@@ -27,7 +27,6 @@ COPY . .
 RUN go build -v -o /usr/local/bin/app .
 
 COPY .env-release /usr/src/app/.env
-COPY ./files /usr/src/app/files
 COPY ./pkg/conf/model.conf /usr/src/app/model.conf
 COPY ./pkg/conf/policy.csv /usr/src/app/policy.csv
 
