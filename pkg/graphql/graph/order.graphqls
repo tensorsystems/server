@@ -1,0 +1,116 @@
+"""
+Copyright 2021 Kidus Tiliksew
+
+This file is part of Tensor EMR.
+
+Tensor EMR is free software: you can redistribute it and/or modify
+it under the terms of the version 2 of GNU General Public License as published by
+the Free Software Foundation.
+
+Tensor EMR is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+type Order {
+  id: ID!
+  userId: ID!
+  user: User!
+  firstName: String
+  lastName: String
+  phoneNo: String
+  patientId: ID
+  patientChartId: ID
+  appointmentId: ID
+  emergency: Boolean
+  note: String!
+  status: String!
+  orderType: String!
+  payments: [Payment!]!
+  createdAt: Time
+}
+
+type OrderEdge {
+  node: Order!
+}
+
+type OrderConnection implements Connection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [OrderEdge]!
+}
+
+input OrderInput {
+  userId: ID!
+  emergency: Boolean
+  note: String!
+  status: String!
+  orderType: String!
+  paymentIds: [ID]!
+}
+
+input OrderUpdateInput {
+  id: ID!
+  userId: ID
+  emergency: Boolean
+  note: String
+  status: String
+  orderType: String
+}
+
+input OrderFollowupInput {
+  appointmentId: ID!
+  note: String
+}
+
+input ScheduleSurgeryInput {
+  orderId: ID!
+  checkInTime: Time!
+  roomId: ID!
+  invoiceNo: String!
+}
+
+input ScheduleTreatmentInput {
+  orderId: ID!
+  checkInTime: Time!
+  roomId: ID!
+  invoiceNo: String!
+}
+
+input OrderFilterInput {
+  userId: ID
+  appointmentId: ID
+  patientChartId: ID
+  status: String
+  orderType: String
+  searchTerm: String
+  date: Time
+}
+
+input ConfirmFollowOrderInput {
+  orderId: ID!
+  checkInTime: Time!
+  roomId: ID!
+}
+
+extend type Query {
+  order(id: ID!): Order!
+  orders(page: PaginationInput!, filter: OrderFilterInput): OrderConnection!
+  providerOrders(page: PaginationInput!, searchTerm: String): OrderConnection!
+}
+
+extend type Mutation {
+  saveOrder(input: OrderInput!): Order!
+  updateOrder(input: OrderUpdateInput!): Order!
+  deleteOrder(id: ID!): Boolean!
+
+  orderFollowup(input: OrderFollowupInput!): Order!
+
+  scheduleSurgery(input: ScheduleSurgeryInput!): Order!
+  scheduleTreatment(input: ScheduleTreatmentInput!): Order!
+
+  confirmOrder(orderId: ID!, invoiceNo: String!): Order!
+}
