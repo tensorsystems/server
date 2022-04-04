@@ -21,7 +21,7 @@ MAIN_FILE := "main.go"
 PKG_LIST := $(shell go list ./...)
 GO_FILES := $(shell find . -name '*.go' | grep -v _test.go)
 
-VERSION := 1.0.0
+VERSION := 0.1.0
 
 LINTERS := \
 	github.com/rakyll/gotest \
@@ -85,5 +85,5 @@ deploy:
 	register-connectors
 
 build-image:
-	docker build -t docker.tensorsystems.net/tensoremr/backend:$(VERSION) .
+	docker build -t docker.tensorsystems.net/tensoremr/server:$(VERSION) .
 
