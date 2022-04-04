@@ -8,10 +8,10 @@ Tensor EMR is a web based Open Source Electronic Medical Record software applica
 
 1. Pull repository 
 2. Start the Go Server
-        make run
+  make run
+3. Explore at `http://localhost:8080/api`
 
 #### Use Docker
 1. Pull repository 
-2. Build docker
-        make build-image 
-3. 
+2. `cd docker`
+3. `docker-compose up -d`

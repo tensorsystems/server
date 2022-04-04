@@ -23,9 +23,9 @@ services:
     container_name: postgres
     restart: "always"
     environment:
-      - POSTGRES_USER="postgres"
-      - POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"
-      - POSTGRES_DB="emr"
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=emr
     ports:
       - 5432:5432
     volumes:
@@ -34,22 +34,51 @@ services:
     #  - ./pg_hba.conf:/etc/postgresql/pg_hba.conf
     # command: postgres -c config_file=/etc/postgresql/postgresql.conf
 
-
   pgadmin:
     image: dpage/pgadmin4:6.5
     container_name: pgadmin
     restart: "always"
     environment:
-      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_EMAIL}"
-      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD}"
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
     depends_on:
       - postgres
 
+  server:
+    image: ghcr.io/tensor-systems/tensoremr-server:main
+    ports:
+      - "8080:8080"
+    volumes:
+      - serverfiles:/files
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=emr
+      - DB_HOST=postgres
+      #      DB_REPLICATION_HOST: "192.168.1.101"
+      - DB_DRIVER=postgres
+      - DB_PORT=5432
+      - RXNORM_ADDRESS=https://rxnav.nlm.nih.gov
+    depends_on:
+      - postgres 
+
+  webclient:
+    image: ghcr.io/tensor-systems/tensoremr-web-client:main
+    ports:
+      - "4000:80"
+    environment:
+      NODE_ENV: "production"
+      REACT_APP_SERVER_URL: http://localhost:8080
+      REACT_APP_ELASTICSEARCH_URL: http://localhost:9200
+    depends_on:
+      - server
+
 volumes:
   # elasticsearch:
   postgres:
+  serverfiles:
 
 
   # zookeeper:
