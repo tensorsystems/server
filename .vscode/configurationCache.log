@@ -1,0 +1,1 @@
+{"buildTargets":["all","build","build-image","clean","coverage","coverhtml","delete-connectors","dep","deploy","golint","help","init","lint","register-connectors","run","staticcheck","test","test-coverage","test-int","testdep","vet"],"launchTargets":[],"customConfigurationProvider":{"workspaceBrowse":{"browsePath":[],"compilerArgs":[]},"fileIndex":[]}}
