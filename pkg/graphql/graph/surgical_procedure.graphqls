@@ -233,6 +233,7 @@ type SurgicalProcedure {
   ga: Boolean
   retrobulbar: Boolean
   peribulbar: Boolean
+  subtenones: Boolean
   topical: Boolean
   conjFlapLimbal: Boolean
   conjFlapFornix: Boolean
@@ -468,6 +469,7 @@ input SurgicalProcedureInput {
   ga: Boolean
   retrobulbar: Boolean
   peribulbar: Boolean
+  subtenones: Boolean
   topical: Boolean
   conjFlapLimbal: Boolean
   conjFlapFornix: Boolean
@@ -685,6 +687,7 @@ input SurgicalProcedureUpdateInput {
   ga: Boolean
   retrobulbar: Boolean
   peribulbar: Boolean
+  subtenones: Boolean
   topical: Boolean
   conjFlapLimbal: Boolean
   conjFlapFornix: Boolean

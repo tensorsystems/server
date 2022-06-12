@@ -193,6 +193,7 @@ type SurgicalProcedure struct {
 	Ga                         *bool                 `json:"ga"`
 	Retrobulbar                *bool                 `json:"retrobulbar"`
 	Peribulbar                 *bool                 `json:"peribulbar"`
+	Subtenones                 *bool                 `json:"subtenones"`
 	Topical                    *bool                 `json:"topical"`
 	ConjFlapLimbal             *bool                 `json:"conjFlapLimbal"`
 	ConjFlapFornix             *bool                 `json:"conjFlapFornix"`

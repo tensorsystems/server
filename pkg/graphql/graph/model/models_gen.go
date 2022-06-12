@@ -1606,6 +1606,21 @@ type NewTodo struct {
 	UserID string `json:"userId"`
 }
 
+// Copyright 2021 Kidus Tiliksew
+//
+// This file is part of Tensor EMR.
+//
+// Tensor EMR is free software: you can redistribute it and/or modify
+// it under the terms of the version 2 of GNU General Public License as published by
+// the Free Software Foundation.
+//
+// Tensor EMR is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 type Notif struct {
 	DiagnosticProcedureOrders int `json:"diagnosticProcedureOrders"`
 	LabOrders                 int `json:"labOrders"`
@@ -2438,6 +2453,21 @@ type ScheduleTreatmentInput struct {
 	InvoiceNo   string    `json:"invoiceNo"`
 }
 
+// Copyright 2021 Kidus Tiliksew
+//
+// This file is part of Tensor EMR.
+//
+// Tensor EMR is free software: you can redistribute it and/or modify
+// it under the terms of the version 2 of GNU General Public License as published by
+// the Free Software Foundation.
+//
+// Tensor EMR is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 type SearchResult struct {
 	Patients  []*repository.Patient `json:"patients"`
 	Providers []*repository.User    `json:"providers"`
@@ -2667,6 +2697,7 @@ type SurgicalProcedureInput struct {
 	Ga                           *bool         `json:"ga"`
 	Retrobulbar                  *bool         `json:"retrobulbar"`
 	Peribulbar                   *bool         `json:"peribulbar"`
+	Subtenones                   *bool         `json:"subtenones"`
 	Topical                      *bool         `json:"topical"`
 	ConjFlapLimbal               *bool         `json:"conjFlapLimbal"`
 	ConjFlapFornix               *bool         `json:"conjFlapFornix"`
@@ -2911,6 +2942,7 @@ type SurgicalProcedureUpdateInput struct {
 	Ga                           *bool         `json:"ga"`
 	Retrobulbar                  *bool         `json:"retrobulbar"`
 	Peribulbar                   *bool         `json:"peribulbar"`
+	Subtenones                   *bool         `json:"subtenones"`
 	Topical                      *bool         `json:"topical"`
 	ConjFlapLimbal               *bool         `json:"conjFlapLimbal"`
 	ConjFlapFornix               *bool         `json:"conjFlapFornix"`
@@ -3435,6 +3467,21 @@ func (e OrderDirection) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+// Copyright 2021 Kidus Tiliksew
+//
+// This file is part of Tensor EMR.
+//
+// Tensor EMR is free software: you can redistribute it and/or modify
+// it under the terms of the version 2 of GNU General Public License as published by
+// the Free Software Foundation.
+//
+// Tensor EMR is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 type SupplyStatus string
 
 const (
