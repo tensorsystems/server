@@ -229,6 +229,18 @@ func (m *Model) RegisterAllModels() {
 
 // SeedData ...
 func (m *Model) SeedData() error {
+	var appointmentStatus AppointmentStatus
+	appointmentStatus.Seed()
+
+	var userType UserType
+	userType.Seed()
+
+	var adminUser User
+	adminUser.Seed()
+
+	var visitType VisitType
+	visitType.Seed()
+	
 	// Save default patient encounter limits
 	var user User
 	physicians, err := user.GetByUserTypeTitle("Physician")
@@ -258,17 +270,7 @@ func (m *Model) SeedData() error {
 		}
 	}
 
-	// var appointmentStatus AppointmentStatus
-	// appointmentStatus.Seed()
 
-	// var userType UserType
-	// userType.Seed()
-
-	// var user User
-	// user.Seed()
-
-	// var visitType VisitType
-	// visitType.Seed()
 
 	// var queueDestination QueueDestination
 	// queueDestination.Seed()
