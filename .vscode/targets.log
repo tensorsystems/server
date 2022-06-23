@@ -56,7 +56,7 @@ PATH = /opt/homebrew/bin:/opt/homebrew/bin:/Users/kidustiliksew/google-cloud-sdk
 # environment
 GOPATH = /Users/kidustiliksew/go
 # makefile (from `Makefile', line 21)
-PKG_LIST := github.com/Tensor-Systems/tensoremr-server github.com/Tensor-Systems/tensoremr-server/pkg/auth github.com/Tensor-Systems/tensoremr-server/pkg/conf github.com/Tensor-Systems/tensoremr-server/pkg/controller github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/generated github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/model github.com/Tensor-Systems/tensoremr-server/pkg/jwt github.com/Tensor-Systems/tensoremr-server/pkg/middleware github.com/Tensor-Systems/tensoremr-server/pkg/repository github.com/Tensor-Systems/tensoremr-server/pkg/server github.com/Tensor-Systems/tensoremr-server/pkg/util
+PKG_LIST := github.com/tensoremr/server github.com/tensoremr/server/pkg/auth github.com/tensoremr/server/pkg/conf github.com/tensoremr/server/pkg/controller github.com/tensoremr/server/pkg/graphql/graph github.com/tensoremr/server/pkg/graphql/graph/generated github.com/tensoremr/server/pkg/graphql/graph/model github.com/tensoremr/server/pkg/jwt github.com/tensoremr/server/pkg/middleware github.com/tensoremr/server/pkg/repository github.com/tensoremr/server/pkg/server github.com/tensoremr/server/pkg/util
 # environment
 VSCODE_LOG_STACK = false
 # environment
@@ -72,7 +72,7 @@ VSCODE_PIPE_LOGGING = true
 # environment
 PWD = /Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server
 # makefile (from `Makefile', line 19)
-PKG := "github.com/Tensor-Systems/tensoremr-server"
+PKG := "github.com/tensoremr/server"
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = undefined
 # environment

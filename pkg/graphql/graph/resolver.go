@@ -31,8 +31,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/conf"
 	"github.com/casbin/casbin/v2"
+	"github.com/tensoremr/server/pkg/conf"
 )
 
 // This file will not be regenerated automatically.

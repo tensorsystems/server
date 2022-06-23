@@ -23,9 +23,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/server"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/tensoremr/server/pkg/server"
 )
 
 func main() {

@@ -21,8 +21,8 @@ package graph
 import (
 	"math"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/model"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
+	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 // ConvertEntityToConnection ...

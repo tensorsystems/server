@@ -31,16 +31,16 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/auth"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/conf"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/controller"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/generated"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/middleware"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
+	"github.com/tensoremr/server/pkg/auth"
+	"github.com/tensoremr/server/pkg/conf"
+	"github.com/tensoremr/server/pkg/controller"
+	"github.com/tensoremr/server/pkg/graphql/graph"
+	"github.com/tensoremr/server/pkg/graphql/graph/generated"
+	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/repository"
 	"gorm.io/gorm"
 )
 

@@ -22,8 +22,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 // Wrapper wraps the signing key and the issuer

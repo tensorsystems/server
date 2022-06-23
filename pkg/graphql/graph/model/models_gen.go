@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 type Connection interface {

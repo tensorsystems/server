@@ -6,8 +6,8 @@ package graph
 import (
 	"context"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/model"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
+	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *queryResolver) Notifs(ctx context.Context) (*model.Notif, error) {

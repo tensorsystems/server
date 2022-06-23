@@ -27,8 +27,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/jwt"
 	"github.com/gin-gonic/gin"
+	"github.com/tensoremr/server/pkg/jwt"
 )
 
 // AuthMiddleware ...

@@ -21,9 +21,9 @@ package controller
 import (
 	"encoding/json"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/model"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 // GetPatientQueues ...

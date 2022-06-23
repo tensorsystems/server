@@ -25,8 +25,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/conf"
 	"github.com/casbin/casbin/v2"
+	"github.com/tensoremr/server/pkg/conf"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

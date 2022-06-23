@@ -7,8 +7,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/middleware"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
+	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chiefComplaintTypeID int) (*repository.FavoriteChiefComplaint, error) {

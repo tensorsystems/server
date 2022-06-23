@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/generated"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/graphql/graph/model"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/middleware"
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
+	"github.com/tensoremr/server/pkg/graphql/graph/generated"
+	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *mutationResolver) CreateChat(ctx context.Context, input model.ChatInput) (*repository.Chat, error) {

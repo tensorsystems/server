@@ -19,8 +19,8 @@
 package controller
 
 import (
-	"github.com/Tensor-Systems/tensoremr-server/pkg/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 // GetUserTypes ...

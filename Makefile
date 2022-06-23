@@ -16,7 +16,7 @@
 
 
 PROJECT_NAME := "tensoremr-server"
-PKG := "github.com/Tensor-Systems/tensoremr-server"
+PKG := "github.com/tensoremr/server"
 MAIN_FILE := "main.go"
 PKG_LIST := $(shell go list ./...)
 GO_FILES := $(shell find . -name '*.go' | grep -v _test.go)
