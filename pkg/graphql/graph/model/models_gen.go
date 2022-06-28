@@ -311,6 +311,13 @@ type ConfirmTreatmentOrderResult struct {
 	InvoiceNo      string                     `json:"invoiceNo"`
 }
 
+type DateOfBirthInput struct {
+	DateOfBirth *time.Time           `json:"dateOfBirth"`
+	AgeInYears  *int                 `json:"ageInYears"`
+	AgeInMonths *int                 `json:"ageInMonths"`
+	InputType   DateOfBirthInputType `json:"inputType"`
+}
+
 type DiagnosisConnection struct {
 	TotalCount int              `json:"totalCount"`
 	PageInfo   *PageInfo        `json:"pageInfo"`
@@ -2178,6 +2185,39 @@ type PatientInput struct {
 	Memo                   *string       `json:"memo"`
 }
 
+type PatientInputV2 struct {
+	FirstName              string        `json:"firstName"`
+	LastName               string        `json:"lastName"`
+	Gender                 string        `json:"gender"`
+	PhoneNo                string        `json:"phoneNo"`
+	PhoneNo2               *string       `json:"phoneNo2"`
+	HomePhone              *string       `json:"homePhone"`
+	Email                  *string       `json:"email"`
+	Credit                 *bool         `json:"credit"`
+	CreditCompany          *string       `json:"creditCompany"`
+	IDNo                   *string       `json:"idNo"`
+	IDType                 *string       `json:"idType"`
+	MartialStatus          *string       `json:"martialStatus"`
+	Occupation             *string       `json:"occupation"`
+	EmergencyContactName   *string       `json:"emergencyContactName"`
+	EmergencyContactRel    *string       `json:"emergencyContactRel"`
+	EmergencyContactPhone  *string       `json:"emergencyContactPhone"`
+	EmergencyContactPhone2 *string       `json:"emergencyContactPhone2"`
+	EmergencyContactMemo   *string       `json:"emergencyContactMemo"`
+	Region                 string        `json:"region"`
+	City                   *string       `json:"city"`
+	SubCity                *string       `json:"subCity"`
+	Woreda                 string        `json:"woreda"`
+	Zone                   *string       `json:"zone"`
+	Kebele                 *string       `json:"kebele"`
+	HouseNo                *string       `json:"houseNo"`
+	CardNo                 *string       `json:"cardNo"`
+	PaperRecord            bool          `json:"paperRecord"`
+	PaperRecordDocument    *FileUpload   `json:"paperRecordDocument"`
+	Documents              []*FileUpload `json:"documents"`
+	Memo                   *string       `json:"memo"`
+}
+
 type PatientQueueInput struct {
 	QueueName string               `json:"queueName"`
 	Queue     []string             `json:"queue"`
@@ -3340,6 +3380,49 @@ type VitalSignsUpdateInput struct {
 	LeftLensMeterAxis        *string  `json:"leftLensMeterAxis"`
 	RightLensMeterCyl        *string  `json:"rightLensMeterCyl"`
 	LeftLensMeterCyl         *string  `json:"leftLensMeterCyl"`
+}
+
+type DateOfBirthInputType string
+
+const (
+	DateOfBirthInputTypeDate     DateOfBirthInputType = "DATE"
+	DateOfBirthInputTypeAgeYear  DateOfBirthInputType = "AGE_YEAR"
+	DateOfBirthInputTypeAgeMonth DateOfBirthInputType = "AGE_MONTH"
+)
+
+var AllDateOfBirthInputType = []DateOfBirthInputType{
+	DateOfBirthInputTypeDate,
+	DateOfBirthInputTypeAgeYear,
+	DateOfBirthInputTypeAgeMonth,
+}
+
+func (e DateOfBirthInputType) IsValid() bool {
+	switch e {
+	case DateOfBirthInputTypeDate, DateOfBirthInputTypeAgeYear, DateOfBirthInputTypeAgeMonth:
+		return true
+	}
+	return false
+}
+
+func (e DateOfBirthInputType) String() string {
+	return string(e)
+}
+
+func (e *DateOfBirthInputType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DateOfBirthInputType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DateOfBirthInputType", str)
+	}
+	return nil
+}
+
+func (e DateOfBirthInputType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 type Destination string

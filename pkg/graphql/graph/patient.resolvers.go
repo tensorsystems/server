@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/repository"
@@ -16,6 +17,68 @@ func (r *mutationResolver) SavePatient(ctx context.Context, input model.PatientI
 	// Copy
 	var patient repository.Patient
 	deepCopy.Copy(&input).To(&patient)
+
+	// Upload paper record document
+	if input.PaperRecordDocument != nil {
+		fileName, hashedFileName, hash, ext := HashFileName(input.PaperRecordDocument.Name)
+		err := WriteFile(input.PaperRecordDocument.File.File, hashedFileName+"."+ext)
+		if err != nil {
+			return nil, err
+		}
+
+		patient.PaperRecordDocument = &repository.File{
+			ContentType: input.PaperRecordDocument.File.ContentType,
+			Size:        input.PaperRecordDocument.File.Size,
+			FileName:    fileName,
+			Extension:   ext,
+			Hash:        hash,
+		}
+	}
+
+	// Upload other doucments
+	for _, fileUpload := range input.Documents {
+		fileName, hashedFileName, hash, ext := HashFileName(fileUpload.Name)
+		err := WriteFile(fileUpload.File.File, hashedFileName+"."+ext)
+		if err != nil {
+			return nil, err
+		}
+
+		patient.Documents = append(patient.Documents, repository.File{
+			ContentType: fileUpload.File.ContentType,
+			Size:        fileUpload.File.Size,
+			FileName:    fileName,
+			Extension:   ext,
+			Hash:        hash,
+		})
+	}
+
+	// Save
+	if err := patient.Save(); err != nil {
+		return nil, err
+	}
+
+	// Return
+	return &patient, nil
+}
+
+func (r *mutationResolver) SavePatientV2(ctx context.Context, input model.PatientInputV2, dateOfBirthInput model.DateOfBirthInput) (*repository.Patient, error) {
+	// Copy
+	var patient repository.Patient
+	deepCopy.Copy(&input).To(&patient)
+
+	var dateOfBirth time.Time
+
+	now := time.Now()
+
+	if dateOfBirthInput.InputType == model.DateOfBirthInputTypeDate {
+		dateOfBirth = *dateOfBirthInput.DateOfBirth
+	} else if dateOfBirthInput.InputType == model.DateOfBirthInputTypeAgeYear {
+		dateOfBirth = now.AddDate(-*dateOfBirthInput.AgeInYears, 0, 0)
+	} else if(dateOfBirthInput.InputType == model.DateOfBirthInputTypeAgeMonth) {
+		dateOfBirth = now.AddDate(0, -*dateOfBirthInput.AgeInMonths, 0)
+	}
+
+	patient.DateOfBirth = dateOfBirth
 
 	// Upload paper record document
 	if input.PaperRecordDocument != nil {

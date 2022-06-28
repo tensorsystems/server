@@ -163,13 +163,12 @@ func (s *Server) NewRouter() *gin.Engine {
 
 		r.GET("/rxnorm-drugs", controller.GetDrugs)
 		r.GET("/rxnorm-intractions", controller.GetDrugIntractions)
-
-		r.GET("/api", playgroundHandler())
 	}
 
 	r.GET("/clean", controller.ClearPatientsRecord)
 
 	r.Use(middleware.AuthMiddleware())
+	r.GET("/api", playgroundHandler())
 	r.POST("/query", graphqlHandler(s))
 
 	return r
