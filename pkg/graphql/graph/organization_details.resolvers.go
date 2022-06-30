@@ -32,7 +32,7 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input mo
 	}
 
 	var existing repository.OrganizationDetails
-	if err := existing.Get(); err == nil {
+	if err := existing.Get(r.DB); err == nil {
 		entity.ID = existing.ID
 
 		if err := entity.Update(); err != nil {
@@ -50,7 +50,7 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input mo
 func (r *queryResolver) OrganizationDetails(ctx context.Context) (*repository.OrganizationDetails, error) {
 	var entity repository.OrganizationDetails
 
-	if err := entity.Get(); err != nil {
+	if err := entity.Get(r.DB); err != nil {
 		return nil, err
 	}
 

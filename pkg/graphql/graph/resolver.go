@@ -33,6 +33,7 @@ import (
 
 	"github.com/casbin/casbin/v2"
 	"github.com/tensoremr/server/pkg/conf"
+	"gorm.io/gorm"
 )
 
 // This file will not be regenerated automatically.
@@ -43,6 +44,7 @@ import (
 type Resolver struct {
 	Config        *conf.Configuration
 	AccessControl *casbin.Enforcer
+	DB            *gorm.DB
 }
 
 // WriteFile ...

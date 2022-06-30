@@ -130,6 +130,7 @@ func graphqlHandler(server *Server) gin.HandlerFunc {
 	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
 		Config:        server.Config,
 		AccessControl: server.ACLEnforcer,
+		DB:            server.DB,
 	}}))
 
 	return func(c *gin.Context) {

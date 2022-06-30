@@ -26,7 +26,6 @@ import (
 // GetOrganizationDetails ...
 func GetOrganizationDetails(c *gin.Context) {
 	var entity repository.OrganizationDetails
-	entity.Get()
 
 	c.JSON(200, entity)
 }

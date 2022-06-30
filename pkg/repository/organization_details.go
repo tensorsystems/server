@@ -43,8 +43,8 @@ func (r *OrganizationDetails) Save() error {
 }
 
 // Get ...
-func (r *OrganizationDetails) Get() error {
-	return DB.Preload("Logo").Take(&r).Error
+func (r *OrganizationDetails) Get(db *gorm.DB) error {
+	return db.Preload("Logo").Take(&r).Error
 }
 
 // Update ...
