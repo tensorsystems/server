@@ -8,10 +8,11 @@ import (
 	"errors"
 
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chiefComplaintTypeID int) (*repository.FavoriteChiefComplaint, error) {
+func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chiefComplaintTypeID int) (*models.FavoriteChiefComplaint, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -22,17 +23,18 @@ func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chief
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.FavoriteChiefComplaint
+	var favoriteChiefComplaintRepository repository.FavoriteChiefComplaintRepository
+	var entity models.FavoriteChiefComplaint
 	entity.ChiefComplaintTypeID = chiefComplaintTypeID
 	entity.UserID = user.ID
 
-	if err := entity.Save(); err != nil {
+	if err := favoriteChiefComplaintRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -40,15 +42,15 @@ func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chief
 }
 
 func (r *mutationResolver) DeleteFavoriteChiefComplaint(ctx context.Context, id int) (*int, error) {
-	var entity repository.FavoriteChiefComplaint
-	if err := entity.Delete(id); err != nil {
+	var repository repository.FavoriteChiefComplaintRepository
+	if err := repository.Delete(id); err != nil {
 		return nil, err
 	}
 
 	return &id, nil
 }
 
-func (r *queryResolver) FavoriteChiefComplaints(ctx context.Context) ([]*repository.FavoriteChiefComplaint, error) {
+func (r *queryResolver) FavoriteChiefComplaints(ctx context.Context) ([]*models.FavoriteChiefComplaint, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -59,14 +61,14 @@ func (r *queryResolver) FavoriteChiefComplaints(ctx context.Context) ([]*reposit
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.FavoriteChiefComplaint
-	entities, err := entity.GetByUser(user.ID)
+	var favoriteChiefComplaintRepository repository.FavoriteChiefComplaintRepository
+	entities, err := favoriteChiefComplaintRepository.GetByUser(user.ID)
 
 	if err != nil {
 		return nil, err

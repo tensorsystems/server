@@ -18,36 +18,30 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// OrganizationDetails ...
-type OrganizationDetails struct {
-	gorm.Model
-	ID                       int     `gorm:"primaryKey" json:"id"`
-	Name                     *string `json:"name"`
-	PhoneNo                  *string `json:"phoneNo"`
-	PhoneNo2                 *string `json:"phoneNo2"`
-	Address                  *string `json:"address"`
-	Address2                 *string `json:"address2"`
-	Website                  *string `json:"website"`
-	Email                    *string `json:"email"`
-	LanIpAddress             *string `json:"lanIpAddress"`
-	LogoID                   *int    `json:"logoId"`
-	Logo                     *File   `json:"logo"`
-	DefaultMedicalDepartment *string `json:"defaultMedicalDepartment"`
+type OrganizationDetailsRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideOrganizationDetailsRepository(DB *gorm.DB) OrganizationDetailsRepository {
+	return OrganizationDetailsRepository{DB: DB}
 }
 
 // Save ...
-func (r *OrganizationDetails) Save() error {
-	return DB.Create(&r).Error
+func (r *OrganizationDetailsRepository) Save(m *models.OrganizationDetails) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *OrganizationDetails) Get(db *gorm.DB) error {
-	return db.Preload("Logo").Take(&r).Error
+func (r *OrganizationDetailsRepository) Get(m *models.OrganizationDetails) error {
+	return r.DB.Preload("Logo").Take(&m).Error
 }
 
 // Update ...
-func (r *OrganizationDetails) Update() error {
-	return DB.Updates(&r).Error
+func (r *OrganizationDetailsRepository) Update(m *models.OrganizationDetails) error {
+	return r.DB.Updates(&m).Error
 }

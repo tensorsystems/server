@@ -6,11 +6,11 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-func (r *queryResolver) Search(ctx context.Context, searchTerm string) (*model.SearchResult, error) {
+func (r *queryResolver) Search(ctx context.Context, searchTerm string) (*graph_models.SearchResult, error) {
 	var patient repository.Patient
 
 	patients, err := patient.Search(searchTerm)

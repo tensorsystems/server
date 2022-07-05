@@ -18,57 +18,45 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// PatientHistory ...
-type PatientHistory struct {
-	gorm.Model
-	ID                   int                   `gorm:"primaryKey" json:"id"`
-	PatientID            int                   `json:"patientId" gorm:"uniqueIndex"`
-	ReviewOfSystems      []ReviewOfSystem      `json:"reviewOfSystems"`
-	ReviewOfSystemsNote  *string               `json:"reviewOfSystemsNote"`
-	PastIllnesses        []PastIllness         `json:"pastIllnesses"`
-	PastInjuries         []PastInjury          `json:"pastInjuries"`
-	PastHospitalizations []PastHospitalization `json:"pastHospitalizations"`
-	PastSurgeries        []PastSurgery         `json:"pastSurgeries"`
-	FamilyIllnesses      []FamilyIllness       `json:"familyIllnesses"`
-	Lifestyles           []Lifestyle           `json:"lifestyles"`
-	Allergies            []Allergy             `json:"allergies"`
+type PatientHistoryRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePatientHistoryRepository(DB *gorm.DB) PatientHistoryRepository {
+	return PatientHistoryRepository{DB: DB}
 }
 
 // Save ...
-func (r *PatientHistory) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PatientHistoryRepository) Save(m *models.PatientHistory) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *PatientHistory) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PatientHistoryRepository) Get(m *models.PatientHistory, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientID ...
-func (r *PatientHistory) GetByPatientID(ID int) error {
-	return DB.Where("patient_id = ?", ID).Take(&r).Error
+func (r *PatientHistoryRepository) GetByPatientID(m *models.PatientHistory, ID int) error {
+	return r.DB.Where("patient_id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientIDWithDetails ...
-func (r *PatientHistory) GetByPatientIDWithDetails(ID int) error {
-	return DB.Where("patient_id = ?", ID).Preload("PastIllnesses").Preload("PastInjuries").Preload("PastHospitalizations").Preload("PastSurgeries").Preload("FamilyIllnesses").Preload("Lifestyles").Preload("Allergies").Take(&r).Error
+func (r *PatientHistoryRepository) GetByPatientIDWithDetails(m *models.PatientHistory, ID int) error {
+	return r.DB.Where("patient_id = ?", ID).Preload("PastIllnesses").Preload("PastInjuries").Preload("PastHospitalizations").Preload("PastSurgeries").Preload("FamilyIllnesses").Preload("Lifestyles").Preload("Allergies").Take(&m).Error
 }
 
 // Update ...
-func (r *PatientHistory) Update() error {
-	return DB.Updates(&r).Error
+func (r *PatientHistoryRepository) Update(m *models.PatientHistory) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PatientHistory) Delete(ID int) error {
-	var e PatientHistory
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PatientHistoryRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PatientHistory{}).Error
 }

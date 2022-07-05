@@ -6,37 +6,37 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-func (r *queryResolver) Notifs(ctx context.Context) (*model.Notif, error) {
-	var diagnosticOrderRepo repository.DiagnosticProcedureOrder
+func (r *queryResolver) Notifs(ctx context.Context) (*graph_models.Notif, error) {
+	var diagnosticOrderRepo repository.DiagnosticProcedureOrderRepository
 	diagnostics := diagnosticOrderRepo.GetTodaysOrderedCount()
 
-	var surgicalOrderRepo repository.SurgicalOrder
+	var surgicalOrderRepo repository.SurgicalOrderRepository
 	surgical := surgicalOrderRepo.GetTodaysOrderedCount()
 
-	var labOrderRepo repository.LabOrder
+	var labOrderRepo repository.LabOrderRepository
 	labs := labOrderRepo.GetTodaysOrderedCount()
 
-	var treatmentRepo repository.TreatmentOrder
+	var treatmentRepo repository.TreatmentOrderRepository
 	treatments := treatmentRepo.GetTodaysOrderedCount()
 
-	var followUpRepo repository.FollowUpOrder
+	var followUpRepo repository.FollowUpOrderRepository
 	followUps := followUpRepo.GetTodaysOrderedCount()
 
-	var referralRepo repository.ReferralOrder
+	var referralRepo repository.ReferralOrderRepository
 	referrals := referralRepo.GetTodaysOrderedCount()
 
-	var paymentWaiver repository.PaymentWaiver
+	var paymentWaiver repository.PaymentWaiverRepository
 	waivers, err := paymentWaiver.GetApprovedCount()
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.Notif{
+	return &graph_models.Notif{
 		DiagnosticProcedureOrders: diagnostics,
 		LabOrders:                 labs,
 		TreatmentOrders:           treatments,

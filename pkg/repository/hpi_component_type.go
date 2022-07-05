@@ -18,42 +18,45 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// HpiComponentType ...
-type HpiComponentType struct {
-	gorm.Model
-	ID          int    `gorm:"primaryKey"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+type HpiComponentTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideHpiComponentTypeRepository(DB *gorm.DB) HpiComponentTypeRepository {
+	return HpiComponentTypeRepository{DB: DB}
 }
 
 // Save ...
-func (r *HpiComponentType) Save() error {
-	return DB.Create(&r).Error
+func (r *HpiComponentTypeRepository) Save(m *models.HpiComponentType) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *HpiComponentType) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *HpiComponentTypeRepository) Get(m *models.HpiComponentType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *HpiComponentType) Update() error {
-	return DB.Updates(&r).Error
+func (r *HpiComponentTypeRepository) Update(m *models.HpiComponentType) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Count ...
-func (r *HpiComponentType) Count(dbString string) (int64, error) {
+func (r *HpiComponentTypeRepository) Count(dbString string) (int64, error) {
 	var count int64
 
-	err := DB.Model(&HpiComponent{}).Count(&count).Error
+	err := r.DB.Model(&models.HpiComponent{}).Count(&count).Error
 	return count, err
 }
 
 // GetAll ...
-func (r *HpiComponentType) GetAll(p PaginationInput) ([]HpiComponentType, int64, error) {
-	var result []HpiComponentType
+func (r *HpiComponentTypeRepository) GetAll(p models.PaginationInput) ([]models.HpiComponentType, int64, error) {
+	var result []models.HpiComponentType
 
 	var count int64
 	count, countErr := r.Count("")
@@ -61,7 +64,7 @@ func (r *HpiComponentType) GetAll(p PaginationInput) ([]HpiComponentType, int64,
 		return result, 0, countErr
 	}
 
-	err := DB.Scopes(Paginate(&p)).Order("id ASC").Find(&result).Error
+	err := r.DB.Scopes(models.Paginate(&p)).Order("id ASC").Find(&result).Error
 	if err != nil {
 		return result, 0, err
 	}
@@ -70,8 +73,7 @@ func (r *HpiComponentType) GetAll(p PaginationInput) ([]HpiComponentType, int64,
 }
 
 // Delete ...
-func (r *HpiComponentType) Delete(ID int) error {
-	var e HpiComponent
-	err := DB.Where("id = ?", ID).Delete(&e).Error
+func (r *HpiComponentTypeRepository) Delete(ID int) error {
+	err := r.DB.Where("id = ?", ID).Delete(&models.HpiComponentType{}).Error
 	return err
 }

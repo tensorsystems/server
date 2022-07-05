@@ -16,7 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package repository
+package models
 
 import (
 	"errors"
@@ -160,7 +160,6 @@ func (m *Model) RegisterAllModels() {
 	m.Register(Lab{})
 	m.Register(Lifestyle{})
 	m.Register(MedicalPrescription{})
-	m.Register(Order{})
 	m.Register(PastSurgery{})
 	m.Register(PastHospitalization{})
 	m.Register(PastIllness{})
@@ -225,57 +224,6 @@ func (m *Model) RegisterAllModels() {
 	m.Register(FollowUp{})
 	m.Register(FollowUpOrder{})
 	m.Register(ReferralOrder{})
-}
-
-// SeedData ...
-func (m *Model) SeedData() error {
-	var appointmentStatus AppointmentStatus
-	appointmentStatus.Seed()
-
-	var userType UserType
-	userType.Seed()
-
-	var adminUser User
-	adminUser.Seed()
-
-	var visitType VisitType
-	visitType.Seed()
-	
-	// Save default patient encounter limits
-	var user User
-	physicians, err := user.GetByUserTypeTitle("Physician")
-
-	if err != nil {
-		return err
-	}
-
-	for _, p := range physicians {
-		user := *p
-
-		var patientEncounterLimit PatientEncounterLimit
-		if err := patientEncounterLimit.GetByUser(user.ID); err != nil {
-			patientEncounterLimit.UserID = user.ID
-			patientEncounterLimit.MondayLimit = 150
-			patientEncounterLimit.TuesdayLimit = 150
-			patientEncounterLimit.WednesdayLimit = 150
-			patientEncounterLimit.ThursdayLimit = 150
-			patientEncounterLimit.FridayLimit = 150
-			patientEncounterLimit.SaturdayLimit = 150
-			patientEncounterLimit.SundayLimit = 150
-			patientEncounterLimit.Overbook = 150
-
-			if err := patientEncounterLimit.Save(); err != nil {
-				return err
-			}
-		}
-	}
-
-
-
-	// var queueDestination QueueDestination
-	// queueDestination.Seed()
-
-	return nil
 }
 
 func getTypeName(typ reflect.Type) string {

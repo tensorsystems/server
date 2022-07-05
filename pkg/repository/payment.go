@@ -19,66 +19,32 @@
 package repository
 
 import (
-	"database/sql/driver"
-
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// PaymentStatus ...
-type PaymentStatus string
-
-// Payment statuses ...
-const (
-	PaidPaymentStatus            PaymentStatus = "PAID"
-	NotPaidPaymentStatus         PaymentStatus = "NOTPAID"
-	WaiverRequestedPaymentStatus PaymentStatus = "PAYMENT_WAIVER_REQUESTED"
-)
-
-// Scan ...
-func (p *PaymentStatus) Scan(value interface{}) error {
-	*p = PaymentStatus(value.(string))
-	return nil
+type PaymentRepository struct {
+	DB *gorm.DB
 }
 
-// Value ...
-func (p PaymentStatus) Value() (driver.Value, error) {
-	return string(p), nil
-}
-
-// Payment ...
-type Payment struct {
-	gorm.Model
-	ID        int           `gorm:"primaryKey"`
-	InvoiceNo string        `json:"invoiceNo"`
-	Status    PaymentStatus `json:"status" sql:"payment_status"`
-	BillingID int           `json:"billingId"`
-	Billing   Billing       `json:"billing"`
+func ProvidePaymentRepository(DB *gorm.DB) PaymentRepository {
+	return PaymentRepository{DB: DB}
 }
 
 // Save ...
-func (r *Payment) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PaymentRepository) Save(m *models.Payment) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Payment) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PaymentRepository) Get(m *models.Payment, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Get ...
-func (r *Payment) GetByIds(ids []int) ([]Payment, error) {
-	var result []Payment
-	err := DB.Where("id IN ?", ids).Find(&result).Error
+func (r *PaymentRepository) GetByIds(ids []int) ([]models.Payment, error) {
+	var result []models.Payment
+	err := r.DB.Where("id IN ?", ids).Find(&result).Error
 	if err != nil {
 		return nil, err
 	}
@@ -86,27 +52,27 @@ func (r *Payment) GetByIds(ids []int) ([]Payment, error) {
 }
 
 // Update ...
-func (r *Payment) Update() error {
-	return DB.Updates(&r).Error
+func (r *PaymentRepository) Update(m *models.Payment) error {
+	return r.DB.Updates(&m).Error
 }
 
 // BatchUpdate ...
-func (r *Payment) BatchUpdate(ids []int, e Payment) error {
-	return DB.Model(&r).Where("id IN ?", ids).Updates(&e).Error
+func (r *PaymentRepository) BatchUpdate(ids []int, e models.Payment) error {
+	return r.DB.Model(&models.Payment{}).Where("id IN ?", ids).Updates(&e).Error
 }
 
 // RequestWaiver ...
-func (r *Payment) RequestWaiver(paymentID int, patientID int, userID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PaymentRepository) RequestWaiver(m *models.Payment, paymentID int, patientID int, userID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Update payment
-		r.ID = paymentID
-		r.Status = WaiverRequestedPaymentStatus
-		if err := tx.Updates(&r).Error; err != nil {
+		m.ID = paymentID
+		m.Status = models.WaiverRequestedPaymentStatus
+		if err := tx.Updates(&m).Error; err != nil {
 			return err
 		}
 
 		// Save payment waiver
-		var paymentWaiver PaymentWaiver
+		var paymentWaiver models.PaymentWaiver
 		paymentWaiver.PatientID = patientID
 		paymentWaiver.PaymentID = paymentID
 		paymentWaiver.UserID = userID
@@ -120,17 +86,17 @@ func (r *Payment) RequestWaiver(paymentID int, patientID int, userID int) error 
 }
 
 // RequestWaiverBatch ...
-func (r *Payment) RequestWaiverBatch(paymentIds []int, patientId int, userId int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PaymentRepository) RequestWaiverBatch(paymentIds []int, patientId int, userId int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Update payments
-		if err := tx.Where("id IN ?", paymentIds).Updates(&Payment{Status: WaiverRequestedPaymentStatus}).Error; err != nil {
+		if err := tx.Where("id IN ?", paymentIds).Updates(&models.Payment{Status: models.WaiverRequestedPaymentStatus}).Error; err != nil {
 			return err
 		}
 
 		// Save payment waivers
-		var paymentWaivers []PaymentWaiver
+		var paymentWaivers []models.PaymentWaiver
 		for i := range paymentIds {
-			waiver := PaymentWaiver{
+			waiver := models.PaymentWaiver{
 				PatientID: patientId,
 				PaymentID: paymentIds[i],
 				UserID:    userId,
@@ -148,8 +114,6 @@ func (r *Payment) RequestWaiverBatch(paymentIds []int, patientId int, userId int
 }
 
 // Delete ...
-func (r *Payment) Delete(ID int) error {
-	var e Payment
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PaymentRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Payment{}).Error
 }

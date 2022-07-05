@@ -18,32 +18,35 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// ChatMute ...
-type ChatMute struct {
-	gorm.Model
-	ID     int `gorm:"primaryKey"`
-	UserID int `json:"userId"`
-	ChatID int `json:"chatId"`
+type ChatMuteRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChatMuteRepository(DB *gorm.DB) ChatMuteRepository {
+	return ChatMuteRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChatMute) Save() error {
-	return DB.Create(&r).Error
+func (r *ChatMuteRepository) Save(m *models.ChatMute) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *ChatMute) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ChatMuteRepository) Get(m *models.ChatMute, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *ChatMute) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChatMuteRepository) Update(m *models.ChatMute) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ChatMute) Delete(userID int, chatID int) error {
-	return DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&r).Error
+func (r *ChatMuteRepository) Delete(userID int, chatID int) error {
+	return r.DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&models.ChatMute{}).Error
 }

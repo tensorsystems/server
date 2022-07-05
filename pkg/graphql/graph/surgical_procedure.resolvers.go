@@ -8,13 +8,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input model.OrderSurgicalInput) (*repository.SurgicalOrder, error) {
+func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input graph_models.OrderSurgicalInput) (*models.SurgicalOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -51,7 +52,7 @@ func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input mod
 	return &surgicalProcedure, nil
 }
 
-func (r *mutationResolver) ConfirmSurgicalOrder(ctx context.Context, input model.ConfirmSurgicalOrderInput) (*model.ConfirmSurgicalOrderResult, error) {
+func (r *mutationResolver) ConfirmSurgicalOrder(ctx context.Context, input graph_models.ConfirmSurgicalOrderInput) (*graph_models.ConfirmSurgicalOrderResult, error) {
 	var entity repository.SurgicalOrder
 
 	if err := entity.ConfirmOrder(input.SurgicalOrderID, input.SurgicalProcedureID, *input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
@@ -65,7 +66,7 @@ func (r *mutationResolver) ConfirmSurgicalOrder(ctx context.Context, input model
 	}, nil
 }
 
-func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input model.SurgicalProcedureInput) (*repository.SurgicalProcedure, error) {
+func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input graph_models.SurgicalProcedureInput) (*models.SurgicalProcedure, error) {
 	var entity repository.SurgicalProcedure
 	deepCopy.Copy(&input).To(&entity)
 
@@ -102,7 +103,7 @@ func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input mode
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input model.SurgicalProcedureUpdateInput) (*repository.SurgicalProcedure, error) {
+func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input graph_models.SurgicalProcedureUpdateInput) (*models.SurgicalProcedure, error) {
 	var entity repository.SurgicalProcedure
 	deepCopy.Copy(&input).To(&entity)
 
@@ -141,7 +142,7 @@ func (r *mutationResolver) DeleteSurgicalProcedure(ctx context.Context, id int) 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveSurgicalProcedureType(ctx context.Context, input model.SurgicalProcedureTypeInput) (*repository.SurgicalProcedureType, error) {
+func (r *mutationResolver) SaveSurgicalProcedureType(ctx context.Context, input graph_models.SurgicalProcedureTypeInput) (*models.SurgicalProcedureType, error) {
 	var entity repository.SurgicalProcedureType
 	deepCopy.Copy(&input).To(&entity)
 
@@ -170,7 +171,7 @@ func (r *mutationResolver) SaveSurgicalProcedureType(ctx context.Context, input 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSurgicalProcedureType(ctx context.Context, input model.SurgicalProcedureTypeUpdateInput) (*repository.SurgicalProcedureType, error) {
+func (r *mutationResolver) UpdateSurgicalProcedureType(ctx context.Context, input graph_models.SurgicalProcedureTypeUpdateInput) (*models.SurgicalProcedureType, error) {
 	var entity repository.SurgicalProcedureType
 	deepCopy.Copy(&input).To(&entity)
 
@@ -219,7 +220,7 @@ func (r *mutationResolver) DeletePreanestheticDocument(ctx context.Context, surg
 	return true, nil
 }
 
-func (r *mutationResolver) UpdateSurgeryFitness(ctx context.Context, id int, fit bool) (*repository.SurgicalProcedure, error) {
+func (r *mutationResolver) UpdateSurgeryFitness(ctx context.Context, id int, fit bool) (*models.SurgicalProcedure, error) {
 	var entity repository.SurgicalProcedure
 	if err := entity.Get(id); err != nil {
 		return nil, err
@@ -234,7 +235,7 @@ func (r *mutationResolver) UpdateSurgeryFitness(ctx context.Context, id int, fit
 	return &entity, nil
 }
 
-func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input model.OrderAndConfirmSurgicalProcedureInput) (*repository.SurgicalOrder, error) {
+func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input graph_models.OrderAndConfirmSurgicalProcedureInput) (*models.SurgicalOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -288,7 +289,7 @@ func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input mod
 	return &surgicalOrder, nil
 }
 
-func (r *queryResolver) SurgicalProcedure(ctx context.Context, patientChartID int) (*repository.SurgicalProcedure, error) {
+func (r *queryResolver) SurgicalProcedure(ctx context.Context, patientChartID int) (*models.SurgicalProcedure, error) {
 	var entity repository.SurgicalProcedure
 	if err := entity.GetByPatientChart(patientChartID); err != nil {
 		return nil, err
@@ -297,7 +298,7 @@ func (r *queryResolver) SurgicalProcedure(ctx context.Context, patientChartID in
 	return &entity, nil
 }
 
-func (r *queryResolver) SurgicalProcedures(ctx context.Context, page repository.PaginationInput, filter *model.SurgicalProcedureFilter) (*model.SurgicalProcedureConnection, error) {
+func (r *queryResolver) SurgicalProcedures(ctx context.Context, page models.PaginationInput, filter *graph_models.SurgicalProcedureFilter) (*graph_models.SurgicalProcedureConnection, error) {
 	var f repository.SurgicalProcedure
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
@@ -324,7 +325,7 @@ func (r *queryResolver) SurgicalProcedures(ctx context.Context, page repository.
 	return &model.SurgicalProcedureConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) GetSurgicalProceduresByPatient(ctx context.Context, page repository.PaginationInput, patientID int) (*model.SurgicalProcedureConnection, error) {
+func (r *queryResolver) GetSurgicalProceduresByPatient(ctx context.Context, page models.PaginationInput, patientID int) (*graph_models.SurgicalProcedureConnection, error) {
 	var entity repository.SurgicalProcedure
 	procedures, count, err := entity.GetByPatient(page, patientID)
 
@@ -346,7 +347,7 @@ func (r *queryResolver) GetSurgicalProceduresByPatient(ctx context.Context, page
 	return &model.SurgicalProcedureConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SurgicalProcedureTypes(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SurgicalProcedureTypeConnection, error) {
+func (r *queryResolver) SurgicalProcedureTypes(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SurgicalProcedureTypeConnection, error) {
 	var entity repository.SurgicalProcedureType
 	result, count, err := entity.GetAll(page, searchTerm)
 	if err != nil {
@@ -367,7 +368,7 @@ func (r *queryResolver) SurgicalProcedureTypes(ctx context.Context, page reposit
 	return &model.SurgicalProcedureTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SurgicalOrder(ctx context.Context, patientChartID int) (*repository.SurgicalOrder, error) {
+func (r *queryResolver) SurgicalOrder(ctx context.Context, patientChartID int) (*models.SurgicalOrder, error) {
 	var entity repository.SurgicalOrder
 	if err := entity.GetByPatientChartID(patientChartID); err != nil {
 		return nil, err
@@ -376,7 +377,7 @@ func (r *queryResolver) SurgicalOrder(ctx context.Context, patientChartID int) (
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchSurgicalOrders(ctx context.Context, page repository.PaginationInput, filter *model.SurgicalOrderFilter, date *time.Time, searchTerm *string) (*model.SurgicalOrderConnection, error) {
+func (r *queryResolver) SearchSurgicalOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.SurgicalOrderFilter, date *time.Time, searchTerm *string) (*graph_models.SurgicalOrderConnection, error) {
 	var f repository.SurgicalOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)

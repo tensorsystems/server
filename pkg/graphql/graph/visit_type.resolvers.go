@@ -6,12 +6,13 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveVisitType(ctx context.Context, input model.VisitTypeInput) (*repository.VisitType, error) {
+func (r *mutationResolver) SaveVisitType(ctx context.Context, input graph_models.VisitTypeInput) (*models.VisitType, error) {
 	var visitType repository.VisitType
 	deepCopy.Copy(&input).To(&visitType)
 
@@ -23,7 +24,7 @@ func (r *mutationResolver) SaveVisitType(ctx context.Context, input model.VisitT
 	return &visitType, nil
 }
 
-func (r *mutationResolver) UpdateVisitType(ctx context.Context, input model.VisitTypeInput, id int) (*repository.VisitType, error) {
+func (r *mutationResolver) UpdateVisitType(ctx context.Context, input graph_models.VisitTypeInput, id int) (*models.VisitType, error) {
 	var visitType repository.VisitType
 	deepCopy.Copy(&input).To(&visitType)
 	visitType.ID = id
@@ -45,7 +46,7 @@ func (r *mutationResolver) DeleteVisitType(ctx context.Context, id int) (bool, e
 	return true, nil
 }
 
-func (r *queryResolver) VisitTypes(ctx context.Context, page repository.PaginationInput) (*model.VisitTypeConnection, error) {
+func (r *queryResolver) VisitTypes(ctx context.Context, page models.PaginationInput) (*graph_models.VisitTypeConnection, error) {
 	var visitType repository.VisitType
 	visitTypes, count, err := visitType.GetAll(page)
 

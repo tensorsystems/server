@@ -14,38 +14,34 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-	
+
 */
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Supply ...
-type Supply struct {
-	gorm.Model
-	ID       int       `gorm:"primaryKey" json:"id"`
-	Title    string    `json:"title"`
-	Active   bool      `json:"active"`
-	Billings []Billing `json:"billings" gorm:"many2many:supply_billings"`
-	Count    int64     `json:"count"`
+type SupplyRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideSupplyRepository(DB *gorm.DB) SupplyRepository {
+	return SupplyRepository{DB: DB}
 }
 
 // Save ...
-func (r *Supply) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *SupplyRepository) Save(m *models.Supply) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *Supply) GetAll(p PaginationInput, searchTerm *string) ([]Supply, int64, error) {
-	var result []Supply
+func (r *SupplyRepository) GetAll(p PaginationInput, searchTerm *string) ([]models.Supply, int64, error) {
+	var result []models.Supply
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -66,15 +62,15 @@ func (r *Supply) GetAll(p PaginationInput, searchTerm *string) ([]Supply, int64,
 }
 
 // Get ...
-func (r *Supply) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *SupplyRepository) Get(m *models.Supply, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByIds ...
-func (r *Supply) GetByIds(ids []*int) ([]Supply, error) {
-	var result []Supply
+func (r *SupplyRepository) GetByIds(ids []*int) ([]models.Supply, error) {
+	var result []models.Supply
 
-	err := DB.Where("id IN ?", ids).Find(&result).Error
+	err := r.DB.Where("id IN ?", ids).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -84,20 +80,20 @@ func (r *Supply) GetByIds(ids []*int) ([]Supply, error) {
 }
 
 // GetByTitle ...
-func (r *Supply) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *SupplyRepository) GetByTitle(m *models.Supply, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *Supply) Update() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		tx.Model(&r).Association("Billings").Replace(&r.Billings)
+func (r *SupplyRepository) Update(m *models.Supply) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		tx.Model(&m).Association("Billings").Replace(&m.Billings)
 
 		return tx.Updates(&r).Error
 	})
 }
 
 // Delete ...
-func (r *Supply) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *SupplyRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Supply{}).Error
 }

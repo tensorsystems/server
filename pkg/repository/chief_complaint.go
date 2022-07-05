@@ -22,50 +22,43 @@ import (
 	"errors"
 
 	"github.com/lib/pq"
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// ChiefComplaint ...
-type ChiefComplaint struct {
-	gorm.Model
-	ID             int            `gorm:"primaryKey"`
-	Title          string         `json:"title"`
-	PatientChartID int            `json:"patientChartId"`
-	HPIComponents  []HpiComponent `gorm:"many2many:complaint_hpi_components"`
-	Count          int64          `json:"count"`
-	OldId          int            `json:"oldId"`
+type ChiefComplaintRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChiefComplaintRepository(DB *gorm.DB) ChiefComplaintRepository {
+	return ChiefComplaintRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChiefComplaint) Save() error {
-	var existing ChiefComplaint
-	DB.Unscoped().Where("title = ?", r.Title).Where("patient_chart_id = ?", r.PatientChartID).Take(&existing)
+func (r *ChiefComplaintRepository) Save(m *models.ChiefComplaint) error {
+	var existing models.ChiefComplaint
+	r.DB.Unscoped().Where("title = ?", m.Title).Where("patient_chart_id = ?", m.PatientChartID).Take(&existing)
 
 	if existing.ID != 0 {
-		DB.Model(&ChiefComplaint{}).Unscoped().Where("id = ?", existing.ID).Update("deleted_at", nil)
-		r = &existing
+		r.DB.Model(&models.ChiefComplaint{}).Unscoped().Where("id = ?", existing.ID).Update("deleted_at", nil)
+		m = &existing
 		return nil
 	}
 
-	err := DB.Create(&r).Error
+	err := r.DB.Create(&m).Error
 	return err
 }
 
 // Get ...
-func (r *ChiefComplaint) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Preload("HPIComponents").Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *ChiefComplaintRepository) Get(m *models.ChiefComplaint, ID int) error {
+	return r.DB.Where("id = ?", ID).Preload("HPIComponents").Take(&m).Error
 }
 
 // GetAll ...
-func (r *ChiefComplaint) GetAll(p PaginationInput, filter *ChiefComplaint) ([]ChiefComplaint, int64, error) {
-	var result []ChiefComplaint
+func (r *ChiefComplaintRepository) GetAll(p models.PaginationInput, filter *models.ChiefComplaint) ([]models.ChiefComplaint, int64, error) {
+	var result []models.ChiefComplaint
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("HPIComponents").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("HPIComponents").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -80,9 +73,9 @@ func (r *ChiefComplaint) GetAll(p PaginationInput, filter *ChiefComplaint) ([]Ch
 }
 
 // Search ...
-func (r *ChiefComplaint) Search(p PaginationInput, searchTerm string) ([]ChiefComplaint, int64, error) {
-	var result []ChiefComplaint
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("title LIKE ?", "%"+searchTerm+"%").Order("id ASC").Preload("HPIComponents").Find(&result)
+func (r *ChiefComplaintRepository) Search(p models.PaginationInput, searchTerm string) ([]models.ChiefComplaint, int64, error) {
+	var result []models.ChiefComplaint
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where("title LIKE ?", "%"+searchTerm+"%").Order("id ASC").Preload("HPIComponents").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -97,11 +90,11 @@ func (r *ChiefComplaint) Search(p PaginationInput, searchTerm string) ([]ChiefCo
 }
 
 // Update ...
-func (r *ChiefComplaint) Update() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		tx.Model(&r).Association("HPIComponents").Replace(&r.HPIComponents)
+func (r *ChiefComplaintRepository) Update(m *models.ChiefComplaint) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		tx.Model(&m).Association("HPIComponents").Replace(&m.HPIComponents)
 
-		err := tx.Updates(&r).Error
+		err := tx.Updates(&m).Error
 
 		if err, ok := err.(*pq.Error); ok && err.Code.Name() == "unique_violation" {
 			return errors.New("Duplicate, " + err.Detail)
@@ -115,6 +108,6 @@ func (r *ChiefComplaint) Update() error {
 }
 
 // Delete ...
-func (r *ChiefComplaint) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ChiefComplaintRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.ChiefComplaint{}).Error
 }

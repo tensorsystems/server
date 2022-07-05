@@ -21,96 +21,51 @@ package repository
 import (
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// PatientChart ...
-type PatientChart struct {
-	gorm.Model
-	ID                        int                      `gorm:"primaryKey"`
-	AppointmentID             int                      `json:"appointmentId"`
-	VitalSigns                VitalSigns               `json:"vitalSigns"`
-	PhysicalExamFindings      []PhysicalExamFinding    `json:"physicalExamFindings"`
-	PhysicalExamFindingNote   *string                  `json:"physicalExamFindingNote"`
-	OpthalmologyExam          OpthalmologyExam         `json:"opthalmologyExam"`
-	SurgicalProcedure         SurgicalProcedure        `json:"surgicalProcedure"`
-	Treatment                 Treatment                `json:"treatment"`
-	ChiefComplaints           []ChiefComplaint         `json:"chiefComplaints"`
-	ChiefComplaintsNote       *string                  `json:"chiefComplaintNote"`
-	BloodPressure             *string                  `json:"bloodPressure"`
-	HpiNote                   *string                  `json:"hpiNote"`
-	DiagnosisNote             *string                  `json:"diagnosisNote"`
-	DifferentialDiagnosisNote *string                  `json:"differentialDiagnosisNote"`
-	RightSummarySketch        *string                  `json:"rightSummarySketch"`
-	LeftSummarySketch         *string                  `json:"leftSummarySketch"`
-	SummaryNote               *string                  `json:"summaryNote"`
-	StickieNote               *string                  `json:"stickieNote"`
-	MedicalRecommendation     *string                  `json:"medicalRecommendation"`
-	SickLeave                 *string                  `json:"sickLeave"`
-	MedicalPrescriptionOrder  MedicalPrescriptionOrder `json:"medicalPrescriptionOrder"`
-	EyewearPrescriptionOrder  EyewearPrescriptionOrder `json:"eyewearPrescriptionOrder"`
-	DiagnosticProcedureOrder  DiagnosticProcedureOrder `json:"diagnosticProcedureOrder"`
-	SurgicalOrder             SurgicalOrder            `json:"surgicalOrder"`
-	TreatmentOrder            TreatmentOrder           `json:"treatmentOrder"`
-	ReferralOrder             ReferralOrder            `json:"referralOrder"`
-	FollowUpOrder             FollowUpOrder            `json:"followUpOrder"`
-	LabOrder                  LabOrder                 `json:"labOrder"`
-	Diagnoses                 []PatientDiagnosis       `json:"diagnoses"`
-	Locked                    *bool                    `json:"locked"`
-	LockedDate                *time.Time               `json:"lockedDate"`
-	LockedByID                *int                     `json:"lockedById"`
-	LockedBy                  *User                    `json:"lockedBy"`
-	Amendments                []Amendment              `json:"amendments"`
-	OldPatientChartId         int                      `json:"oldPatientChartId"`
+type PatientChartRepository struct {
+	DB *gorm.DB
 }
 
-// AfterCreate ...
-func (r *PatientChart) AfterCreate(tx *gorm.DB) error {
-
-	if err := tx.Create(&VitalSigns{PatientChartID: r.ID}).Error; err != nil {
-		return err
-	}
-
-	if err := tx.Create(&OpthalmologyExam{PatientChartID: r.ID}).Error; err != nil {
-		return err
-	}
-
-	return nil
+func ProvidePatientChartRepository(DB *gorm.DB) PatientChartRepository {
+	return PatientChartRepository{DB: DB}
 }
 
 // Save ...
-func (r *PatientChart) Save() error {
-	return DB.Create(&r).Error
+func (r *PatientChartRepository) Save(m *models.PatientChart) error {
+	return r.DB.Create(&m).Error
 }
 
 // SignAndLock ...
-func (r *PatientChart) SignAndLock(patientChartID int, userID *int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", patientChartID).Take(&r).Error; err != nil {
+func (r *PatientChartRepository) SignAndLock(m *models.PatientChart, patientChartID int, userID *int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", patientChartID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		if r.Locked != nil && *r.Locked == true {
+		if m.Locked != nil && *m.Locked == true {
 			return nil
 		}
 
 		locked := true
 		lockedDate := time.Now()
 
-		r.Locked = &locked
-		r.LockedDate = &lockedDate
-		r.LockedByID = userID
+		m.Locked = &locked
+		m.LockedDate = &lockedDate
+		m.LockedByID = userID
 
-		if err := tx.Updates(&r).Error; err != nil {
+		if err := tx.Updates(&m).Error; err != nil {
 			return err
 		}
 
-		var checkedOut AppointmentStatus
+		var checkedOut models.AppointmentStatus
 		if err := tx.Where("title = ?", "Checked-Out").Take(&checkedOut).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Table("appointments").Where("id = ?", r.AppointmentID).Updates(map[string]interface{}{"appointment_status_id": checkedOut.ID}).Error; err != nil {
+		if err := tx.Table("appointments").Where("id = ?", m.AppointmentID).Updates(map[string]interface{}{"appointment_status_id": checkedOut.ID}).Error; err != nil {
 			return err
 		}
 
@@ -120,21 +75,21 @@ func (r *PatientChart) SignAndLock(patientChartID int, userID *int) error {
 }
 
 // Get ...
-func (r *PatientChart) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PatientChartRepository) Get(m *models.PatientChart, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByAppointmentID ...
-func (r *PatientChart) GetByAppointmentID(appointmentID int) error {
-	return DB.Where("appointment_id = ?", appointmentID).Take(&r).Error
+func (r *PatientChartRepository) GetByAppointmentID(m *models.PatientChart, appointmentID int) error {
+	return r.DB.Where("appointment_id = ?", appointmentID).Take(&m).Error
 }
 
 // Get ...
-func (r *PatientChart) GetWithDetails(ID int) error {
-	return DB.Where("id = ?", ID).Preload("ChiefComplaints.HPIComponents.HpiComponentType").Preload("MedicalPrescriptionOrder.MedicalPrescriptions").Preload("EyewearPrescriptionOrder.EyewearPrescriptions").Preload("VitalSigns").Preload("PhysicalExamFindings.ExamCategory").Preload("OpthalmologyExam").Preload("Diagnoses").Preload("LabOrder.Labs.LabType").Preload("LabOrder.Labs.RightEyeImages").Preload("LabOrder.Labs.LeftEyeImages").Preload("LabOrder.Labs.Documents").Preload("DiagnosticProcedureOrder.DiagnosticProcedures.DiagnosticProcedureType").Preload("DiagnosticProcedureOrder.DiagnosticProcedures.Images").Preload("DiagnosticProcedureOrder.DiagnosticProcedures.Documents").Preload("SurgicalProcedure.SurgicalProcedureType").Preload("Treatment.TreatmentType").Preload("Amendments").Take(&r).Error
+func (r *PatientChartRepository) GetWithDetails(m *models.PatientChart, ID int) error {
+	return r.DB.Where("id = ?", ID).Preload("ChiefComplaints.HPIComponents.HpiComponentType").Preload("MedicalPrescriptionOrder.MedicalPrescriptions").Preload("EyewearPrescriptionOrder.EyewearPrescriptions").Preload("VitalSigns").Preload("PhysicalExamFindings.ExamCategory").Preload("OpthalmologyExam").Preload("Diagnoses").Preload("LabOrder.Labs.LabType").Preload("LabOrder.Labs.RightEyeImages").Preload("LabOrder.Labs.LeftEyeImages").Preload("LabOrder.Labs.Documents").Preload("DiagnosticProcedureOrder.DiagnosticProcedures.DiagnosticProcedureType").Preload("DiagnosticProcedureOrder.DiagnosticProcedures.Images").Preload("DiagnosticProcedureOrder.DiagnosticProcedures.Documents").Preload("SurgicalProcedure.SurgicalProcedureType").Preload("Treatment.TreatmentType").Preload("Amendments").Take(&m).Error
 }
 
 // Update ...
-func (r *PatientChart) Update() error {
-	return DB.Updates(&r).Error
+func (r *PatientChartRepository) Update(m *models.PatientChart) error {
+	return r.DB.Updates(&m).Error
 }

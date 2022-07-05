@@ -24,72 +24,58 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
-// QueueType ...
-type QueueType string
+type PatientQueueRepository struct {
+	DB *gorm.DB
+}
 
-// Queue Types ...
-const (
-	UserQueue       QueueType = "USER"
-	DiagnosticQueue QueueType = "DIAGNOSTIC"
-	LabQueue        QueueType = "LAB"
-	TreatmentQueue  QueueType = "TREATMENT"
-	SurgicalQueue   QueueType = "SURGICAL"
-	PreExamQueue    QueueType = "PREEXAM"
-	PreOperation    QueueType = "PREOPERATION"
-)
-
-// PatientQueue ...
-type PatientQueue struct {
-	gorm.Model
-	ID        int            `gorm:"primaryKey" json:"id"`
-	QueueName string         `json:"queueName"`
-	Queue     datatypes.JSON `json:"queue"`
-	QueueType QueueType      `json:"queueType"`
+func ProvidePatientQueueRepository(DB *gorm.DB) PatientQueueRepository {
+	return PatientQueueRepository{DB: DB}
 }
 
 // Save
-func (r *PatientQueue) Save() error {
-	return DB.Create(&r).Error
+func (r *PatientQueueRepository) Save(m *models.PatientQueue) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll
-func (r *PatientQueue) GetAll() ([]*PatientQueue, error) {
-	var result []*PatientQueue
-	err := DB.Order("queue_type DESC").Find(&result).Error
+func (r *PatientQueueRepository) GetAll() ([]*models.PatientQueue, error) {
+	var result []*models.PatientQueue
+	err := r.DB.Order("queue_type DESC").Find(&result).Error
 
 	return result, err
 }
 
 // Get ...
-func (r *PatientQueue) Get(id int) error {
-	return DB.Where("id = ?", id).Take(&r).Error
+func (r *PatientQueueRepository) Get(m *models.PatientQueue, id int) error {
+	return r.DB.Where("id = ?", id).Take(&m).Error
 }
 
 // GetByQueueName ...
-func (r *PatientQueue) GetByQueueName(queueName string) error {
-	return DB.Where("queue_name = ?", queueName).Take(&r).Error
+func (r *PatientQueueRepository) GetByQueueName(m *models.PatientQueue, queueName string) error {
+	return r.DB.Where("queue_name = ?", queueName).Take(&m).Error
 }
 
 // GetByQueueName ...
-func (r *PatientQueue) UpdateQueue(queueName string, queue datatypes.JSON) error {
-	return DB.Where("queue_name = ?", queueName).Updates(&PatientQueue{Queue: queue}).Error
+func (r *PatientQueueRepository) UpdateQueue(queueName string, queue datatypes.JSON) error {
+	return r.DB.Where("queue_name = ?", queueName).Updates(&models.PatientQueue{Queue: queue}).Error
 }
 
 // Move ...
-func (r *PatientQueue) Move(fromQueueID int, toQueueID int, appointmentID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PatientQueueRepository) Move(m *models.PatientQueue, fromQueueID int, toQueueID int, appointmentID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get source queue
-		var sourceQueue PatientQueue
+		var sourceQueue models.PatientQueue
 		if err := tx.Where("id = ?", fromQueueID).Take(&sourceQueue).Error; err != nil {
 			return err
 		}
 
 		// Get destination queue
-		var destinationQueue PatientQueue
+		var destinationQueue models.PatientQueue
 		if err := tx.Where("id = ?", toQueueID).Take(&destinationQueue).Error; err != nil {
 			return err
 		}
@@ -112,7 +98,7 @@ func (r *PatientQueue) Move(fromQueueID int, toQueueID int, appointmentID int) e
 		}
 
 		sourceQueue.Queue = datatypes.JSON([]byte("[" + strings.Join(sourceAppointmentIds, ", ") + "]"))
-		if err := tx.Updates(&PatientQueue{ID: sourceQueue.ID, Queue: sourceQueue.Queue}).Error; err != nil {
+		if err := tx.Updates(&models.PatientQueue{ID: sourceQueue.ID, Queue: sourceQueue.Queue}).Error; err != nil {
 			return err
 		}
 
@@ -140,19 +126,21 @@ func (r *PatientQueue) Move(fromQueueID int, toQueueID int, appointmentID int) e
 
 		destinationAppointmentIds = append(destinationAppointmentIds, fmt.Sprint(appointmentID))
 		destinationQueue.Queue = datatypes.JSON([]byte("[" + strings.Join(destinationAppointmentIds, ", ") + "]"))
-		if err := tx.Updates(&PatientQueue{ID: destinationQueue.ID, Queue: destinationQueue.Queue}).Error; err != nil {
+		if err := tx.Updates(&models.PatientQueue{ID: destinationQueue.ID, Queue: destinationQueue.Queue}).Error; err != nil {
 			return err
 		}
+
+		m = &destinationQueue
 
 		return nil
 	})
 }
 
 // MoveToQueueName ...
-func (r *PatientQueue) MoveToQueueName(fromQueueID int, toQueueName string, appointmentID int, queueType string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PatientQueueRepository) MoveToQueueName(fromQueueID int, toQueueName string, appointmentID int, queueType string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get source queue
-		var sourceQueue PatientQueue
+		var sourceQueue models.PatientQueue
 		if err := tx.Where("id = ?", fromQueueID).Take(&sourceQueue).Error; err != nil {
 			return err
 		}
@@ -175,12 +163,12 @@ func (r *PatientQueue) MoveToQueueName(fromQueueID int, toQueueName string, appo
 		}
 
 		sourceQueue.Queue = datatypes.JSON([]byte("[" + strings.Join(sourceAppointmentIds, ", ") + "]"))
-		if err := tx.Updates(&PatientQueue{ID: sourceQueue.ID, Queue: sourceQueue.Queue}).Error; err != nil {
+		if err := tx.Updates(&models.PatientQueue{ID: sourceQueue.ID, Queue: sourceQueue.Queue}).Error; err != nil {
 			return err
 		}
 
 		// Add appointment to destination queue
-		var destinationQueue PatientQueue
+		var destinationQueue models.PatientQueue
 
 		// Check if queue exists, create new one if it doesn't
 		if err := tx.Where("queue_name = ?", toQueueName).Take(&destinationQueue).Error; err != nil {
@@ -188,7 +176,7 @@ func (r *PatientQueue) MoveToQueueName(fromQueueID int, toQueueName string, appo
 			destinationQueue.Queue = datatypes.JSON([]byte("[" + fmt.Sprint(appointmentID) + "]"))
 
 			if len(queueType) != 0 {
-				destinationQueue.QueueType = QueueType(queueType)
+				destinationQueue.QueueType = models.QueueType(queueType)
 			}
 
 			if err := tx.Create(&destinationQueue).Error; err != nil {
@@ -222,7 +210,7 @@ func (r *PatientQueue) MoveToQueueName(fromQueueID int, toQueueName string, appo
 
 		destinationAppointmentIds = append(destinationAppointmentIds, fmt.Sprint(appointmentID))
 		destinationQueue.Queue = datatypes.JSON([]byte("[" + strings.Join(destinationAppointmentIds, ", ") + "]"))
-		if err := tx.Updates(&PatientQueue{ID: destinationQueue.ID, Queue: destinationQueue.Queue}).Error; err != nil {
+		if err := tx.Updates(&models.PatientQueue{ID: destinationQueue.ID, Queue: destinationQueue.Queue}).Error; err != nil {
 			return err
 		}
 
@@ -231,18 +219,18 @@ func (r *PatientQueue) MoveToQueueName(fromQueueID int, toQueueName string, appo
 }
 
 // AddToQueue
-func (r *PatientQueue) AddToQueue(toQueueName string, appointmentID int, queueType string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PatientQueueRepository) AddToQueue(m *models.PatientQueue, toQueueName string, appointmentID int, queueType string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 
 		// Check if queue exists, create new one if it doesn't
-		if err := tx.Where("queue_name = ?", toQueueName).Take(&r).Error; err != nil {
-			r.QueueName = toQueueName
-			r.Queue = datatypes.JSON([]byte("[" + fmt.Sprint(appointmentID) + "]"))
+		if err := tx.Where("queue_name = ?", toQueueName).Take(&m).Error; err != nil {
+			m.QueueName = toQueueName
+			m.Queue = datatypes.JSON([]byte("[" + fmt.Sprint(appointmentID) + "]"))
 			if len(queueType) != 0 {
-				r.QueueType = QueueType(queueType)
+				m.QueueType = models.QueueType(queueType)
 			}
 
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 
@@ -250,7 +238,7 @@ func (r *PatientQueue) AddToQueue(toQueueName string, appointmentID int, queueTy
 		}
 
 		var destinationIds []int
-		if err := json.Unmarshal([]byte(r.Queue.String()), &destinationIds); err != nil {
+		if err := json.Unmarshal([]byte(m.Queue.String()), &destinationIds); err != nil {
 			return err
 		}
 
@@ -272,8 +260,8 @@ func (r *PatientQueue) AddToQueue(toQueueName string, appointmentID int, queueTy
 		}
 
 		destinationAppointmentIds = append(destinationAppointmentIds, fmt.Sprint(appointmentID))
-		r.Queue = datatypes.JSON([]byte("[" + strings.Join(destinationAppointmentIds, ", ") + "]"))
-		if err := tx.Updates(&PatientQueue{ID: r.ID, Queue: r.Queue}).Error; err != nil {
+		m.Queue = datatypes.JSON([]byte("[" + strings.Join(destinationAppointmentIds, ", ") + "]"))
+		if err := tx.Updates(&models.PatientQueue{ID: m.ID, Queue: m.Queue}).Error; err != nil {
 			return err
 		}
 
@@ -282,14 +270,14 @@ func (r *PatientQueue) AddToQueue(toQueueName string, appointmentID int, queueTy
 }
 
 // DeleteFromQueue ...
-func (r *PatientQueue) DeleteFromQueue(patientQueueID int, appointmentID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", patientQueueID).Take(&r).Error; err != nil {
+func (r *PatientQueueRepository) DeleteFromQueue(m *models.PatientQueue, patientQueueID int, appointmentID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", patientQueueID).Take(&m).Error; err != nil {
 			return err
 		}
 
 		var ids []int
-		if err := json.Unmarshal([]byte(r.Queue.String()), &ids); err != nil {
+		if err := json.Unmarshal([]byte(m.Queue.String()), &ids); err != nil {
 			return err
 		}
 
@@ -304,8 +292,8 @@ func (r *PatientQueue) DeleteFromQueue(patientQueueID int, appointmentID int) er
 			appointmentIds = append(appointmentIds, fmt.Sprint(v))
 		}
 
-		r.Queue = datatypes.JSON([]byte("[" + strings.Join(appointmentIds, ", ") + "]"))
-		if err := tx.Updates(&PatientQueue{ID: r.ID, Queue: r.Queue}).Error; err != nil {
+		m.Queue = datatypes.JSON([]byte("[" + strings.Join(appointmentIds, ", ") + "]"))
+		if err := tx.Updates(&models.PatientQueue{ID: m.ID, Queue: m.Queue}).Error; err != nil {
 			return err
 		}
 
@@ -314,9 +302,9 @@ func (r *PatientQueue) DeleteFromQueue(patientQueueID int, appointmentID int) er
 }
 
 // ClearExpired ...
-func (r *PatientQueue) ClearExpired() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var patientQueues []PatientQueue
+func (r *PatientQueueRepository) ClearExpired() error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var patientQueues []models.PatientQueue
 
 		if err := tx.Find(&patientQueues).Error; err != nil {
 			return err
@@ -331,9 +319,9 @@ func (r *PatientQueue) ClearExpired() error {
 			now := time.Now()
 			start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-			var expiredAppointments []Appointment
+			var expiredAppointments []models.Appointment
 
-			if err := tx.Model(Appointment{}).Select("id").Where("id IN ?", ids).Where("checked_in_time < ?", start).Find(&expiredAppointments).Error; err != nil {
+			if err := tx.Model(models.Appointment{}).Select("id").Where("id IN ?", ids).Where("checked_in_time < ?", start).Find(&expiredAppointments).Error; err != nil {
 				return err
 			}
 

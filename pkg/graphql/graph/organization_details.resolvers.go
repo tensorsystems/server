@@ -6,13 +6,14 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input model.OrganizationDetailsInput) (*repository.OrganizationDetails, error) {
-	var entity repository.OrganizationDetails
+func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input graph_models.OrganizationDetailsInput) (*models.OrganizationDetails, error) {
+	var entity models.OrganizationDetails
 	deepCopy.Copy(&input).To(&entity)
 
 	if input.Logo != nil {
@@ -22,7 +23,7 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input mo
 			return nil, err
 		}
 
-		entity.Logo = &repository.File{
+		entity.Logo = &models.File{
 			ContentType: input.Logo.File.ContentType,
 			Size:        input.Logo.File.Size,
 			FileName:    fileName,
@@ -31,15 +32,16 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input mo
 		}
 	}
 
-	var existing repository.OrganizationDetails
-	if err := existing.Get(r.DB); err == nil {
+	var organizationDetailsRepository repository.OrganizationDetailsRepository
+	var existing models.OrganizationDetails
+	if err := organizationDetailsRepository.Get(&existing); err == nil {
 		entity.ID = existing.ID
 
-		if err := entity.Update(); err != nil {
+		if err := organizationDetailsRepository.Update(&entity); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := entity.Save(); err != nil {
+		if err := organizationDetailsRepository.Save(&entity); err != nil {
 			return nil, err
 		}
 	}
@@ -47,10 +49,11 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input mo
 	return &entity, nil
 }
 
-func (r *queryResolver) OrganizationDetails(ctx context.Context) (*repository.OrganizationDetails, error) {
-	var entity repository.OrganizationDetails
+func (r *queryResolver) OrganizationDetails(ctx context.Context) (*models.OrganizationDetails, error) {
+	var entity models.OrganizationDetails
 
-	if err := entity.Get(r.DB); err != nil {
+	var repository repository.OrganizationDetailsRepository
+	if err := repository.Get(&entity); err != nil {
 		return nil, err
 	}
 

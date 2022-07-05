@@ -8,14 +8,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/jwt"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) Signup(ctx context.Context, input model.UserInput) (*repository.User, error) {
+func (r *mutationResolver) Signup(ctx context.Context, input graph_models.UserInput) (*models.User, error) {
 	var entity repository.User
 	deepCopy.Copy(&input).To(&entity)
 
@@ -70,7 +71,7 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.UserInput) (*
 	return &entity, nil
 }
 
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (string, error) {
+func (r *mutationResolver) Login(ctx context.Context, input graph_models.LoginInput) (string, error) {
 	var user repository.User
 
 	// Check if user exists
@@ -100,7 +101,7 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (s
 	return token, nil
 }
 
-func (r *mutationResolver) ResetPassword(ctx context.Context, id int) (*repository.User, error) {
+func (r *mutationResolver) ResetPassword(ctx context.Context, id int) (*models.User, error) {
 	var entity repository.User
 	if err := entity.Get(id); err != nil {
 		return nil, err
@@ -119,7 +120,7 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, id int) (*reposito
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UserUpdateInput) (*repository.User, error) {
+func (r *mutationResolver) UpdateUser(ctx context.Context, input graph_models.UserUpdateInput) (*models.User, error) {
 	var entity repository.User
 	deepCopy.Copy(&input).To(&entity)
 
@@ -168,7 +169,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UserUpdat
 	return &entity, nil
 }
 
-func (r *mutationResolver) ChangePassword(ctx context.Context, input model.ChangePasswordInput) (*repository.User, error) {
+func (r *mutationResolver) ChangePassword(ctx context.Context, input graph_models.ChangePasswordInput) (*models.User, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -207,7 +208,7 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input model.Chang
 	return &user, nil
 }
 
-func (r *mutationResolver) SaveUserType(ctx context.Context, input model.UserTypeInput) (*repository.UserType, error) {
+func (r *mutationResolver) SaveUserType(ctx context.Context, input graph_models.UserTypeInput) (*models.UserType, error) {
 	var entity repository.UserType
 	deepCopy.Copy(&input).To(&entity)
 
@@ -219,7 +220,7 @@ func (r *mutationResolver) SaveUserType(ctx context.Context, input model.UserTyp
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateUserType(ctx context.Context, input model.UserTypeUpdateInput) (*repository.UserType, error) {
+func (r *mutationResolver) UpdateUserType(ctx context.Context, input graph_models.UserTypeUpdateInput) (*models.UserType, error) {
 	var userType repository.UserType
 
 	deepCopy.Copy(&input).To(&userType)
@@ -242,7 +243,7 @@ func (r *mutationResolver) DeleteUserType(ctx context.Context, id int) (bool, er
 	return true, nil
 }
 
-func (r *queryResolver) User(ctx context.Context, id int) (*repository.User, error) {
+func (r *queryResolver) User(ctx context.Context, id int) (*models.User, error) {
 	var entity repository.User
 	err := entity.Get(id)
 	if err != nil {
@@ -252,7 +253,7 @@ func (r *queryResolver) User(ctx context.Context, id int) (*repository.User, err
 	return &entity, err
 }
 
-func (r *queryResolver) Users(ctx context.Context, page repository.PaginationInput, filter *model.UserFilter, searchTerm *string) (*model.UserConnection, error) {
+func (r *queryResolver) Users(ctx context.Context, page models.PaginationInput, filter *graph_models.UserFilter, searchTerm *string) (*graph_models.UserConnection, error) {
 	var f repository.User
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
@@ -279,7 +280,7 @@ func (r *queryResolver) Users(ctx context.Context, page repository.PaginationInp
 	return &model.UserConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) UserTypes(ctx context.Context, page repository.PaginationInput) (*model.UserTypeConnection, error) {
+func (r *queryResolver) UserTypes(ctx context.Context, page models.PaginationInput) (*graph_models.UserTypeConnection, error) {
 	var entity repository.UserType
 	entities, count, err := entity.GetAll(page)
 
@@ -301,11 +302,11 @@ func (r *queryResolver) UserTypes(ctx context.Context, page repository.Paginatio
 	return &model.UserTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SearchUsers(ctx context.Context, input model.UserSearchInput) ([]*repository.User, error) {
+func (r *queryResolver) SearchUsers(ctx context.Context, input graph_models.UserSearchInput) ([]*models.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) GetByUserTypeTitle(ctx context.Context, input string) ([]*repository.User, error) {
+func (r *queryResolver) GetByUserTypeTitle(ctx context.Context, input string) ([]*models.User, error) {
 	var user repository.User
 
 	users, err := user.GetByUserTypeTitle(input)

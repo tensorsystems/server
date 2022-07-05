@@ -22,47 +22,33 @@ import (
 	"errors"
 
 	"github.com/lib/pq"
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// FavoriteMedication ...
-type FavoriteMedication struct {
-	gorm.Model
-	ID                  int     `gorm:"primaryKey" json:"id"`
-	Medication          string  `json:"medication"`
-	Sig                 string  `json:"sig"`
-	RxCui               *string `json:"rxCui"`
-	Synonym             *string `json:"synonym"`
-	Tty                 *string `json:"tty"`
-	Language            *string `json:"language"`
-	Refill              int     `json:"refill"`
-	Generic             bool    `json:"generic"`
-	SubstitutionAllowed bool    `json:"substitutionAllowed"`
-	DirectionToPatient  string  `json:"directionToPatient"`
-	UserID              int     `json:"user_id"`
-	User                User    `json:"user"`
-	Count               int64   `json:"count"`
+type FavoriteMedicationRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideFavoriteMedicationRepository(DB *gorm.DB) FavoriteMedicationRepository {
+	return FavoriteMedicationRepository{DB: DB}
 }
 
 // Save ...
-func (r *FavoriteMedication) Save() error {
-	if err := DB.Create(&r).Error; err != nil {
-		return err
-	}
-
-	return nil
+func (r *FavoriteMedicationRepository) Save(m *models.FavoriteMedication) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *FavoriteMedication) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *FavoriteMedicationRepository) Get(m *models.FavoriteMedication, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *FavoriteMedication) GetAll(p PaginationInput, filter *FavoriteMedication, searchTerm *string) ([]FavoriteMedication, int64, error) {
-	var result []FavoriteMedication
+func (r *FavoriteMedicationRepository) GetAll(p models.PaginationInput, filter *models.FavoriteMedication, searchTerm *string) ([]models.FavoriteMedication, int64, error) {
+	var result []models.FavoriteMedication
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter)
 
 	if searchTerm != nil {
 		dbOp.Where("medication ILIKE ?", "%"+*searchTerm+"%")
@@ -83,9 +69,9 @@ func (r *FavoriteMedication) GetAll(p PaginationInput, filter *FavoriteMedicatio
 }
 
 // Search ...
-func (r *FavoriteMedication) Search(p PaginationInput, searchTerm string) ([]FavoriteMedication, int64, error) {
-	var result []FavoriteMedication
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("medication LIKE ?", "%"+searchTerm+"%").Order("id ASC").Find(&result)
+func (r *FavoriteMedicationRepository) Search(p models.PaginationInput, searchTerm string) ([]models.FavoriteMedication, int64, error) {
+	var result []models.FavoriteMedication
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where("medication LIKE ?", "%"+searchTerm+"%").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -100,9 +86,9 @@ func (r *FavoriteMedication) Search(p PaginationInput, searchTerm string) ([]Fav
 }
 
 // Update ...
-func (r *FavoriteMedication) Update() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Updates(&r).Error
+func (r *FavoriteMedicationRepository) Update(m *models.FavoriteMedication) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Updates(&m).Error
 
 		if err, ok := err.(*pq.Error); ok && err.Code.Name() == "unique_violation" {
 			return errors.New("Duplicate, " + err.Detail)
@@ -116,6 +102,6 @@ func (r *FavoriteMedication) Update() error {
 }
 
 // Delete ...
-func (r *FavoriteMedication) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *FavoriteMedicationRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.FavoriteMedication{}).Error
 }

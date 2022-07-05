@@ -25,135 +25,76 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// Appointment ...
-type Appointment struct {
-	gorm.Model
-	ID                  int               `gorm:"primaryKey" json:"id"`
-	PatientID           int               `json:"patientId"`
-	Patient             Patient           `json:"patient"`
-	FirstName           string            `json:"firstName"`
-	LastName            string            `json:"lastName"`
-	PhoneNo             string            `json:"phoneNo"`
-	CheckInTime         time.Time         `json:"checkInTime" gorm:"index:check_in_time_idx"`
-	CheckedInTime       *time.Time        `json:"checkedInTime" gorm:"index:daily_appointment_idx"`
-	CheckedOutTime      time.Time         `json:"checkedOutTime"`
-	RoomID              int               `json:"roomId"`
-	Room                Room              `json:"room"`
-	VisitTypeID         int               `json:"visitTypeId"`
-	VisitType           VisitType         `json:"visitType"`
-	AppointmentStatusID int               `json:"appointmentStatusId" gorm:"index:daily_appointment_idx"`
-	AppointmentStatus   AppointmentStatus `json:"appointmentStatus"`
-	Emergency           *bool             `json:"emergency"`
-	MedicalDepartment   string            `json:"medicalDepartment"`
-	Credit              bool              `json:"credit"`
-	Payments            []Payment         `json:"payments" gorm:"many2many:appointment_payments;"`
-	Files               []File            `json:"files" gorm:"many2many:appointment_files"`
-	UserID              int               `json:"userId"`
-	ProviderName        string            `json:"providerName"`
-	PatientChart        PatientChart      `json:"patientChart"`
-	QueueID             int               `json:"queueId"`
-	QueueName           string            `json:"queueName"`
-	Document            string            `gorm:"type:tsvector"`
-	Count               int64             `json:"count"`
+type AppointmentRepository struct {
+	DB *gorm.DB
 }
 
-// AppointmentSearchInput ...
-type AppointmentSearchInput struct {
-	SearchTerm          *string    `json:"searchTerm"`
-	UserID              *int       `json:"userId"`
-	PatientID           *int       `json:"patientId"`
-	AppointmentStatusID *string    `json:"appointmentStatusId"`
-	VisitTypeID         *string    `json:"visitTypeId"`
-	CheckInTime         *time.Time `json:"checkInTime"`
-}
-
-// AfterCreate ...
-func (r *Appointment) AfterCreate(tx *gorm.DB) error {
-	var patient Patient
-	err := tx.Where("id = ?", r.PatientID).Take(&patient).Error
-	if err != nil {
-		return err
-	}
-
-	r.FirstName = patient.FirstName
-	r.LastName = patient.LastName
-	r.PhoneNo = patient.PhoneNo
-
-	var provider User
-	tx.Where("id = ?", r.UserID).Take(&provider)
-	r.ProviderName = provider.FirstName + " " + provider.LastName
-
-	tx.Model(r).Updates(&r)
-
-	return nil
+func ProvideAppointmentRepository(DB *gorm.DB) AppointmentRepository {
+	return AppointmentRepository{DB: DB}
 }
 
 // Save ...
-func (r *Appointment) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *AppointmentRepository) Save(m *models.Appointment) error {
+	return r.DB.Create(&m).Error
 }
 
 // CreateNewAppointment ... Creates a new appointment along with PatientChart
-func (r *Appointment) CreateNewAppointment(billingID *int, invoiceNo *string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var sickVisit VisitType
+func (r *AppointmentRepository) CreateNewAppointment(m *models.Appointment, billingID *int, invoiceNo *string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var sickVisit models.VisitType
 		if err := tx.Where("title = ?", "Sick Visit").Take(&sickVisit).Error; err != nil {
 			return err
 		}
 
-		if r.VisitTypeID == sickVisit.ID {
-			var existingAppointment Appointment
+		if m.VisitTypeID == sickVisit.ID {
+			var existingAppointment models.Appointment
 
-			checkInTime := r.CheckInTime
+			checkInTime := m.CheckInTime
 			start := time.Date(checkInTime.Year(), checkInTime.Month(), checkInTime.Day(), 0, 0, 0, 0, checkInTime.Location())
 			end := start.AddDate(0, 0, 1)
 
-			var status AppointmentStatus
+			var status models.AppointmentStatus
 			if err := tx.Where("title = ?", "Checked-In").Take(&status).Error; err != nil {
 				return err
 			}
 
-			if err := tx.Where("patient_id = ?", r.PatientID).Where("user_id = ?", r.UserID).Where("visit_type_id = ?", r.VisitTypeID).Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Where("appointment_status_id = ?", status.ID).Take(&existingAppointment).Error; err == nil {
+			if err := tx.Where("patient_id = ?", m.PatientID).Where("user_id = ?", m.UserID).Where("visit_type_id = ?", m.VisitTypeID).Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Where("appointment_status_id = ?", status.ID).Take(&existingAppointment).Error; err == nil {
 				if existingAppointment.ID != 0 {
 					return errors.New("Appointment already exists")
 				}
 			}
 		}
 
-		var status AppointmentStatus
+		var status models.AppointmentStatus
 		if err := tx.Where("title = ?", "Scheduled").Take(&status).Error; err != nil {
 			return err
 		}
 
-		r.AppointmentStatusID = status.ID
+		m.AppointmentStatusID = status.ID
 
 		if invoiceNo != nil && billingID != nil {
-			var payment Payment
+			var payment models.Payment
 			payment.InvoiceNo = *invoiceNo
-			payment.Status = PaidPaymentStatus
+			payment.Status = models.PaidPaymentStatus
 			payment.BillingID = *billingID
 
 			if err := tx.Create(&payment).Error; err != nil {
 				return err
 			}
 
-			r.Payments = append(r.Payments, payment)
+			m.Payments = append(m.Payments, payment)
 		}
 
-		if err := tx.Create(&r).Error; err != nil {
+		if err := tx.Create(&m).Error; err != nil {
 			return err
 		}
 
-		patientChart := &PatientChart{
-			AppointmentID: r.ID,
+		patientChart := &models.PatientChart{
+			AppointmentID: m.ID,
 		}
 
 		if err := tx.Create(&patientChart).Error; err != nil {
@@ -165,10 +106,10 @@ func (r *Appointment) CreateNewAppointment(billingID *int, invoiceNo *string) er
 }
 
 // SchedulePostOp ...
-func (r *Appointment) SchedulePostOp(appointment Appointment) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *AppointmentRepository) SchedulePostOp(m *models.Appointment, appointment models.Appointment) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 
-		var room Room
+		var room models.Room
 		if err := tx.Where("title = ?", "Post-Op Room").Take(&room).Error; err != nil {
 			room.Title = "Post-Op Room"
 
@@ -177,7 +118,7 @@ func (r *Appointment) SchedulePostOp(appointment Appointment) error {
 			}
 		}
 
-		var visitType VisitType
+		var visitType models.VisitType
 		if err := tx.Where("title = ?", "Post-Op").Take(&visitType).Error; err != nil {
 			visitType.Title = "Post-Op"
 
@@ -186,7 +127,7 @@ func (r *Appointment) SchedulePostOp(appointment Appointment) error {
 			}
 		}
 
-		var status AppointmentStatus
+		var status models.AppointmentStatus
 		if err := tx.Where("title = ?", "Scheduled").Take(&status).Error; err != nil {
 			status.Title = "Scheduled"
 
@@ -198,25 +139,25 @@ func (r *Appointment) SchedulePostOp(appointment Appointment) error {
 		now := time.Now()
 		tomorrow := now.AddDate(0, 0, 1)
 
-		r.CheckInTime = tomorrow
-		r.RoomID = room.ID
-		r.VisitTypeID = visitType.ID
-		r.AppointmentStatus = status
-		r.Credit = appointment.Credit
-		r.MedicalDepartment = appointment.MedicalDepartment
-		r.PatientID = appointment.PatientID
-		r.FirstName = appointment.FirstName
-		r.LastName = appointment.LastName
-		r.PhoneNo = appointment.PhoneNo
-		r.ProviderName = appointment.ProviderName
-		r.UserID = appointment.UserID
+		m.CheckInTime = tomorrow
+		m.RoomID = room.ID
+		m.VisitTypeID = visitType.ID
+		m.AppointmentStatus = status
+		m.Credit = appointment.Credit
+		m.MedicalDepartment = appointment.MedicalDepartment
+		m.PatientID = appointment.PatientID
+		m.FirstName = appointment.FirstName
+		m.LastName = appointment.LastName
+		m.PhoneNo = appointment.PhoneNo
+		m.ProviderName = appointment.ProviderName
+		m.UserID = appointment.UserID
 
-		if err := tx.Create(&r).Error; err != nil {
+		if err := tx.Create(&m).Error; err != nil {
 			return err
 		}
 
-		patientChart := &PatientChart{
-			AppointmentID: r.ID,
+		patientChart := &models.PatientChart{
+			AppointmentID: m.ID,
 		}
 
 		if err := tx.Create(&patientChart).Error; err != nil {
@@ -228,10 +169,10 @@ func (r *Appointment) SchedulePostOp(appointment Appointment) error {
 }
 
 // GetAll ...
-func (r *Appointment) GetAll(p PaginationInput, filter *Appointment) ([]Appointment, int64, error) {
-	var result []Appointment
+func (r *AppointmentRepository) GetAll(p models.PaginationInput, filter *models.Appointment) ([]models.Appointment, int64, error) {
+	var result []models.Appointment
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("AppointmentStatus").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("AppointmentStatus").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -246,7 +187,7 @@ func (r *Appointment) GetAll(p PaginationInput, filter *Appointment) ([]Appointm
 }
 
 // PayForConsultation ...
-func (r *Appointment) PayForConsultation(patientID int, date *time.Time) (bool, error) {
+func (r *AppointmentRepository) PayForConsultation(patientID int, date *time.Time) (bool, error) {
 	endDate := time.Now()
 	if date != nil {
 		endDate = *date
@@ -258,17 +199,17 @@ func (r *Appointment) PayForConsultation(patientID int, date *time.Time) (bool, 
 	var consultationCount int64
 	var surgeryCount int64
 
-	cErr := DB.Model(&Appointment{}).Where("patient_id = ?", patientID).Where("check_in_time >= ?", consultationStartDate).Where("check_in_time <= ?", endDate).Count(&consultationCount).Error
+	cErr := r.DB.Model(&models.Appointment{}).Where("patient_id = ?", patientID).Where("check_in_time >= ?", consultationStartDate).Where("check_in_time <= ?", endDate).Count(&consultationCount).Error
 	if cErr != nil {
 		return false, cErr
 	}
 
-	var surgicalVisitType VisitType
-	if err := DB.Where("title = ?", "Surgery").Take(&surgicalVisitType).Error; err != nil {
+	var surgicalVisitType models.VisitType
+	if err := r.DB.Where("title = ?", "Surgery").Take(&surgicalVisitType).Error; err != nil {
 		return false, err
 	}
 
-	sErr := DB.Model(&Appointment{}).Where("patient_id = ?", patientID).Where("check_in_time >= ?", surgeryStartDate).Where("check_in_time <= ?", endDate).Where("visit_type_id = ?", surgicalVisitType.ID).Count(&surgeryCount).Error
+	sErr := r.DB.Model(&models.Appointment{}).Where("patient_id = ?", patientID).Where("check_in_time >= ?", surgeryStartDate).Where("check_in_time <= ?", endDate).Where("visit_type_id = ?", surgicalVisitType.ID).Count(&surgeryCount).Error
 	if sErr != nil {
 		return false, sErr
 	}
@@ -277,22 +218,22 @@ func (r *Appointment) PayForConsultation(patientID int, date *time.Time) (bool, 
 }
 
 // FindAppointmentsByPatientAndRange ...
-func (r *Appointment) FindAppointmentsByPatientAndRange(patientID int, start time.Time, end time.Time) ([]*Appointment, error) {
-	var result []*Appointment
+func (r *AppointmentRepository) FindAppointmentsByPatientAndRange(patientID int, start time.Time, end time.Time) ([]*models.Appointment, error) {
+	var result []*models.Appointment
 
-	err := DB.Where("patient_id = ?", patientID).Where("check_in_time >= ?", start).Where("check_in_time <= ?", end).Preload("VisitType").Preload("Room").Find(&result).Error
+	err := r.DB.Where("patient_id = ?", patientID).Where("check_in_time >= ?", start).Where("check_in_time <= ?", end).Preload("VisitType").Preload("Room").Find(&result).Error
 
 	return result, err
 }
 
 // PatientsAppointmentsToday ...
-func (r *Appointment) PatientsAppointmentToday(patientID int, checkedIn *bool) (Appointment, error) {
+func (r *AppointmentRepository) PatientsAppointmentToday(patientID int, checkedIn *bool) (models.Appointment, error) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	var appointment Appointment
-	tx := DB.Model(&Appointment{}).Where("patient_id = ?", patientID).Where("check_in_time >= ?", start).Where("check_in_time <= ?", end)
+	var appointment models.Appointment
+	tx := r.DB.Model(&models.Appointment{}).Where("patient_id = ?", patientID).Where("check_in_time >= ?", start).Where("check_in_time <= ?", end)
 
 	if checkedIn != nil {
 		var checkInCondition string
@@ -311,14 +252,14 @@ func (r *Appointment) PatientsAppointmentToday(patientID int, checkedIn *bool) (
 }
 
 // FindTodaysAppointments ...
-func (r *Appointment) FindTodaysAppointments(p PaginationInput, searchTerm *string) ([]Appointment, int64, error) {
-	var result []Appointment
+func (r *AppointmentRepository) FindTodaysAppointments(p models.PaginationInput, searchTerm *string) ([]models.Appointment, int64, error) {
+	var result []models.Appointment
 
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	tx := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Preload("Payments.Billing")
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Preload("Payments.Billing")
 
 	if searchTerm != nil {
 		tx.Where("document @@ plainto_tsquery(?)", *searchTerm)
@@ -339,27 +280,28 @@ func (r *Appointment) FindTodaysAppointments(p PaginationInput, searchTerm *stri
 }
 
 // FindTodaysCheckedInAppointments ...
-func (r *Appointment) FindTodaysCheckedInAppointments(p PaginationInput, searchTerm *string, visitTypes []string) ([]Appointment, int64, error) {
-	var result []Appointment
+func (r *AppointmentRepository) FindTodaysCheckedInAppointments(p models.PaginationInput, searchTerm *string, visitTypes []string) ([]models.Appointment, int64, error) {
+	var result []models.Appointment
 
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	var status AppointmentStatus
-	if err := status.GetByTitle("Checked-In"); err != nil {
+	var appointmentStatusRepository AppointmentStatusRepository
+	var appointmentStatus models.AppointmentStatus
+	if err := appointmentStatusRepository.GetByTitle(&appointmentStatus, "Checked-In"); err != nil {
 		return result, 0, err
 	}
 
-	tx := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Where("checked_in_time >= ?", start).Where("checked_in_time < ?", end).Where("appointment_status_id = ?", status.ID)
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Where("checked_in_time >= ?", start).Where("checked_in_time < ?", end).Where("appointment_status_id = ?", appointmentStatus.ID)
 
 	if searchTerm != nil {
 		tx.Where("document @@ plainto_tsquery(?)", *searchTerm)
 	}
 
 	if len(visitTypes) > 0 {
-		var appointmentVisitType VisitType
-		v, err := appointmentVisitType.GetByTitles(visitTypes)
+		var visitTypeRepository VisitTypeRepository
+		v, err := visitTypeRepository.GetByTitles(visitTypes)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -383,10 +325,10 @@ func (r *Appointment) FindTodaysCheckedInAppointments(p PaginationInput, searchT
 }
 
 // GetByIds ...
-func (r *Appointment) GetByIds(ids []int, p PaginationInput) ([]Appointment, int64, error) {
-	var result []Appointment
+func (r *AppointmentRepository) GetByIds(ids []int, p PaginationInput) ([]models.Appointment, int64, error) {
+	var result []models.Appointment
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("id IN ?", ids).Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("id IN ?", ids).Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -401,8 +343,8 @@ func (r *Appointment) GetByIds(ids []int, p PaginationInput) ([]Appointment, int
 }
 
 // GetByIds ...
-func (r *Appointment) FindByUserSubscriptions(ids []int, searchTerm *string, visitTypes []string, p PaginationInput) ([]Appointment, int64, error) {
-	var result []Appointment
+func (r *AppointmentRepository) FindByUserSubscriptions(ids []int, searchTerm *string, visitTypes []string, p models.PaginationInput) ([]models.Appointment, int64, error) {
+	var result []models.Appointment
 
 	var i []string
 	for _, id := range ids {
@@ -413,15 +355,15 @@ func (r *Appointment) FindByUserSubscriptions(ids []int, searchTerm *string, vis
 
 	join := fmt.Sprintf("JOIN unnest('{%s}'::int[]) WITH ORDINALITY t(id, ord) USING (id)", idsString)
 
-	tx := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Joins(join)
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Joins(join)
 
 	if searchTerm != nil {
 		tx.Where("document @@ plainto_tsquery(?)", *searchTerm)
 	}
 
 	if len(visitTypes) > 0 {
-		var appointmentVisitType VisitType
-		v, err := appointmentVisitType.GetByTitles(visitTypes)
+		var visitTypeRepository VisitTypeRepository
+		v, err := visitTypeRepository.GetByTitles(visitTypes)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -445,27 +387,28 @@ func (r *Appointment) FindByUserSubscriptions(ids []int, searchTerm *string, vis
 }
 
 // FindByProvider ...
-func (r *Appointment) FindByProvider(p PaginationInput, searchTerm *string, visitTypes []string, userID int) ([]Appointment, int64, error) {
-	var result []Appointment
+func (r *AppointmentRepository) FindByProvider(p models.PaginationInput, searchTerm *string, visitTypes []string, userID int) ([]models.Appointment, int64, error) {
+	var result []models.Appointment
 
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	var status AppointmentStatus
-	if err := status.GetByTitle("Checked-In"); err != nil {
+	var appointmentStatusRepository AppointmentStatusRepository
+	var appointmentStatus models.AppointmentStatus
+	if err := appointmentStatusRepository.GetByTitle(&appointmentStatus, "Checked-In"); err != nil {
 		return result, 0, err
 	}
 
-	tx := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Where("appointment_status_id = ?", status.ID).Where("user_id = ?", userID)
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Where("appointment_status_id = ?", appointmentStatus.ID).Where("user_id = ?", userID)
 
 	if searchTerm != nil {
 		tx.Where("document @@ plainto_tsquery(?)", *searchTerm)
 	}
 
 	if len(visitTypes) > 0 {
-		var appointmentVisitType VisitType
-		v, err := appointmentVisitType.GetByTitles(visitTypes)
+		var visitTypeRepository VisitTypeRepository
+		v, err := visitTypeRepository.GetByTitles(visitTypes)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -489,11 +432,11 @@ func (r *Appointment) FindByProvider(p PaginationInput, searchTerm *string, visi
 }
 
 // SearchAppointments ...
-func (r *Appointment) SearchAppointments(page PaginationInput, p AppointmentSearchInput) ([]Appointment, int64, error) {
+func (r *AppointmentRepository) SearchAppointments(page models.PaginationInput, p models.AppointmentSearchInput) ([]models.Appointment, int64, error) {
 	var count int64
-	var appointments []Appointment
+	var appointments []models.Appointment
 
-	tx := DB.Scopes(Paginate(&page)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Preload("Payments.Billing")
+	tx := r.DB.Scopes(models.Paginate(&page)).Select("*, count(*) OVER() AS count").Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Preload("Payments.Billing")
 
 	if p.SearchTerm != nil {
 		tx.Where("document @@ plainto_tsquery(?)", p.SearchTerm)
@@ -535,34 +478,24 @@ func (r *Appointment) SearchAppointments(page PaginationInput, p AppointmentSear
 }
 
 // Get ...
-func (r *Appointment) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *AppointmentRepository) Get(m *models.Appointment, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetWithDetails ...
-func (r *Appointment) GetWithDetails(ID int) error {
-	err := DB.Where("id = ?", ID).Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Preload("PatientChart.SurgicalProcedure.SurgicalProcedureType").Preload("PatientChart.SurgicalProcedure.PreanestheticDocuments").Preload("PatientChart.Treatment.TreatmentType").Preload("Patient.PaperRecordDocument").Preload("Patient.Documents").Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *AppointmentRepository) GetWithDetails(m *models.Appointment, ID int) error {
+	return r.DB.Where("id = ?", ID).Preload("VisitType").Preload("Room").Preload("Patient").Preload("AppointmentStatus").Preload("PatientChart.SurgicalProcedure.SurgicalProcedureType").Preload("PatientChart.SurgicalProcedure.PreanestheticDocuments").Preload("PatientChart.Treatment.TreatmentType").Preload("Patient.PaperRecordDocument").Preload("Patient.Documents").Take(&m).Error
 }
 
 // ReceptionHomeStats ...
-func (r *Appointment) ReceptionHomeStats() (int, int, int, error) {
-	var appointments []Appointment
+func (r *AppointmentRepository) ReceptionHomeStats() (int, int, int, error) {
+	var appointments []models.Appointment
 
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	err := DB.Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Preload("AppointmentStatus").Find(&appointments).Error
+	err := r.DB.Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Preload("AppointmentStatus").Find(&appointments).Error
 	if err != nil {
 		return 0, 0, 0, nil
 	}
@@ -584,14 +517,14 @@ func (r *Appointment) ReceptionHomeStats() (int, int, int, error) {
 }
 
 // NurseHomeStats ...
-func (r *Appointment) NurseHomeStats() (int, int, int, error) {
-	var appointments []Appointment
+func (r *AppointmentRepository) NurseHomeStats() (int, int, int, error) {
+	var appointments []models.Appointment
 
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	err := DB.Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Preload("AppointmentStatus").Find(&appointments).Error
+	err := r.DB.Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Preload("AppointmentStatus").Find(&appointments).Error
 	if err != nil {
 		return 0, 0, 0, nil
 	}
@@ -613,14 +546,14 @@ func (r *Appointment) NurseHomeStats() (int, int, int, error) {
 }
 
 // PhysicianHomeStats ...
-func (r *Appointment) PhysicianHomeStats(userId int) (int, int, int, error) {
-	var appointments []Appointment
+func (r *AppointmentRepository) PhysicianHomeStats(userId int) (int, int, int, error) {
+	var appointments []models.Appointment
 
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	err := DB.Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Where("user_id = ?", userId).Preload("AppointmentStatus").Find(&appointments).Error
+	err := r.DB.Select("*, count(*) OVER() AS count").Where("check_in_time >= ?", start).Where("check_in_time < ?", end).Where("user_id = ?", userId).Preload("AppointmentStatus").Find(&appointments).Error
 	if err != nil {
 		return 0, 0, 0, nil
 	}
@@ -642,13 +575,11 @@ func (r *Appointment) PhysicianHomeStats(userId int) (int, int, int, error) {
 }
 
 // Update ...
-func (r *Appointment) Update() error {
-	return DB.Updates(&r).Error
+func (r *AppointmentRepository) Update(m *models.Appointment) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Appointment) Delete(ID int) error {
-	var e Appointment
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *AppointmentRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Appointment{}).Error
 }

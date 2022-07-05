@@ -18,41 +18,39 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// QueueDestination ...
-type QueueDestination struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey" json:"id"`
-	Title string `json:"title" gorm:"uniqueIndex"`
-	Count int64  `json:"count"`
+type QueueDestinationRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideQueueDestinationRepository(DB *gorm.DB) QueueDestinationRepository {
+	return QueueDestinationRepository{DB: DB}
 }
 
 // Seed ...
-func (r *QueueDestination) Seed() {
-	DB.Create(&QueueDestination{Title: "Front Desk"})
-	DB.Create(&QueueDestination{Title: "Exam Room"})
-	DB.Create(&QueueDestination{Title: "Operating Room"})
-	DB.Create(&QueueDestination{Title: "Emergency Room"})
-	DB.Create(&QueueDestination{Title: "Pre-Exam"})
-	DB.Create(&QueueDestination{Title: "Optometry"})
+func (r *QueueDestinationRepository) Seed() {
+	r.DB.Create(&models.QueueDestination{Title: "Front Desk"})
+	r.DB.Create(&models.QueueDestination{Title: "Exam Room"})
+	r.DB.Create(&models.QueueDestination{Title: "Operating Room"})
+	r.DB.Create(&models.QueueDestination{Title: "Emergency Room"})
+	r.DB.Create(&models.QueueDestination{Title: "Pre-Exam"})
+	r.DB.Create(&models.QueueDestination{Title: "Optometry"})
 }
 
 // Save ...
-func (r *QueueDestination) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *QueueDestinationRepository) Save(m *models.QueueDestination) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *QueueDestination) GetAll(p PaginationInput) ([]QueueDestination, int64, error) {
-	var result []QueueDestination
+func (r *QueueDestinationRepository) GetAll(p PaginationInput) ([]models.QueueDestination, int64, error) {
+	var result []models.QueueDestination
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -67,38 +65,27 @@ func (r *QueueDestination) GetAll(p PaginationInput) ([]QueueDestination, int64,
 }
 
 // Get ...
-func (r *QueueDestination) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *QueueDestinationRepository) Get(m *models.QueueDestination, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *QueueDestination) Update() (*QueueDestination, error) {
-	err := DB.Save(&r).Error
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+func (r *QueueDestinationRepository) Update(m *models.QueueDestination) error {
+	return r.DB.Save(&m).Error
 }
 
 // Delete ...
-func (r *QueueDestination) Delete(ID int) error {
-	var e QueueDestination
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *QueueDestinationRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.QueueDestination{}).Error
 }
 
 // GetByTitle ...
-func (r *QueueDestination) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *QueueDestinationRepository) GetByTitle(m *models.QueueDestination, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // GetUserTypeFromDestination ...
-func (r *QueueDestination) GetUserTypeFromDestination(destination string) string {
+func (r *QueueDestinationRepository) GetUserTypeFromDestination(destination string) string {
 	if destination == "PRE_EXAM" {
 		return "Nurse"
 	}

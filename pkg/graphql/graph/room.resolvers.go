@@ -7,13 +7,14 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveRoom(ctx context.Context, input model.RoomInput) (*repository.Room, error) {
+func (r *mutationResolver) SaveRoom(ctx context.Context, input graph_models.RoomInput) (*models.Room, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func (r *mutationResolver) SaveRoom(ctx context.Context, input model.RoomInput) 
 	return &room, nil
 }
 
-func (r *mutationResolver) UpdateRoom(ctx context.Context, input model.RoomInput, id int) (*repository.Room, error) {
+func (r *mutationResolver) UpdateRoom(ctx context.Context, input graph_models.RoomInput, id int) (*models.Room, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -89,7 +90,7 @@ func (r *mutationResolver) DeleteRoom(ctx context.Context, id int) (bool, error)
 	return true, nil
 }
 
-func (r *queryResolver) Rooms(ctx context.Context, page repository.PaginationInput) (*model.RoomConnection, error) {
+func (r *queryResolver) Rooms(ctx context.Context, page models.PaginationInput) (*graph_models.RoomConnection, error) {
 	var room repository.Room
 	rooms, count, err := room.GetAll(page)
 

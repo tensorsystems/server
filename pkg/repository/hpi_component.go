@@ -18,38 +18,34 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// HpiComponent ...
-type HpiComponent struct {
-	gorm.Model
-	ID                 int              `gorm:"primaryKey"`
-	Title              string           `json:"title"`
-	HpiComponentTypeID int              `json:"hpiComponentTypeId"`
-	HpiComponentType   HpiComponentType `json:"hpiComponentType"`
-	Count              int64            `json:"count"`
+type HpiComponentRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideHpiComponentRepository(DB *gorm.DB) HpiComponentRepository {
+	return HpiComponentRepository{DB: DB}
 }
 
 // Save ...
-func (r *HpiComponent) Save() error {
-	return DB.Create(&r).Error
+func (r *HpiComponentRepository) Save(m *models.HpiComponent) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *HpiComponent) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Preload("HpiComponentType").Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *HpiComponentRepository) Get(m *models.HpiComponent, ID int) error {
+	return r.DB.Where("id = ?", ID).Preload("HpiComponentType").Take(&m).Error
 }
 
 // GetByIds ...
-func (r *HpiComponent) GetByIds(ids []*int) ([]HpiComponent, error) {
-	var result []HpiComponent
+func (r *HpiComponentRepository) GetByIds(ids []*int) ([]models.HpiComponent, error) {
+	var result []models.HpiComponent
 
-	err := DB.Where("id IN ?", ids).Find(&result).Error
+	err := r.DB.Where("id IN ?", ids).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -59,15 +55,15 @@ func (r *HpiComponent) GetByIds(ids []*int) ([]HpiComponent, error) {
 }
 
 // Update ...
-func (r *HpiComponent) Update() error {
-	return DB.Updates(&r).Error
+func (r *HpiComponentRepository) Update(m *models.HpiComponent) error {
+	return r.DB.Updates(&m).Error
 }
 
 // GetAll ...
-func (r *HpiComponent) GetAll(p PaginationInput, filter *HpiComponent) ([]HpiComponent, int64, error) {
-	var result []HpiComponent
+func (r *HpiComponentRepository) GetAll(p models.PaginationInput, filter *models.HpiComponent) ([]models.HpiComponent, int64, error) {
+	var result []models.HpiComponent
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("HpiComponentType").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("HpiComponentType").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -82,10 +78,10 @@ func (r *HpiComponent) GetAll(p PaginationInput, filter *HpiComponent) ([]HpiCom
 }
 
 // Search ...
-func (r *HpiComponent) Search(p PaginationInput, filter *HpiComponent, searchTerm *string) ([]HpiComponent, int64, error) {
-	var result []HpiComponent
+func (r *HpiComponentRepository) Search(p models.PaginationInput, filter *models.HpiComponent, searchTerm *string) ([]models.HpiComponent, int64, error) {
+	var result []models.HpiComponent
 
-	tx := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter)
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter)
 
 	if searchTerm != nil {
 		tx.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -106,8 +102,6 @@ func (r *HpiComponent) Search(p PaginationInput, filter *HpiComponent, searchTer
 }
 
 // Delete ...
-func (r *HpiComponent) Delete(ID int) error {
-	var e HpiComponent
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *HpiComponentRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.HpiComponent{}).Error
 }

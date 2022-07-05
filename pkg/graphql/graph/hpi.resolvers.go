@@ -6,30 +6,30 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveHpiComponentType(ctx context.Context, input model.HpiComponentTypeInput) (*repository.HpiComponentType, error) {
-	var hpiComponentType repository.HpiComponentType
-
+func (r *mutationResolver) SaveHpiComponentType(ctx context.Context, input graph_models.HpiComponentTypeInput) (*models.HpiComponentType, error) {
+	var hpiComponentType models.HpiComponentType
 	deepCopy.Copy(&input).To(&hpiComponentType)
 
-	err := hpiComponentType.Save()
-	if err != nil {
+	var repository repository.HpiComponentTypeRepository
+	if err := repository.Save(&hpiComponentType); err != nil {
 		return nil, err
 	}
 
 	return &hpiComponentType, nil
 }
 
-func (r *mutationResolver) UpdateHpiComponentType(ctx context.Context, input model.HpiComponentTypeUpdateInput) (*repository.HpiComponentType, error) {
-	var hpiComponentType repository.HpiComponentType
-
+func (r *mutationResolver) UpdateHpiComponentType(ctx context.Context, input graph_models.HpiComponentTypeUpdateInput) (*models.HpiComponentType, error) {
+	var hpiComponentType models.HpiComponentType
 	deepCopy.Copy(&input).To(&hpiComponentType)
 
-	if err := hpiComponentType.Update(); err != nil {
+	var repository repository.HpiComponentTypeRepository
+	if err := repository.Update(&hpiComponentType); err != nil {
 		return nil, err
 	}
 
@@ -37,35 +37,33 @@ func (r *mutationResolver) UpdateHpiComponentType(ctx context.Context, input mod
 }
 
 func (r *mutationResolver) DeleteHpiComponentType(ctx context.Context, id int) (bool, error) {
-	var hpiComponentType repository.HpiComponentType
-
-	err := hpiComponentType.Delete(id)
-	if err != nil {
+	var repository repository.HpiComponentTypeRepository
+	
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveHpiComponent(ctx context.Context, input model.HpiComponentInput) (*repository.HpiComponent, error) {
-	var hpiComponent repository.HpiComponent
-
+func (r *mutationResolver) SaveHpiComponent(ctx context.Context, input graph_models.HpiComponentInput) (*models.HpiComponent, error) {
+	var hpiComponent models.HpiComponent
 	deepCopy.Copy(&input).To(&hpiComponent)
 
-	err := hpiComponent.Save()
-	if err != nil {
+	var repository repository.HpiComponentRepository
+	if err := repository.Save(&hpiComponent); err != nil {
 		return nil, err
 	}
 
 	return &hpiComponent, nil
 }
 
-func (r *mutationResolver) UpdateHpiComponent(ctx context.Context, input model.HpiComponentUpdateInput) (*repository.HpiComponent, error) {
-	var hpiComponent repository.HpiComponent
-
+func (r *mutationResolver) UpdateHpiComponent(ctx context.Context, input graph_models.HpiComponentUpdateInput) (*models.HpiComponent, error) {
+	var hpiComponent models.HpiComponent
 	deepCopy.Copy(&input).To(&hpiComponent)
 
-	if err := hpiComponent.Update(); err != nil {
+	var repository repository.HpiComponentRepository
+	if err := repository.Update(&hpiComponent); err != nil {
 		return nil, err
 	}
 
@@ -73,62 +71,62 @@ func (r *mutationResolver) UpdateHpiComponent(ctx context.Context, input model.H
 }
 
 func (r *mutationResolver) DeleteHpiComponent(ctx context.Context, id int) (bool, error) {
-	var hpiComponent repository.HpiComponent
+	var repository repository.HpiComponentRepository
 
-	err := hpiComponent.Delete(id)
-	if err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) HpiComponentTypes(ctx context.Context, page repository.PaginationInput) (*model.HpiComponentTypeConnection, error) {
-	var hpiComponentType repository.HpiComponentType
+func (r *queryResolver) HpiComponentTypes(ctx context.Context, page models.PaginationInput) (*graph_models.HpiComponentTypeConnection, error) {
+	var repository repository.HpiComponentTypeRepository
 
-	hpiComponentTypes, count, err := hpiComponentType.GetAll(page)
+	hpiComponentTypes, count, err := repository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.HpiComponentTypeEdge, len(hpiComponentTypes))
+	edges := make([]*graph_models.HpiComponentTypeEdge, len(hpiComponentTypes))
 
 	for i, entity := range hpiComponentTypes {
 		e := entity
 
-		edges[i] = &model.HpiComponentTypeEdge{
+		edges[i] = &graph_models.HpiComponentTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(hpiComponentTypes, count, page)
-	return &model.HpiComponentTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.HpiComponentTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) HpiComponents(ctx context.Context, page repository.PaginationInput, filter *model.HpiFilter, searchTerm *string) (*model.HpiComponentConnection, error) {
-	var f repository.HpiComponent
-
+func (r *queryResolver) HpiComponents(ctx context.Context, page models.PaginationInput, filter *graph_models.HpiFilter, searchTerm *string) (*graph_models.HpiComponentConnection, error) {
+	var f models.HpiComponent
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	hpiComponents, count, err := f.Search(page, &f, searchTerm)
+	var repository repository.HpiComponentRepository
+
+	hpiComponents, count, err := repository.Search(page, &f, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.HpiComponentEdge, len(hpiComponents))
+	edges := make([]*graph_models.HpiComponentEdge, len(hpiComponents))
 
 	for i, entity := range hpiComponents {
 		e := entity
 
-		edges[i] = &model.HpiComponentEdge{
+		edges[i] = &graph_models.HpiComponentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(hpiComponents, count, page)
-	return &model.HpiComponentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.HpiComponentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

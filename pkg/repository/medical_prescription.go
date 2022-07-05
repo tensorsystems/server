@@ -22,52 +22,33 @@ import (
 	"errors"
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// MedicalPrescription ...
-type MedicalPrescription struct {
-	gorm.Model
-	ID                         int        `gorm:"primaryKey"`
-	MedicalPrescriptionOrderID *int       `json:"medicalPrescriptionOrderId"`
-	PatientID                  int        `json:"patientId"`
-	Patient                    Patient    `json:"patient"`
-	Medication                 string     `json:"medication"`
-	RxCui                      *string    `json:"rxCui"`
-	Synonym                    *string    `json:"synonym"`
-	Tty                        *string    `json:"tty"`
-	Language                   *string    `json:"language"`
-	Sig                        *string    `json:"sig"`
-	Refill                     *int       `json:"refill"`
-	Generic                    *bool      `json:"generic"`
-	SubstitutionAllowed        *bool      `json:"substitutionAllowed"`
-	DirectionToPatient         *string    `json:"directionToPatient"`
-	PrescribedDate             *time.Time `json:"prescribedDate"`
-	History                    bool       `json:"history"`
-	Status                     string     `json:"status"`
-	Count                      int64      `json:"count"`
+type MedicalPrescriptionRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideMedicalPrescriptionRepository(DB *gorm.DB) MedicalPrescriptionRepository {
+	return MedicalPrescriptionRepository{DB: DB}
 }
 
 // Save ...
-func (r *MedicalPrescription) Save() error {
-	return DB.Create(&r).Error
+func (r *MedicalPrescriptionRepository) Save(m *models.MedicalPrescription) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *MedicalPrescription) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *MedicalPrescriptionRepository) Get(m *models.MedicalPrescription, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *MedicalPrescription) GetAll(p PaginationInput, filter *MedicalPrescription) ([]MedicalPrescription, int64, error) {
-	var result []MedicalPrescription
+func (r *MedicalPrescriptionRepository) GetAll(p PaginationInput, filter *models.MedicalPrescription) ([]models.MedicalPrescription, int64, error) {
+	var result []models.MedicalPrescription
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -82,10 +63,10 @@ func (r *MedicalPrescription) GetAll(p PaginationInput, filter *MedicalPrescript
 }
 
 // Search ...
-func (r *MedicalPrescription) Search(p PaginationInput, filter *MedicalPrescription, date *time.Time, searchTerm *string, ascending bool) ([]MedicalPrescription, int64, error) {
-	var result []MedicalPrescription
+func (r *MedicalPrescriptionRepository) Search(p models.PaginationInput, filter *models.MedicalPrescription, date *time.Time, searchTerm *string, ascending bool) ([]models.MedicalPrescription, int64, error) {
+	var result []models.MedicalPrescription
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter)
 
 	if date != nil {
 		prescribedDate := *date
@@ -119,23 +100,23 @@ func (r *MedicalPrescription) Search(p PaginationInput, filter *MedicalPrescript
 }
 
 // Update ...
-func (r *MedicalPrescription) Update() error {
-	return DB.Updates(&r).Error
+func (r *MedicalPrescriptionRepository) Update(m *models.MedicalPrescription) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *MedicalPrescription) Delete(ID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", ID).Take(&r).Error; err != nil {
+func (r *MedicalPrescriptionRepository) Delete(m *models.MedicalPrescription, ID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", ID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		var order MedicalPrescriptionOrder
-		if err := tx.Where("id = ?", r.MedicalPrescriptionOrderID).Take(&order).Error; err != nil {
+		var order models.MedicalPrescriptionOrder
+		if err := tx.Where("id = ?", m.MedicalPrescriptionOrderID).Take(&order).Error; err != nil {
 			return err
 		}
 
-		var patientChart PatientChart
+		var patientChart models.PatientChart
 		if err := tx.Where("id = ?", order.PatientChartID).Take(&patientChart).Error; err != nil {
 			return err
 		}
@@ -144,7 +125,7 @@ func (r *MedicalPrescription) Delete(ID int) error {
 			return errors.New("This prescription cannot be deleted because it's respective chart has been locked")
 		}
 
-		if err := tx.Delete(&r).Error; err != nil {
+		if err := tx.Delete(&m).Error; err != nil {
 			return err
 		}
 

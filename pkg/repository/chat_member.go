@@ -19,33 +19,32 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// ChatMemeber ...
-type ChatMember struct {
-	gorm.Model
-	ID          int     `gorm:"primaryKey"`
-	UserID      int     `json:"userId"`
-	ChatID      int     `json:"chatId"`
-	DisplayName string  `json:"displayName"`
-	PhotoURL    *string `json:"photoUrl"`
+type ChatMemberRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChatMemberRepository(DB *gorm.DB) ChatMemberRepository {
+	return ChatMemberRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChatMember) Save() error {
-	return DB.Create(&r).Error
+func (r *ChatMemberRepository) Save(m *models.ChatMember) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *ChatMember) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ChatMemberRepository) Get(m *models.ChatMember, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // FindCommonChatID ...
-func (r *ChatMember) FindCommonChatID(userID int, recipientID int) (int, error) {
-	var chatMemeber ChatMember
-	err := DB.Select("chat_id").Where("user_id = ? or user_id = ?", userID, recipientID).Group("chat_id").Having("count(chat_id) > ?", 1).Order("chat_id desc").Take(&chatMemeber).Error
+func (r *ChatMemberRepository) FindCommonChatID(userID int, recipientID int) (int, error) {
+	var chatMemeber models.ChatMember
+	err := r.DB.Select("chat_id").Where("user_id = ? or user_id = ?", userID, recipientID).Group("chat_id").Having("count(chat_id) > ?", 1).Order("chat_id desc").Take(&chatMemeber).Error
 
 	if err != nil {
 
@@ -56,18 +55,18 @@ func (r *ChatMember) FindCommonChatID(userID int, recipientID int) (int, error) 
 }
 
 // GetByChatID ...
-func (r *ChatMember) GetByChatID(ID int) ([]*ChatMember, error) {
-	var members []*ChatMember
-	err := DB.Where("chat_id = ?", ID).Order("created_at desc").Find(&members).Error
+func (r *ChatMemberRepository) GetByChatID(ID int) ([]*models.ChatMember, error) {
+	var members []*models.ChatMember
+	err := r.DB.Where("chat_id = ?", ID).Order("created_at desc").Find(&members).Error
 	return members, err
 }
 
 // Update ...
-func (r *ChatMember) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChatMemberRepository) Update(m *models.ChatMember) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ChatMember) Delete(userID int, chatID int) error {
-	return DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&r).Error
+func (r *ChatMemberRepository) Delete(userID int, chatID int) error {
+	return r.DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&models.ChatMember{}).Error
 }

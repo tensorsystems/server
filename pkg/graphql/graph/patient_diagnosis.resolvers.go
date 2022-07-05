@@ -8,13 +8,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SavePatientDiagnosis(ctx context.Context, input model.PatientDiagnosisInput) (*repository.PatientDiagnosis, error) {
+func (r *mutationResolver) SavePatientDiagnosis(ctx context.Context, input graph_models.PatientDiagnosisInput) (*models.PatientDiagnosis, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -26,9 +27,9 @@ func (r *mutationResolver) SavePatientDiagnosis(ctx context.Context, input model
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -43,17 +44,18 @@ func (r *mutationResolver) SavePatientDiagnosis(ctx context.Context, input model
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var entity repository.PatientDiagnosis
+	var entity models.PatientDiagnosis
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(input.DiagnosisID); err != nil {
+	var repository repository.PatientDiagnosisRepository
+	if err := repository.Save(&entity, input.DiagnosisID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePatientDiagnosis(ctx context.Context, input model.PatientDiagnosisUpdateInput) (*repository.PatientDiagnosis, error) {
+func (r *mutationResolver) UpdatePatientDiagnosis(ctx context.Context, input graph_models.PatientDiagnosisUpdateInput) (*models.PatientDiagnosis, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -65,9 +67,9 @@ func (r *mutationResolver) UpdatePatientDiagnosis(ctx context.Context, input mod
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -82,10 +84,11 @@ func (r *mutationResolver) UpdatePatientDiagnosis(ctx context.Context, input mod
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var entity repository.PatientDiagnosis
+	var entity models.PatientDiagnosis
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PatientDiagnosisRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -104,9 +107,9 @@ func (r *mutationResolver) DeletePatientDiagnosis(ctx context.Context, id int) (
 		return false, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return false, err
 	}
 
@@ -121,42 +124,41 @@ func (r *mutationResolver) DeletePatientDiagnosis(ctx context.Context, id int) (
 		return false, errors.New("You are not authorized to perform this action")
 	}
 
-	var entity repository.PatientDiagnosis
-
-	if err := entity.Delete(id); err != nil {
+	var repository repository.PatientDiagnosisRepository
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) PatientDiagnoses(ctx context.Context, page repository.PaginationInput, filter *model.PatientDiagnosisFilter) (*model.PatientDiagnosisConnection, error) {
-	var f repository.PatientDiagnosis
+func (r *queryResolver) PatientDiagnoses(ctx context.Context, page models.PaginationInput, filter *graph_models.PatientDiagnosisFilter) (*graph_models.PatientDiagnosisConnection, error) {
+	var f models.PatientDiagnosis
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.PatientDiagnosis
-	diagnoses, count, err := entity.GetAll(page, &f)
+	var repository repository.PatientDiagnosisRepository
+	diagnoses, count, err := repository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.PatientDiagnosisEdge, len(diagnoses))
+	edges := make([]*graph_models.PatientDiagnosisEdge, len(diagnoses))
 
 	for i, entity := range diagnoses {
 		e := entity
 
-		edges[i] = &model.PatientDiagnosisEdge{
+		edges[i] = &graph_models.PatientDiagnosisEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(diagnoses, count, page)
-	return &model.PatientDiagnosisConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.PatientDiagnosisConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SearchPatientDiagnosis(ctx context.Context, searchTerm *string, page repository.PaginationInput) (*model.PatientDiagnosisConnection, error) {
+func (r *queryResolver) SearchPatientDiagnosis(ctx context.Context, searchTerm *string, page models.PaginationInput) (*graph_models.PatientDiagnosisConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }

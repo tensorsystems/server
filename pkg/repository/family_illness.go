@@ -18,42 +18,34 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// FamilyIllness ...
-type FamilyIllness struct {
-	gorm.Model
-	ID               int    `gorm:"primaryKey" json:"id"`
-	Title            string `json:"title"`
-	Description      string `json:"description"`
-	PatientHistoryID int    `json:"patientHistoryID"`
+type FamilyIllnessRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideFamilyIllnessRepository(DB *gorm.DB) FamilyIllnessRepository {
+	return FamilyIllnessRepository{DB: DB}
 }
 
 // Save ...
-func (r *FamilyIllness) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *FamilyIllnessRepository) Save(m *models.FamilyIllness) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *FamilyIllness) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *FamilyIllnessRepository) Get(m *models.FamilyIllness, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientHistoryID ...
-func (r *FamilyIllness) GetByPatientHistoryID(ID int) ([]*FamilyIllness, error) {
-	var result []*FamilyIllness
+func (r *FamilyIllnessRepository) GetByPatientHistoryID(ID int) ([]*models.FamilyIllness, error) {
+	var result []*models.FamilyIllness
 
-	err := DB.Where("patient_history_id = ?", ID).Find(&result).Error
+	err := r.DB.Where("patient_history_id = ?", ID).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -63,13 +55,11 @@ func (r *FamilyIllness) GetByPatientHistoryID(ID int) ([]*FamilyIllness, error) 
 }
 
 // Update ...
-func (r *FamilyIllness) Update() error {
-	return DB.Updates(&r).Error
+func (r *FamilyIllnessRepository) Update(m *models.FamilyIllness) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *FamilyIllness) Delete(ID int) error {
-	var e FamilyIllness
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *FamilyIllnessRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.FamilyIllness{}).Error
 }

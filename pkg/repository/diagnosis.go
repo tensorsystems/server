@@ -18,35 +18,29 @@
 
 package repository
 
-// Diagnosis ...
-type Diagnosis struct {
-	ID                     int     `gorm:"primaryKey" json:"id"`
-	CategoryCode           *string `json:"categoryCode"`
-	DiagnosisCode          *string `json:"diagnosisCode"`
-	FullCode               *string `json:"fullCode"`
-	AbbreviatedDescription *string `json:"abbreviatedDescription"`
-	FullDescription        string  `json:"fullDescription"`
-	CategoryTitle          *string `json:"categoryTitle"`
-	Active                 bool    `json:"active"`
-	Document               string  `gorm:"type:tsvector"`
-	Count                  int64   `json:"count"`
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
+
+type DiagnosisRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideDiagnosisRepository(DB *gorm.DB) DiagnosisRepository {
+	return DiagnosisRepository{DB: DB}
 }
 
 // Save ...
-func (r *Diagnosis) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *DiagnosisRepository) Save(m *models.Diagnosis) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *Diagnosis) GetAll(p PaginationInput, searchTerm *string) ([]Diagnosis, int64, error) {
-	var result []Diagnosis
+func (r *DiagnosisRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.Diagnosis, int64, error) {
+	var result []models.Diagnosis
 
-	dbOp := DB.Scopes(Paginate(&p))
+	dbOp := r.DB.Scopes(models.Paginate(&p))
 
 	if searchTerm != nil && len(*searchTerm) > 0 {
 		dbOp.Where("document @@ plainto_tsquery(?)", *searchTerm)
@@ -67,22 +61,22 @@ func (r *Diagnosis) GetAll(p PaginationInput, searchTerm *string) ([]Diagnosis, 
 }
 
 // GetFavorites ...
-func (r *Diagnosis) GetFavorites(p PaginationInput, searchTerm *string, userId int) ([]Diagnosis, int64, error) {
-	var result []Diagnosis
+func (r *DiagnosisRepository) GetFavorites(p models.PaginationInput, searchTerm *string, userId int) ([]models.Diagnosis, int64, error) {
+	var result []models.Diagnosis
 	var count int64
 	var err error
 
 	var favoriteIds []int
-	var entity FavoriteDiagnosis
-	favoriteDiagnosis, _ := entity.GetByUser(userId)
+	var favoriteDiagnosisRepository FavoriteDiagnosisRepository
+	favoriteDiagnosis, _ := favoriteDiagnosisRepository.GetByUser(userId)
 	for _, e := range favoriteDiagnosis {
 		favoriteIds = append(favoriteIds, e.DiagnosisID)
 	}
 
 	if len(favoriteIds) > 0 {
-		var favorites []Diagnosis
+		var favorites []models.Diagnosis
 
-		favoritesDb := DB.Where("id IN ?", favoriteIds)
+		favoritesDb := r.DB.Where("id IN ?", favoriteIds)
 		if searchTerm != nil && len(*searchTerm) > 0 {
 			favoritesDb.Where("full_description ILIKE ?", "%"+*searchTerm+"%")
 		}
@@ -90,8 +84,8 @@ func (r *Diagnosis) GetFavorites(p PaginationInput, searchTerm *string, userId i
 
 		result = append(result, favorites...)
 
-		var nonFavorites []Diagnosis
-		nonFavoritesDb := DB.Not(favoriteIds).Scopes(Paginate(&p))
+		var nonFavorites []models.Diagnosis
+		nonFavoritesDb := r.DB.Not(favoriteIds).Scopes(models.Paginate(&p))
 		if searchTerm != nil && len(*searchTerm) > 0 {
 			nonFavoritesDb.Where("full_description ILIKE ?", "%"+*searchTerm+"%")
 		}
@@ -110,21 +104,21 @@ func (r *Diagnosis) GetFavorites(p PaginationInput, searchTerm *string, userId i
 }
 
 // Get ...
-func (r *Diagnosis) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *DiagnosisRepository) Get(m *models.Diagnosis, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *Diagnosis) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *DiagnosisRepository) GetByTitle(m *models.Diagnosis, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *Diagnosis) Update() error {
-	return DB.Updates(&r).Error
+func (r *DiagnosisRepository) Update(m *models.Diagnosis) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Diagnosis) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *DiagnosisRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Diagnosis{}).Error
 }

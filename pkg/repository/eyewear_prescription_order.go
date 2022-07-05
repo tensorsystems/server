@@ -21,74 +21,64 @@ package repository
 import (
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// EyewearPrescriptionOrder ...
-type EyewearPrescriptionOrder struct {
-	gorm.Model
-	ID                   int                   `gorm:"primaryKey"`
-	EyewearShopID        int                   `json:"eyewearShopId"`
-	EyewearShop          EyewearShop           `json:"eyewearShop"`
-	PatientChartID       int                   `json:"patientChartId"`
-	FirstName            string                `json:"firstName"`
-	LastName             string                `json:"lastName"`
-	PhoneNo              string                `json:"phoneNo"`
-	UserName             string                `json:"userName"`
-	OrderedByID          *int                  `json:"orderedById"`
-	OrderedBy            *User                 `json:"orderedBy"`
-	Status               string                `json:"status"`
-	EyewearPrescriptions []EyewearPrescription `json:"eyewearPrescription"`
-	Count                int64                 `json:"count"`
+type EyewearPrescriptionOrderRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideEyewearPrescriptionOrderRepository(DB *gorm.DB) EyewearPrescriptionOrderRepository {
+	return EyewearPrescriptionOrderRepository{DB: DB}
 }
 
 // SaveEyewearPrescription ...
-func (r *EyewearPrescriptionOrder) SaveEyewearPrescription(eyewearPrescription EyewearPrescription, patientID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var patient Patient
+func (r *EyewearPrescriptionOrderRepository) SaveEyewearPrescription(m *models.EyewearPrescriptionOrder, eyewearPrescription models.EyewearPrescription, patientID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var patient models.Patient
 		if err := tx.Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
-		var user User
-		if err := tx.Where("id = ?", r.OrderedByID).Take(&user).Error; err != nil {
+		var user models.User
+		if err := tx.Where("id = ?", m.OrderedByID).Take(&user).Error; err != nil {
 			return err
 		}
 
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = user.FirstName + " " + user.LastName
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = user.FirstName + " " + user.LastName
+		m.Status = "ORDERED"
 
-		r.Status = "ORDERED"
-
-		var existing EyewearPrescriptionOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.EyewearPrescriptionOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
 		eyewearPrescription.Status = "Active"
 
-		tx.Model(&r).Association("EyewearPrescriptions").Append(&eyewearPrescription)
+		tx.Model(&m).Association("EyewearPrescriptions").Append(&eyewearPrescription)
 
 		return nil
 	})
 }
 
 // Search ...
-func (r *EyewearPrescriptionOrder) Search(p PaginationInput, filter *EyewearPrescriptionOrder, date *time.Time, searchTerm *string, ascending bool) ([]EyewearPrescriptionOrder, int64, error) {
-	var result []EyewearPrescriptionOrder
+func (r *EyewearPrescriptionOrderRepository) Search(p models.PaginationInput, filter *models.EyewearPrescriptionOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.EyewearPrescriptionOrder, int64, error) {
+	var result []models.EyewearPrescriptionOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("EyewearPrescriptions").Preload("OrderedBy")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("EyewearPrescriptions").Preload("OrderedBy")
 
 	if date != nil {
 		prescribedDate := *date
@@ -122,20 +112,20 @@ func (r *EyewearPrescriptionOrder) Search(p PaginationInput, filter *EyewearPres
 }
 
 // Get ...
-func (r *EyewearPrescriptionOrder) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *EyewearPrescriptionOrderRepository) Get(m *models.EyewearPrescriptionOrder, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientChartID ...
-func (r *EyewearPrescriptionOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("EyewearPrescriptions").Take(&r).Error
+func (r *EyewearPrescriptionOrderRepository) GetByPatientChartID(m *models.EyewearPrescriptionOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("EyewearPrescriptions").Take(&m).Error
 }
 
 // GetAll ...
-func (r *EyewearPrescriptionOrder) GetAll(p PaginationInput, filter *EyewearPrescriptionOrder) ([]EyewearPrescriptionOrder, int64, error) {
-	var result []EyewearPrescriptionOrder
+func (r *EyewearPrescriptionOrderRepository) GetAll(p PaginationInput, filter *models.EyewearPrescriptionOrder) ([]models.EyewearPrescriptionOrder, int64, error) {
+	var result []models.EyewearPrescriptionOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -150,16 +140,16 @@ func (r *EyewearPrescriptionOrder) GetAll(p PaginationInput, filter *EyewearPres
 }
 
 // Save ...
-func (r *EyewearPrescriptionOrder) Save() error {
-	return DB.Create(&r).Error
+func (r *EyewearPrescriptionOrderRepository) Save(m *models.EyewearPrescriptionOrder) error {
+	return r.DB.Create(&m).Error
 }
 
 // Update ...
-func (r *EyewearPrescriptionOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *EyewearPrescriptionOrderRepository) Update(m *models.EyewearPrescriptionOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *EyewearPrescriptionOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *EyewearPrescriptionOrderRepository) Delete(m *models.EyewearPrescriptionOrder, ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.EyewearPrescriptionOrder{}).Error
 }

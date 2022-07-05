@@ -10,20 +10,20 @@ import (
 	"time"
 
 	"github.com/tensoremr/server/pkg/graphql/graph/generated"
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+func (r *mutationResolver) CreateTodo(ctx context.Context, input graph_models.NewTodo) (*graph_models.Todo, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+func (r *queryResolver) Todos(ctx context.Context) ([]*graph_models.Todo, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) GetHealthCheck(ctx context.Context) (*model.HealthCheckReport, error) {
+func (r *queryResolver) GetHealthCheck(ctx context.Context) (*graph_models.HealthCheckReport, error) {
 	var entity repository.User
 
 	pingErr := entity.Ping()
@@ -37,7 +37,7 @@ func (r *queryResolver) GetHealthCheck(ctx context.Context) (*model.HealthCheckR
 	return &model.HealthCheckReport{Health: "YES", Db: true}, nil
 }
 
-func (r *queryResolver) ReceptionHomeStats(ctx context.Context) (*model.HomeStats, error) {
+func (r *queryResolver) ReceptionHomeStats(ctx context.Context) (*graph_models.HomeStats, error) {
 	var entity repository.Appointment
 	scheduled, checkedIn, checkedOut, err := entity.ReceptionHomeStats()
 
@@ -48,7 +48,7 @@ func (r *queryResolver) ReceptionHomeStats(ctx context.Context) (*model.HomeStat
 	}, err
 }
 
-func (r *queryResolver) NurseHomeStats(ctx context.Context) (*model.HomeStats, error) {
+func (r *queryResolver) NurseHomeStats(ctx context.Context) (*graph_models.HomeStats, error) {
 	var entity repository.Appointment
 	scheduled, checkedIn, checkedOut, err := entity.NurseHomeStats()
 
@@ -59,7 +59,7 @@ func (r *queryResolver) NurseHomeStats(ctx context.Context) (*model.HomeStats, e
 	}, err
 }
 
-func (r *queryResolver) PhysicianHomeStats(ctx context.Context) (*model.HomeStats, error) {
+func (r *queryResolver) PhysicianHomeStats(ctx context.Context) (*graph_models.HomeStats, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err

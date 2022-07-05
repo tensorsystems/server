@@ -8,148 +8,162 @@ import (
 	"fmt"
 
 	"github.com/tensoremr/server/pkg/graphql/graph/generated"
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SavePastIllness(ctx context.Context, input model.PastIllnessInput) (*repository.PastIllness, error) {
-	var entity repository.PastIllness
+func (r *mutationResolver) SavePastIllness(ctx context.Context, input graph_models.PastIllnessInput) (*models.PastIllness, error) {
+	var entity models.PastIllness
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.PastIllnessRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SavePastInjury(ctx context.Context, input model.PastInjuryInput) (*repository.PastInjury, error) {
-	var entity repository.PastInjury
+func (r *mutationResolver) SavePastInjury(ctx context.Context, input graph_models.PastInjuryInput) (*models.PastInjury, error) {
+	var entity models.PastInjury
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.PastInjuryRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SavePastHospitalization(ctx context.Context, input model.PastHospitalizationInput) (*repository.PastHospitalization, error) {
-	var entity repository.PastHospitalization
+func (r *mutationResolver) SavePastHospitalization(ctx context.Context, input graph_models.PastHospitalizationInput) (*models.PastHospitalization, error) {
+	var entity models.PastHospitalization
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.PastHospitalizationRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SavePastSurgery(ctx context.Context, input model.PastSurgeryInput) (*repository.PastSurgery, error) {
-	var entity repository.PastSurgery
+func (r *mutationResolver) SavePastSurgery(ctx context.Context, input graph_models.PastSurgeryInput) (*models.PastSurgery, error) {
+	var entity models.PastSurgery
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.PastSurgeryRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveLifestyle(ctx context.Context, input model.LifestyleInput) (*repository.Lifestyle, error) {
-	var entity repository.Lifestyle
+func (r *mutationResolver) SaveLifestyle(ctx context.Context, input graph_models.LifestyleInput) (*models.Lifestyle, error) {
+	var entity models.Lifestyle
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.LifestyleRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveFamilyIllness(ctx context.Context, input model.FamilyIllnessInput) (*repository.FamilyIllness, error) {
-	var entity repository.FamilyIllness
+func (r *mutationResolver) SaveFamilyIllness(ctx context.Context, input graph_models.FamilyIllnessInput) (*models.FamilyIllness, error) {
+	var entity models.FamilyIllness
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.FamilyIllnessRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePatientHistory(ctx context.Context, input model.PatientHistoryUpdateInput) (*repository.PatientHistory, error) {
-	var entity repository.PatientHistory
+func (r *mutationResolver) UpdatePatientHistory(ctx context.Context, input graph_models.PatientHistoryUpdateInput) (*models.PatientHistory, error) {
+	var entity models.PatientHistory
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PatientHistoryRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePastIllness(ctx context.Context, input model.PastIllnessUpdateInput) (*repository.PastIllness, error) {
-	var entity repository.PastIllness
+func (r *mutationResolver) UpdatePastIllness(ctx context.Context, input graph_models.PastIllnessUpdateInput) (*models.PastIllness, error) {
+	var entity models.PastIllness
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PastIllnessRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePastInjury(ctx context.Context, input model.PastInjuryUpdateInput) (*repository.PastInjury, error) {
-	var entity repository.PastInjury
+func (r *mutationResolver) UpdatePastInjury(ctx context.Context, input graph_models.PastInjuryUpdateInput) (*models.PastInjury, error) {
+	var entity models.PastInjury
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PastInjuryRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePastHospitalization(ctx context.Context, input model.PastHospitalizationUpdateInput) (*repository.PastHospitalization, error) {
-	var entity repository.PastHospitalization
+func (r *mutationResolver) UpdatePastHospitalization(ctx context.Context, input graph_models.PastHospitalizationUpdateInput) (*models.PastHospitalization, error) {
+	var entity models.PastHospitalization
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PastHospitalizationRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePastSurgery(ctx context.Context, input model.PastSurgeryUpdateInput) (*repository.PastSurgery, error) {
-	var entity repository.PastSurgery
+func (r *mutationResolver) UpdatePastSurgery(ctx context.Context, input graph_models.PastSurgeryUpdateInput) (*models.PastSurgery, error) {
+	var entity models.PastSurgery
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PastSurgeryRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateLifestyle(ctx context.Context, input model.LifestyleUpdateInput) (*repository.Lifestyle, error) {
-	var entity repository.Lifestyle
+func (r *mutationResolver) UpdateLifestyle(ctx context.Context, input graph_models.LifestyleUpdateInput) (*models.Lifestyle, error) {
+	var entity models.Lifestyle
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.LifestyleRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateFamilyIllness(ctx context.Context, input model.FamilyIllnessUpdateInput) (*repository.FamilyIllness, error) {
-	var entity repository.FamilyIllness
+func (r *mutationResolver) UpdateFamilyIllness(ctx context.Context, input graph_models.FamilyIllnessUpdateInput) (*models.FamilyIllness, error) {
+	var entity models.FamilyIllness
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.FamilyIllnessRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -157,9 +171,9 @@ func (r *mutationResolver) UpdateFamilyIllness(ctx context.Context, input model.
 }
 
 func (r *mutationResolver) DeletePastIllness(ctx context.Context, id int) (bool, error) {
-	var entity repository.PastIllness
+	var repository repository.PastIllnessRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -167,9 +181,9 @@ func (r *mutationResolver) DeletePastIllness(ctx context.Context, id int) (bool,
 }
 
 func (r *mutationResolver) DeletePastInjury(ctx context.Context, id int) (bool, error) {
-	var entity repository.PastInjury
+	var repository repository.PastInjuryRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -177,9 +191,9 @@ func (r *mutationResolver) DeletePastInjury(ctx context.Context, id int) (bool, 
 }
 
 func (r *mutationResolver) DeletePastHospitalization(ctx context.Context, id int) (bool, error) {
-	var entity repository.PastHospitalization
+	var repository repository.PastHospitalizationRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -187,9 +201,9 @@ func (r *mutationResolver) DeletePastHospitalization(ctx context.Context, id int
 }
 
 func (r *mutationResolver) DeletePastSurgery(ctx context.Context, id int) (bool, error) {
-	var entity repository.PastSurgery
+	var repository repository.PastSurgeryRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -197,9 +211,9 @@ func (r *mutationResolver) DeletePastSurgery(ctx context.Context, id int) (bool,
 }
 
 func (r *mutationResolver) DeleteLifestyle(ctx context.Context, id int) (bool, error) {
-	var entity repository.Lifestyle
+	var repository repository.LifestyleRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -207,32 +221,34 @@ func (r *mutationResolver) DeleteLifestyle(ctx context.Context, id int) (bool, e
 }
 
 func (r *mutationResolver) DeleteFamilyIllness(ctx context.Context, id int) (bool, error) {
-	var entity repository.FamilyIllness
+	var repository repository.FamilyIllnessRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *patientHistoryResolver) Lifestyle(ctx context.Context, obj *repository.PatientHistory) ([]*repository.Lifestyle, error) {
+func (r *patientHistoryResolver) Lifestyle(ctx context.Context, obj *models.PatientHistory) ([]*models.Lifestyle, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) PatientHistory(ctx context.Context, id int) (*repository.PatientHistory, error) {
-	var entity repository.PatientHistory
-	if err := entity.Get(id); err != nil {
+func (r *queryResolver) PatientHistory(ctx context.Context, id int) (*models.PatientHistory, error) {
+	var entity models.PatientHistory
+
+	var repository repository.PatientHistoryRepository
+	if err := repository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) PastIllnesses(ctx context.Context, patientHistoryID int) ([]*repository.PastIllness, error) {
-	var entity repository.PastIllness
+func (r *queryResolver) PastIllnesses(ctx context.Context, patientHistoryID int) ([]*models.PastIllness, error) {
+	var repository repository.PastIllnessRepository
 
-	result, err := entity.GetByPatientHistoryID(patientHistoryID)
+	result, err := repository.GetByPatientHistoryID(patientHistoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -240,10 +256,10 @@ func (r *queryResolver) PastIllnesses(ctx context.Context, patientHistoryID int)
 	return result, nil
 }
 
-func (r *queryResolver) PastInjuries(ctx context.Context, patientHistoryID int) ([]*repository.PastInjury, error) {
-	var entity repository.PastInjury
+func (r *queryResolver) PastInjuries(ctx context.Context, patientHistoryID int) ([]*models.PastInjury, error) {
+	var repository repository.PastInjuryRepository
 
-	result, err := entity.GetByPatientHistoryID(patientHistoryID)
+	result, err := repository.GetByPatientHistoryID(patientHistoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -251,10 +267,10 @@ func (r *queryResolver) PastInjuries(ctx context.Context, patientHistoryID int) 
 	return result, nil
 }
 
-func (r *queryResolver) PastHospitalizations(ctx context.Context, patientHistoryID int) ([]*repository.PastHospitalization, error) {
-	var entity repository.PastHospitalization
+func (r *queryResolver) PastHospitalizations(ctx context.Context, patientHistoryID int) ([]*models.PastHospitalization, error) {
+	var repository repository.PastHospitalizationRepository
 
-	result, err := entity.GetByPatientHistoryID(patientHistoryID)
+	result, err := repository.GetByPatientHistoryID(patientHistoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -262,10 +278,10 @@ func (r *queryResolver) PastHospitalizations(ctx context.Context, patientHistory
 	return result, nil
 }
 
-func (r *queryResolver) PastSurgeries(ctx context.Context, patientHistoryID int) ([]*repository.PastSurgery, error) {
-	var entity repository.PastSurgery
+func (r *queryResolver) PastSurgeries(ctx context.Context, patientHistoryID int) ([]*models.PastSurgery, error) {
+	var repository repository.PastSurgeryRepository
 
-	result, err := entity.GetByPatientHistoryID(patientHistoryID)
+	result, err := repository.GetByPatientHistoryID(patientHistoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -273,10 +289,10 @@ func (r *queryResolver) PastSurgeries(ctx context.Context, patientHistoryID int)
 	return result, nil
 }
 
-func (r *queryResolver) Lifestyles(ctx context.Context, patientHistoryID int) ([]*repository.Lifestyle, error) {
-	var entity repository.Lifestyle
+func (r *queryResolver) Lifestyles(ctx context.Context, patientHistoryID int) ([]*models.Lifestyle, error) {
+	var repository repository.LifestyleRepository
 
-	result, err := entity.GetByPatientHistoryID(patientHistoryID)
+	result, err := repository.GetByPatientHistoryID(patientHistoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -284,10 +300,10 @@ func (r *queryResolver) Lifestyles(ctx context.Context, patientHistoryID int) ([
 	return result, nil
 }
 
-func (r *queryResolver) FamilyIllnesses(ctx context.Context, patientHistoryID int) ([]*repository.FamilyIllness, error) {
-	var entity repository.FamilyIllness
+func (r *queryResolver) FamilyIllnesses(ctx context.Context, patientHistoryID int) ([]*models.FamilyIllness, error) {
+	var repository repository.FamilyIllnessRepository
 
-	result, err := entity.GetByPatientHistoryID(patientHistoryID)
+	result, err := repository.GetByPatientHistoryID(patientHistoryID)
 	if err != nil {
 		return nil, err
 	}

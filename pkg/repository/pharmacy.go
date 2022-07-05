@@ -18,32 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Pharmacy is a repository for the pharmacy domain.
-type Pharmacy struct {
-	gorm.Model
-	ID      int    `gorm:"primaryKey"`
-	Title   string `json:"title" gorm:"uniqueIndex"`
-	Address string `json:"address"`
-	Region  string `json:"region"`
-	Country string `json:"country"`
-	Phone   string `json:"phone"`
-	InHouse bool   `json:"inHouse"`
-	Count   int64  `json:"count"`
-	Active  bool   `json:"active"`
+type PharmacyRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePharmacyRepository(DB *gorm.DB) PharmacyRepository {
+	return PharmacyRepository{DB: DB}
 }
 
 // Get ...
-func (r *Pharmacy) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PharmacyRepository) Get(m *models.Pharmacy, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *Pharmacy) GetAll(p PaginationInput, filter *Pharmacy) ([]Pharmacy, int64, error) {
-	var result []Pharmacy
+func (r *PharmacyRepository) GetAll(p models.PaginationInput, filter *models.Pharmacy) ([]models.Pharmacy, int64, error) {
+	var result []models.Pharmacy
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -58,16 +55,16 @@ func (r *Pharmacy) GetAll(p PaginationInput, filter *Pharmacy) ([]Pharmacy, int6
 }
 
 // Save ...
-func (r *Pharmacy) Save() error {
-	return DB.Create(&r).Error
+func (r *PharmacyRepository) Save(m *models.Pharmacy) error {
+	return r.DB.Create(&m).Error
 }
 
 // Update ...
-func (r *Pharmacy) Update() error {
-	return DB.Updates(&r).Error
+func (r *PharmacyRepository) Update(m *models.Pharmacy) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Pharmacy) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *PharmacyRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Pharmacy{}).Error
 }

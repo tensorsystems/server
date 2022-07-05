@@ -18,45 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// OpticDisc ...
-type OpticDisc struct {
-	gorm.Model
-	ID                   int     `gorm:"primaryKey"`
-	RightOpticDisc       *string `json:"rightOpticDisc"`
-	LeftOpticDisc        *string `json:"leftOpticDisc"`
-	RightOpticDiscSketch *string `json:"rightOpticDiscSketch"`
-	LeftOpticDiscSketch  *string `json:"leftOpticDiscSketch"`
-	RightCdr             *string `json:"rightCdr"`
-	LeftCdr              *string `json:"leftCdr"`
-	Note                 *string `json:"note"`
-	PatientChartID       int     `json:"patientChartId"`
+type OpticDiscRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideOpticDiscRepository(DB *gorm.DB) OpticDiscRepository {
+	return OpticDiscRepository{DB: DB}
 }
 
 // Save ...
-func (r *OpticDisc) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *OpticDiscRepository) Save(m *models.OpticDisc) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *OpticDisc) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing OpticDisc
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *OpticDiscRepository) SaveForPatientChart(m *models.OpticDisc) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.OpticDisc
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -66,16 +58,16 @@ func (r *OpticDisc) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *OpticDisc) Get(filter OpticDisc) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *OpticDiscRepository) Get(m *models.OpticDisc, filter models.OpticDisc) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *OpticDisc) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *OpticDiscRepository) GetByPatientChart(m *models.OpticDisc, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *OpticDisc) Update() error {
-	return DB.Updates(&r).Error
+func (r *OpticDiscRepository) Update(m *models.OpticDisc) error {
+	return r.DB.Updates(&m).Error
 }

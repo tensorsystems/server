@@ -21,17 +21,17 @@ package graph
 import (
 	"math"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 )
 
 // ConvertEntityToConnection ...
-func GetPageInfo[R any](entities []R, count int64, page repository.PaginationInput) (*model.PageInfo, int) {
+func GetPageInfo[R any](entities []R, count int64, page models.PaginationInput) (*graph_models.PageInfo, int) {
 	if len(entities) == 0 {
-		return &model.PageInfo{}, 0
+		return &graph_models.PageInfo{}, 0
 	}
 
-	pageInfo := model.PageInfo{}
+	pageInfo := graph_models.PageInfo{}
 	totalPages := math.Ceil(float64(count) / float64(page.Size))
 	pageInfo.TotalPages = int(totalPages)
 

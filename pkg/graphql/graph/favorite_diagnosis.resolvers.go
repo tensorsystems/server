@@ -8,10 +8,11 @@ import (
 	"errors"
 
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-func (r *mutationResolver) SaveFavoriteDiagnosis(ctx context.Context, diagnosisID int) (*repository.FavoriteDiagnosis, error) {
+func (r *mutationResolver) SaveFavoriteDiagnosis(ctx context.Context, diagnosisID int) (*models.FavoriteDiagnosis, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -22,17 +23,18 @@ func (r *mutationResolver) SaveFavoriteDiagnosis(ctx context.Context, diagnosisI
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.FavoriteDiagnosis
+	var favoriteDiangnosisRepository repository.FavoriteDiagnosisRepository
+	var entity models.FavoriteDiagnosis
 	entity.DiagnosisID = diagnosisID
 	entity.UserID = user.ID
 
-	if err := entity.Save(); err != nil {
+	if err := favoriteDiangnosisRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -40,15 +42,15 @@ func (r *mutationResolver) SaveFavoriteDiagnosis(ctx context.Context, diagnosisI
 }
 
 func (r *mutationResolver) DeleteFavoriteDiagnosis(ctx context.Context, id int) (*int, error) {
-	var entity repository.FavoriteDiagnosis
-	if err := entity.Delete(id); err != nil {
+	var repository repository.FavoriteDiagnosisRepository
+	if err := repository.Delete(id); err != nil {
 		return nil, err
 	}
 
 	return &id, nil
 }
 
-func (r *queryResolver) FavoriteDiagnosis(ctx context.Context) ([]*repository.FavoriteDiagnosis, error) {
+func (r *queryResolver) FavoriteDiagnosis(ctx context.Context) ([]*models.FavoriteDiagnosis, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -59,14 +61,14 @@ func (r *queryResolver) FavoriteDiagnosis(ctx context.Context) ([]*repository.Fa
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.FavoriteDiagnosis
-	entities, err := entity.GetByUser(user.ID)
+	var favoriteDiagnosisRepository repository.FavoriteDiagnosisRepository
+	entities, err := favoriteDiagnosisRepository.GetByUser(user.ID)
 
 	if err != nil {
 		return nil, err

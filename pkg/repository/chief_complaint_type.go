@@ -19,33 +19,28 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// ChiefComplaintType ...
-type ChiefComplaintType struct {
-	gorm.Model
-	ID     int    `gorm:"primaryKey" json:"id"`
-	Title  string `json:"title"`
-	Count  int64  `json:"count"`
-	Active bool   `json:"active"`
+type ChiefComplaintTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChiefComplaintTypeRepository(DB *gorm.DB) ChiefComplaintTypeRepository {
+	return ChiefComplaintTypeRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChiefComplaintType) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *ChiefComplaintTypeRepository) Save(m *models.ChiefComplaintType) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *ChiefComplaintType) GetAll(p PaginationInput, searchTerm *string) ([]ChiefComplaintType, int64, error) {
-	var result []ChiefComplaintType
+func (r *ChiefComplaintTypeRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.ChiefComplaintType, int64, error) {
+	var result []models.ChiefComplaintType
 
-	dbOp := DB.Scopes(Paginate(&p))
+	dbOp := r.DB.Scopes(models.Paginate(&p))
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -66,22 +61,22 @@ func (r *ChiefComplaintType) GetAll(p PaginationInput, searchTerm *string) ([]Ch
 }
 
 // GetFavorites ...
-func (r *ChiefComplaintType) GetFavorites(p PaginationInput, searchTerm *string, userId int) ([]ChiefComplaintType, int64, error) {
-	var result []ChiefComplaintType
+func (r *ChiefComplaintTypeRepository) GetFavorites(p models.PaginationInput, searchTerm *string, userId int) ([]models.ChiefComplaintType, int64, error) {
+	var result []models.ChiefComplaintType
 	var count int64
 	var err error
 
 	var favoriteIds []int
-	var entity FavoriteChiefComplaint
-	favoriteChiefComplaints, _ := entity.GetByUser(userId)
+	var favoriteChiefComplaintRepository FavoriteChiefComplaintRepository
+	favoriteChiefComplaints, _ := favoriteChiefComplaintRepository.GetByUser(userId)
 	for _, e := range favoriteChiefComplaints {
 		favoriteIds = append(favoriteIds, e.ChiefComplaintTypeID)
 	}
 
 	if len(favoriteIds) > 0 {
-		var favorites []ChiefComplaintType
+		var favorites []models.ChiefComplaintType
 
-		favoritesDb := DB.Where("id IN ?", favoriteIds)
+		favoritesDb := r.DB.Where("id IN ?", favoriteIds)
 		if searchTerm != nil {
 			favoritesDb.Where("title ILIKE ?", "%"+*searchTerm+"%")
 		}
@@ -89,8 +84,8 @@ func (r *ChiefComplaintType) GetFavorites(p PaginationInput, searchTerm *string,
 
 		result = append(result, favorites...)
 
-		var nonFavorites []ChiefComplaintType
-		nonFavoritesDb := DB.Not(favoriteIds).Scopes(Paginate(&p))
+		var nonFavorites []models.ChiefComplaintType
+		nonFavoritesDb := r.DB.Not(favoriteIds).Scopes(models.Paginate(&p))
 		if searchTerm != nil {
 			nonFavoritesDb.Where("title ILIKE ?", "%"+*searchTerm+"%")
 		}
@@ -109,21 +104,21 @@ func (r *ChiefComplaintType) GetFavorites(p PaginationInput, searchTerm *string,
 }
 
 // Get ...
-func (r *ChiefComplaintType) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ChiefComplaintTypeRepository) Get(m *models.ChiefComplaintType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *ChiefComplaintType) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *ChiefComplaintTypeRepository) GetByTitle(m *models.ChiefComplaintType, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *ChiefComplaintType) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChiefComplaintTypeRepository) Update(m *models.ChiefComplaintType) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ChiefComplaintType) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ChiefComplaintTypeRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.ChiefComplaintType{}).Error
 }

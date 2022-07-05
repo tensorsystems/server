@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
@@ -36,18 +37,19 @@ func RecreateOpthalmologyExam(c *gin.Context) {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
 	}
 
-	var entity repository.OpthalmologyExam
+	var repo repository.OpthalmologyExamRepository
+	var opthalmologyExam models.OpthalmologyExam
 
-	if err := entity.Recreate(patientChartId); err != nil {
+	if err := repo.Recreate(&opthalmologyExam, patientChartId); err != nil {
 		c.String(http.StatusNotFound, fmt.Sprintf("error: %s", err))
 	}
 
-	c.JSON(200, entity)
+	c.JSON(200, opthalmologyExam)
 }
 
 // ClearPatientsRecord ...
 func ClearPatientsRecord(c *gin.Context) {
-	var entity repository.Patient
+	var entity repository.PatientRepository
 
 	err := entity.Clean()
 

@@ -18,29 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// ReviewOfSystem ...
-type ReviewOfSystem struct {
-	gorm.Model
-	ID               int           `gorm:"primaryKey" json:"id"`
-	PatientHistoryID int           `json:"patientHistoryId"`
-	SystemSymptomID  int           `json:"systemSymptomId"`
-	SystemSymptom    SystemSymptom `json:"systemSymptom"`
-	Note             *string       `json:"note"`
-	Count            int64         `json:"count"`
+type ReviewOfSystemRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideReviewOfSystemRepository(DB *gorm.DB) ReviewOfSystemRepository {
+	return ReviewOfSystemRepository{DB: DB}
 }
 
 // Save ...
-func (r *ReviewOfSystem) Save() error {
-	return DB.Create(&r).Error
+func (r *ReviewOfSystemRepository) Save(m *models.ReviewOfSystem) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *ReviewOfSystem) GetAll(p PaginationInput, filter *ReviewOfSystem) ([]ReviewOfSystem, int64, error) {
-	var result []ReviewOfSystem
+func (r *ReviewOfSystemRepository) GetAll(p PaginationInput, filter *models.ReviewOfSystem) ([]models.ReviewOfSystem, int64, error) {
+	var result []models.ReviewOfSystem
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("SystemSymptom.System").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("SystemSymptom.System").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -55,21 +55,21 @@ func (r *ReviewOfSystem) GetAll(p PaginationInput, filter *ReviewOfSystem) ([]Re
 }
 
 // Get ...
-func (r *ReviewOfSystem) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ReviewOfSystemRepository) Get(m *models.ReviewOfSystem, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *ReviewOfSystem) GetByPatientHistoryID(id string) error {
-	return DB.Where("patient_history_id = ?", id).Take(&r).Error
+func (r *ReviewOfSystemRepository) GetByPatientHistoryID(m *models.ReviewOfSystem, ID string) error {
+	return r.DB.Where("patient_history_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *ReviewOfSystem) Update() error {
-	return DB.Updates(&r).Error
+func (r *ReviewOfSystemRepository) Update(m *models.ReviewOfSystem) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ReviewOfSystem) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ReviewOfSystemRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.ReviewOfSystem{}).Error
 }

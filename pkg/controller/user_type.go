@@ -25,7 +25,7 @@ import (
 
 // GetUserTypes ...
 func GetUserTypes(c *gin.Context) {
-	var entity repository.UserType
+	var entity repository.UserTypeRepository
 
 	paginationInput := repository.PaginationInput{
 		Page: 0,

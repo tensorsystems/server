@@ -9,13 +9,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) OrderReferral(ctx context.Context, input model.OrderReferralInput) (*repository.ReferralOrder, error) {
+func (r *mutationResolver) OrderReferral(ctx context.Context, input graph_models.OrderReferralInput) (*models.ReferralOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -41,7 +42,7 @@ func (r *mutationResolver) OrderReferral(ctx context.Context, input model.OrderR
 	return &referral, nil
 }
 
-func (r *mutationResolver) ConfirmReferralOrder(ctx context.Context, input model.ConfirmReferralOrderInput) (*model.ConfirmReferralOrderResult, error) {
+func (r *mutationResolver) ConfirmReferralOrder(ctx context.Context, input graph_models.ConfirmReferralOrderInput) (*graph_models.ConfirmReferralOrderResult, error) {
 	var entity repository.ReferralOrder
 
 	if err := entity.ConfirmOrder(input.ReferralOrderID, input.ReferralID, input.BillingID, input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
@@ -66,11 +67,11 @@ func (r *mutationResolver) DeleteReferral(ctx context.Context, id int) (bool, er
 	return true, nil
 }
 
-func (r *queryResolver) Referral(ctx context.Context, filter model.ReferralFilter) (*repository.Referral, error) {
+func (r *queryResolver) Referral(ctx context.Context, filter graph_models.ReferralFilter) (*models.Referral, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Referrals(ctx context.Context, page repository.PaginationInput, filter *model.ReferralFilter) (*model.ReferralConnection, error) {
+func (r *queryResolver) Referrals(ctx context.Context, page models.PaginationInput, filter *graph_models.ReferralFilter) (*graph_models.ReferralConnection, error) {
 	var f repository.Referral
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
@@ -97,7 +98,7 @@ func (r *queryResolver) Referrals(ctx context.Context, page repository.Paginatio
 	return &model.ReferralConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) ReferralOrder(ctx context.Context, patientChartID int) (*repository.ReferralOrder, error) {
+func (r *queryResolver) ReferralOrder(ctx context.Context, patientChartID int) (*models.ReferralOrder, error) {
 	var entity repository.ReferralOrder
 	if err := entity.GetByPatientChartID(patientChartID); err != nil {
 		return nil, err
@@ -106,7 +107,7 @@ func (r *queryResolver) ReferralOrder(ctx context.Context, patientChartID int) (
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchReferralOrders(ctx context.Context, page repository.PaginationInput, filter *model.ReferralOrderFilter, date *time.Time, searchTerm *string) (*model.ReferralOrderConnection, error) {
+func (r *queryResolver) SearchReferralOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.ReferralOrderFilter, date *time.Time, searchTerm *string) (*graph_models.ReferralOrderConnection, error) {
 	var f repository.ReferralOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)

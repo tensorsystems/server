@@ -9,28 +9,31 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) NewAppointment(ctx context.Context, input model.AppointmentInput) (*repository.Appointment, error) {
-	var appointment repository.Appointment
+func (r *mutationResolver) NewAppointment(ctx context.Context, input graph_models.AppointmentInput) (*models.Appointment, error) {
+	var appointment models.Appointment
 	deepCopy.Copy(&input).To(&appointment)
 
-	if err := appointment.CreateNewAppointment(input.BillingID, input.InvoiceNo); err != nil {
+	var repository repository.AppointmentRepository
+	if err := repository.CreateNewAppointment(&appointment, input.BillingID, input.InvoiceNo); err != nil {
 		return nil, err
 	}
 
 	return &appointment, nil
 }
 
-func (r *mutationResolver) UpdateAppointment(ctx context.Context, input model.AppointmentUpdateInput) (*repository.Appointment, error) {
-	var entity repository.Appointment
+func (r *mutationResolver) UpdateAppointment(ctx context.Context, input graph_models.AppointmentUpdateInput) (*models.Appointment, error) {
+	var entity models.Appointment
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.AppointmentRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -38,37 +41,35 @@ func (r *mutationResolver) UpdateAppointment(ctx context.Context, input model.Ap
 }
 
 func (r *mutationResolver) DeleteAppointment(ctx context.Context, id int) (bool, error) {
-	var entity repository.Appointment
+	var repository repository.AppointmentRepository
 
-	err := entity.Delete(id)
-	if err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveAppointmentStatus(ctx context.Context, input model.AppointmentStatusInput) (*repository.AppointmentStatus, error) {
-	var entity repository.AppointmentStatus
+func (r *mutationResolver) SaveAppointmentStatus(ctx context.Context, input graph_models.AppointmentStatusInput) (*models.AppointmentStatus, error) {
+	var entity models.AppointmentStatus
 	deepCopy.Copy(&input).To(&entity)
 
-	err := entity.Save()
-	if err != nil {
+	var repository repository.AppointmentStatusRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateAppointmentStatus(ctx context.Context, input model.AppointmentStatusInput, id int) (*repository.AppointmentStatus, error) {
-	var entity repository.AppointmentStatus
-
+func (r *mutationResolver) UpdateAppointmentStatus(ctx context.Context, input graph_models.AppointmentStatusInput, id int) (*models.AppointmentStatus, error) {
+	var entity models.AppointmentStatus
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.ID = id
 
-	_, err := entity.Update()
-	if err != nil {
+	var repository repository.AppointmentStatusRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -76,84 +77,85 @@ func (r *mutationResolver) UpdateAppointmentStatus(ctx context.Context, input mo
 }
 
 func (r *mutationResolver) DeleteAppointmentStatus(ctx context.Context, id int) (bool, error) {
-	var entity repository.AppointmentStatus
-
-	err := entity.Delete(id)
-	if err != nil {
+	var repository repository.AppointmentStatusRepository
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) Appointment(ctx context.Context, id int) (*repository.Appointment, error) {
-	var entity repository.Appointment
-	if err := entity.GetWithDetails(id); err != nil {
+func (r *queryResolver) Appointment(ctx context.Context, id int) (*models.Appointment, error) {
+	var appointmentRepository repository.AppointmentRepository
+	var appointment models.Appointment
+	if err := appointmentRepository.GetWithDetails(&appointment, id); err != nil {
 		return nil, err
 	}
 
-	var history repository.PatientHistory
-	if err := history.GetByPatientID(entity.Patient.ID); err != nil {
+	var historyRepository repository.PatientHistoryRepository
+	var history models.PatientHistory
+	if err := historyRepository.GetByPatientID(&history, appointment.Patient.ID); err != nil {
 		return nil, err
 	}
 
-	entity.Patient.PatientHistory = history
+	appointment.Patient.PatientHistory = history
 
-	return &entity, nil
+	return &appointment, nil
 }
 
-func (r *queryResolver) Appointments(ctx context.Context, page repository.PaginationInput, filter *model.AppointmentFilter) (*model.AppointmentConnection, error) {
-	var f repository.Appointment
-
+func (r *queryResolver) Appointments(ctx context.Context, page models.PaginationInput, filter *graph_models.AppointmentFilter) (*graph_models.AppointmentConnection, error) {
+	var f models.Appointment
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	appointments, count, err := f.GetAll(page, &f)
+	var repository repository.AppointmentRepository
+
+	appointments, count, err := repository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.AppointmentEdge, len(appointments))
+	edges := make([]*graph_models.AppointmentEdge, len(appointments))
 
 	for i, entity := range appointments {
 		e := entity
 
-		edges[i] = &model.AppointmentEdge{
+		edges[i] = &graph_models.AppointmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(appointments, count, page)
-	return &model.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) AppointmentStatuses(ctx context.Context, page repository.PaginationInput) (*model.AppointmentStatusConnection, error) {
-	var entity repository.AppointmentStatus
-	entities, count, err := entity.GetAll(page)
+func (r *queryResolver) AppointmentStatuses(ctx context.Context, page models.PaginationInput) (*graph_models.AppointmentStatusConnection, error) {
+	var repository repository.AppointmentStatusRepository
+	entities, count, err := repository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.AppointmentStatusEdge, len(entities))
+	edges := make([]*graph_models.AppointmentStatusEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.AppointmentStatusEdge{
+		edges[i] = &graph_models.AppointmentStatusEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.AppointmentStatusConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AppointmentStatusConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) FindAppointmentsByPatientAndRange(ctx context.Context, patientID int, start time.Time, end time.Time) ([]*repository.Appointment, error) {
-	var entity repository.Appointment
-	entities, err := entity.FindAppointmentsByPatientAndRange(patientID, start, end)
+func (r *queryResolver) FindAppointmentsByPatientAndRange(ctx context.Context, patientID int, start time.Time, end time.Time) ([]*models.Appointment, error) {
+	var repository repository.AppointmentRepository
+	entities, err := repository.FindAppointmentsByPatientAndRange(patientID, start, end)
 
 	if err != nil {
 		return entities, err
@@ -162,79 +164,79 @@ func (r *queryResolver) FindAppointmentsByPatientAndRange(ctx context.Context, p
 	return entities, err
 }
 
-func (r *queryResolver) PatientsAppointmentToday(ctx context.Context, patientID int, checkedIn bool) (*repository.Appointment, error) {
-	var entity repository.Appointment
-	appointment, _ := entity.PatientsAppointmentToday(patientID, &checkedIn)
+func (r *queryResolver) PatientsAppointmentToday(ctx context.Context, patientID int, checkedIn bool) (*models.Appointment, error) {
+	var repository repository.AppointmentRepository
+	appointment, _ := repository.PatientsAppointmentToday(patientID, &checkedIn)
 	return &appointment, nil
 }
 
-func (r *queryResolver) FindTodaysAppointments(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.AppointmentConnection, error) {
-	var entity repository.Appointment
-	appointments, count, err := entity.FindTodaysAppointments(page, searchTerm)
+func (r *queryResolver) FindTodaysAppointments(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.AppointmentConnection, error) {
+	var repository repository.AppointmentRepository
+	appointments, count, err := repository.FindTodaysAppointments(page, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.AppointmentEdge, len(appointments))
+	edges := make([]*graph_models.AppointmentEdge, len(appointments))
 
 	for i, entity := range appointments {
 		e := entity
 
-		edges[i] = &model.AppointmentEdge{
+		edges[i] = &graph_models.AppointmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(appointments, count, page)
-	return &model.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) FindTodaysCheckedInAppointments(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.AppointmentConnection, error) {
-	var entity repository.Appointment
+func (r *queryResolver) FindTodaysCheckedInAppointments(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.AppointmentConnection, error) {
+	var repository repository.AppointmentRepository
 
-	appointments, count, err := entity.FindTodaysCheckedInAppointments(page, searchTerm, []string{})
+	appointments, count, err := repository.FindTodaysCheckedInAppointments(page, searchTerm, []string{})
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.AppointmentEdge, len(appointments))
+	edges := make([]*graph_models.AppointmentEdge, len(appointments))
 
 	for i, entity := range appointments {
 		e := entity
 
-		edges[i] = &model.AppointmentEdge{
+		edges[i] = &graph_models.AppointmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(appointments, count, page)
-	return &model.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SearchAppointments(ctx context.Context, page repository.PaginationInput, input repository.AppointmentSearchInput) (*model.AppointmentConnection, error) {
-	var entity repository.Appointment
-	appointments, count, err := entity.SearchAppointments(page, input)
+func (r *queryResolver) SearchAppointments(ctx context.Context, page models.PaginationInput, input models.AppointmentSearchInput) (*graph_models.AppointmentConnection, error) {
+	var repository repository.AppointmentRepository
+	appointments, count, err := repository.SearchAppointments(page, input)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.AppointmentEdge, len(appointments))
+	edges := make([]*graph_models.AppointmentEdge, len(appointments))
 
 	for i, entity := range appointments {
 		e := entity
 
-		edges[i] = &model.AppointmentEdge{
+		edges[i] = &graph_models.AppointmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(appointments, count, page)
-	return &model.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) GetUserAppointments(ctx context.Context, page repository.PaginationInput, searchTerm *string, visitType *string, subscriptions *bool) (*model.AppointmentConnection, error) {
+func (r *queryResolver) GetUserAppointments(ctx context.Context, page models.PaginationInput, searchTerm *string, visitType *string, subscriptions *bool) (*graph_models.AppointmentConnection, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -245,15 +247,16 @@ func (r *queryResolver) GetUserAppointments(ctx context.Context, page repository
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.Appointment
+	var appointmentRepo repository.AppointmentRepository
 
-	var appointments []repository.Appointment
+	var appointments []models.Appointment
 	var count int64
 	var aErr error
 
@@ -279,15 +282,16 @@ func (r *queryResolver) GetUserAppointments(ctx context.Context, page repository
 	}
 
 	if *subscriptions {
-		var queueSubscription repository.QueueSubscription
+		var queueSubscriptionRepository repository.QueueSubscriptionRepository
+		var queueSubscription models.QueueSubscription
 
-		if err := queueSubscription.GetByUserId(user.ID); err != nil {
+		if err := queueSubscriptionRepository.GetByUserId(&queueSubscription, user.ID); err != nil {
 			return nil, err
 		}
 
 		patientQueues := queueSubscription.Subscriptions
 
-		var appointmentRepo repository.Appointment
+		
 		for _, patientQueue := range patientQueues {
 			var ids []int
 
@@ -297,7 +301,7 @@ func (r *queryResolver) GetUserAppointments(ctx context.Context, page repository
 
 			a, c, e := appointmentRepo.FindByUserSubscriptions(ids, searchTerm, visitTypes, page)
 
-			var orderedAppointments []repository.Appointment
+			var orderedAppointments []models.Appointment
 			for _, appointment := range a {
 				aTemp := appointment
 
@@ -312,34 +316,34 @@ func (r *queryResolver) GetUserAppointments(ctx context.Context, page repository
 		}
 	} else {
 		if isPhysician {
-			appointments, count, aErr = entity.FindByProvider(page, searchTerm, visitTypes, user.ID)
+			appointments, count, aErr = appointmentRepo.FindByProvider(page, searchTerm, visitTypes, user.ID)
 			if aErr != nil {
 				return nil, aErr
 			}
 		} else {
-			appointments, count, aErr = entity.FindTodaysCheckedInAppointments(page, searchTerm, visitTypes)
+			appointments, count, aErr = appointmentRepo.FindTodaysCheckedInAppointments(page, searchTerm, visitTypes)
 			if aErr != nil {
 				return nil, aErr
 			}
 		}
 	}
 
-	edges := make([]*model.AppointmentEdge, len(appointments))
+	edges := make([]*graph_models.AppointmentEdge, len(appointments))
 
 	for i, entity := range appointments {
 		e := entity
 
-		edges[i] = &model.AppointmentEdge{
+		edges[i] = &graph_models.AppointmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(appointments, count, page)
-	return &model.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AppointmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
 func (r *queryResolver) PayForConsultation(ctx context.Context, patientID int, date *time.Time) (bool, error) {
-	var entity repository.Appointment
-	shouldPay, err := entity.PayForConsultation(patientID, date)
+	var repository repository.AppointmentRepository
+	shouldPay, err := repository.PayForConsultation(patientID, date)
 	return shouldPay, err
 }

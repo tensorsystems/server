@@ -8,13 +8,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) OrderTreatment(ctx context.Context, input model.OrderTreatmentInput) (*repository.TreatmentOrder, error) {
+func (r *mutationResolver) OrderTreatment(ctx context.Context, input graph_models.OrderTreatmentInput) (*models.TreatmentOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -51,7 +52,7 @@ func (r *mutationResolver) OrderTreatment(ctx context.Context, input model.Order
 	return &treatment, nil
 }
 
-func (r *mutationResolver) ConfirmTreatmentOrder(ctx context.Context, input model.ConfirmTreatmentOrderInput) (*model.ConfirmTreatmentOrderResult, error) {
+func (r *mutationResolver) ConfirmTreatmentOrder(ctx context.Context, input graph_models.ConfirmTreatmentOrderInput) (*graph_models.ConfirmTreatmentOrderResult, error) {
 	var entity repository.TreatmentOrder
 
 	if err := entity.ConfirmOrder(input.TreatmentOrderID, input.TreatmentID, *input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
@@ -65,7 +66,7 @@ func (r *mutationResolver) ConfirmTreatmentOrder(ctx context.Context, input mode
 	}, nil
 }
 
-func (r *mutationResolver) SaveTreatment(ctx context.Context, input model.TreatmentInput) (*repository.Treatment, error) {
+func (r *mutationResolver) SaveTreatment(ctx context.Context, input graph_models.TreatmentInput) (*models.Treatment, error) {
 	var entity repository.Treatment
 	deepCopy.Copy(&input).To(&entity)
 
@@ -84,7 +85,7 @@ func (r *mutationResolver) SaveTreatment(ctx context.Context, input model.Treatm
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateTreatment(ctx context.Context, input model.TreatmentUpdateInput) (*repository.Treatment, error) {
+func (r *mutationResolver) UpdateTreatment(ctx context.Context, input graph_models.TreatmentUpdateInput) (*models.Treatment, error) {
 	var entity repository.Treatment
 	deepCopy.Copy(&input).To(&entity)
 
@@ -105,7 +106,7 @@ func (r *mutationResolver) DeleteTreatment(ctx context.Context, id int) (bool, e
 	return true, nil
 }
 
-func (r *mutationResolver) SaveTreatmentType(ctx context.Context, input model.TreatmentTypeInput) (*repository.TreatmentType, error) {
+func (r *mutationResolver) SaveTreatmentType(ctx context.Context, input graph_models.TreatmentTypeInput) (*models.TreatmentType, error) {
 	var entity repository.TreatmentType
 	deepCopy.Copy(&input).To(&entity)
 
@@ -134,7 +135,7 @@ func (r *mutationResolver) SaveTreatmentType(ctx context.Context, input model.Tr
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateTreatmentType(ctx context.Context, input model.TreatmentTypeUpdateInput) (*repository.TreatmentType, error) {
+func (r *mutationResolver) UpdateTreatmentType(ctx context.Context, input graph_models.TreatmentTypeUpdateInput) (*models.TreatmentType, error) {
 	var entity repository.TreatmentType
 	deepCopy.Copy(&input).To(&entity)
 
@@ -173,7 +174,7 @@ func (r *mutationResolver) DeleteTreatmentType(ctx context.Context, id int) (boo
 	return true, nil
 }
 
-func (r *queryResolver) Treatment(ctx context.Context, patientChartID int) (*repository.Treatment, error) {
+func (r *queryResolver) Treatment(ctx context.Context, patientChartID int) (*models.Treatment, error) {
 	var entity repository.Treatment
 
 	if err := entity.GetByPatientChart(patientChartID); err != nil {
@@ -183,7 +184,7 @@ func (r *queryResolver) Treatment(ctx context.Context, patientChartID int) (*rep
 	return &entity, nil
 }
 
-func (r *queryResolver) Treatments(ctx context.Context, page repository.PaginationInput, filter *model.TreatmentFilter) (*model.TreatmentConnection, error) {
+func (r *queryResolver) Treatments(ctx context.Context, page models.PaginationInput, filter *graph_models.TreatmentFilter) (*graph_models.TreatmentConnection, error) {
 	var f repository.Treatment
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
@@ -210,7 +211,7 @@ func (r *queryResolver) Treatments(ctx context.Context, page repository.Paginati
 	return &model.TreatmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) GetTreatmentsByPatient(ctx context.Context, page repository.PaginationInput, patientID int) (*model.TreatmentConnection, error) {
+func (r *queryResolver) GetTreatmentsByPatient(ctx context.Context, page models.PaginationInput, patientID int) (*graph_models.TreatmentConnection, error) {
 	var entity repository.Treatment
 	entities, count, err := entity.GetByPatient(page, patientID)
 
@@ -232,7 +233,7 @@ func (r *queryResolver) GetTreatmentsByPatient(ctx context.Context, page reposit
 	return &model.TreatmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) TreatmentTypes(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.TreatmentTypeConnection, error) {
+func (r *queryResolver) TreatmentTypes(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.TreatmentTypeConnection, error) {
 	var entity repository.TreatmentType
 	entities, count, err := entity.GetAll(page, searchTerm)
 	if err != nil {
@@ -253,7 +254,7 @@ func (r *queryResolver) TreatmentTypes(ctx context.Context, page repository.Pagi
 	return &model.TreatmentTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) TreatmentOrder(ctx context.Context, patientChartID int) (*repository.TreatmentOrder, error) {
+func (r *queryResolver) TreatmentOrder(ctx context.Context, patientChartID int) (*models.TreatmentOrder, error) {
 	var entity repository.TreatmentOrder
 	if err := entity.GetByPatientChartID(patientChartID); err != nil {
 		return nil, err
@@ -262,7 +263,7 @@ func (r *queryResolver) TreatmentOrder(ctx context.Context, patientChartID int) 
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchTreatmentOrders(ctx context.Context, page repository.PaginationInput, filter *model.TreatmentOrderFilter, date *time.Time, searchTerm *string) (*model.TreatmentOrderConnection, error) {
+func (r *queryResolver) SearchTreatmentOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.TreatmentOrderFilter, date *time.Time, searchTerm *string) (*graph_models.TreatmentOrderConnection, error) {
 	var f repository.TreatmentOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)

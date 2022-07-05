@@ -6,12 +6,13 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveSupply(ctx context.Context, input model.SupplyInput) (*repository.Supply, error) {
+func (r *mutationResolver) SaveSupply(ctx context.Context, input graph_models.SupplyInput) (*models.Supply, error) {
 	var entity repository.Supply
 	deepCopy.Copy(&input).To(&entity)
 
@@ -30,7 +31,7 @@ func (r *mutationResolver) SaveSupply(ctx context.Context, input model.SupplyInp
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSupply(ctx context.Context, input model.SupplyUpdateInput) (*repository.Supply, error) {
+func (r *mutationResolver) UpdateSupply(ctx context.Context, input graph_models.SupplyUpdateInput) (*models.Supply, error) {
 	var entity repository.Supply
 	deepCopy.Copy(&input).To(&entity)
 
@@ -59,7 +60,7 @@ func (r *mutationResolver) DeleteSupply(ctx context.Context, id int) (bool, erro
 	return true, nil
 }
 
-func (r *queryResolver) Supplies(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SupplyConnection, error) {
+func (r *queryResolver) Supplies(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SupplyConnection, error) {
 	var entity repository.Supply
 	result, count, err := entity.GetAll(page, searchTerm)
 	if err != nil {

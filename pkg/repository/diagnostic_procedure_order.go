@@ -24,55 +24,37 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
-// DiagnosticProcedureOrderStatus ...
-type DiagnosticProcedureOrderStatus string
+type DiagnosticProcedureOrderRepository struct {
+	DB *gorm.DB
+}
 
-// DiagnosticProcedureOrder statuses ...
-const (
-	DiagnosticProcedureOrderOrderedStatus   DiagnosticProcedureOrderStatus = "ORDERED"
-	DiagnosticProcedureOrderCompletedStatus DiagnosticProcedureOrderStatus = "COMPLETED"
-)
-
-// DiagnosticProcedureOrder struct holds the order of the diagnostic procedures.
-type DiagnosticProcedureOrder struct {
-	gorm.Model
-	ID                   int                            `gorm:"primaryKey"`
-	PatientChartID       int                            `json:"patientChartId"`
-	PatientID            int                            `json:"patientId"`
-	FirstName            string                         `json:"firstName"`
-	LastName             string                         `json:"lastName"`
-	PhoneNo              string                         `json:"phoneNo"`
-	UserName             string                         `json:"userName"`
-	OrderedByID          *int                           `json:"orderedById"`
-	OrderedBy            *User                          `json:"orderedBy"`
-	Status               DiagnosticProcedureOrderStatus `json:"status"`
-	DiagnosticProcedures []DiagnosticProcedure          `json:"diagnosticProcedures"`
-	Document             string                         `gorm:"type:tsvector"`
-	Count                int64                          `json:"count"`
+func ProvideDiagnosticProcedureOrderRepository(DB *gorm.DB) DiagnosticProcedureOrderRepository {
+	return DiagnosticProcedureOrderRepository{DB: DB}
 }
 
 // Save ...
-func (r *DiagnosticProcedureOrder) Save(diagnosticProcedureTypeID int, patientChartID int, patientID int, billingID int, user User, orderNote string, receptionNote string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *DiagnosticProcedureOrderRepository) Save(m *models.DiagnosticProcedureOrder, diagnosticProcedureTypeID int, patientChartID int, patientID int, billingID int, user models.User, orderNote string, receptionNote string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get Patient
-		var patient Patient
-		if err := tx.Model(&Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
+		var patient models.Patient
+		if err := tx.Model(&models.Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
 		// Diagnostic Procedure Type
-		var diagnosticProcedureType DiagnosticProcedureType
-		if err := tx.Model(&DiagnosticProcedureType{}).Where("id = ?", diagnosticProcedureTypeID).Take(&diagnosticProcedureType).Error; err != nil {
+		var diagnosticProcedureType models.DiagnosticProcedureType
+		if err := tx.Model(&models.DiagnosticProcedureType{}).Where("id = ?", diagnosticProcedureTypeID).Take(&diagnosticProcedureType).Error; err != nil {
 			return err
 		}
 
 		// Create payment
-		var payment Payment
-		payment.Status = NotPaidPaymentStatus
+		var payment models.Payment
+		payment.Status = models.NotPaidPaymentStatus
 		payment.BillingID = billingID
 		if err := tx.Create(&payment).Error; err != nil {
 			return err
@@ -90,36 +72,36 @@ func (r *DiagnosticProcedureOrder) Save(diagnosticProcedureTypeID int, patientCh
 			orderedByPrefix = "Dr. "
 		}
 
-		r.PatientChartID = patientChartID
-		r.PatientID = patientID
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
-		r.OrderedByID = &user.ID
-		r.Status = DiagnosticProcedureOrderOrderedStatus
+		m.PatientChartID = patientChartID
+		m.PatientID = patientID
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
+		m.OrderedByID = &user.ID
+		m.Status = models.DiagnosticProcedureOrderOrderedStatus
 
-		var existing DiagnosticProcedureOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.DiagnosticProcedureOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
 		// Create Diagnostic Procedure
-		var diagnosticProcedure DiagnosticProcedure
+		var diagnosticProcedure models.DiagnosticProcedure
 		diagnosticProcedure.DiagnosticProcedureTypeID = diagnosticProcedureType.ID
-		diagnosticProcedure.DiagnosticProcedureOrderID = r.ID
+		diagnosticProcedure.DiagnosticProcedureOrderID = m.ID
 		diagnosticProcedure.PatientChartID = patientChartID
 		diagnosticProcedure.Payments = append(diagnosticProcedure.Payments, payment)
-		diagnosticProcedure.Status = DiagnosticProcedureOrderedStatus
+		diagnosticProcedure.Status = models.DiagnosticProcedureOrderedStatus
 		diagnosticProcedure.DiagnosticProcedureTypeTitle = diagnosticProcedureType.Title
 		diagnosticProcedure.OrderNote = orderNote
 		diagnosticProcedure.ReceptionNote = receptionNote
@@ -137,18 +119,18 @@ func (r *DiagnosticProcedureOrder) Save(diagnosticProcedureTypeID int, patientCh
 }
 
 // OrderAndConfirm ...
-func (r *DiagnosticProcedureOrder) OrderAndConfirm() {
+func (r *DiagnosticProcedureOrderRepository) OrderAndConfirm() {
 
 }
 
 // GetTodaysOrderedCount ...
-func (r *DiagnosticProcedureOrder) GetTodaysOrderedCount() (count int) {
+func (r *DiagnosticProcedureOrderRepository) GetTodaysOrderedCount() (count int) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
 	var countTmp int64
-	err := DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", DiagnosticProcedureOrderOrderedStatus).Count(&countTmp).Error
+	err := r.DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.DiagnosticProcedureOrderOrderedStatus).Count(&countTmp).Error
 	if err != nil {
 		countTmp = 0
 	}
@@ -159,12 +141,12 @@ func (r *DiagnosticProcedureOrder) GetTodaysOrderedCount() (count int) {
 }
 
 // GetPatientDiagnosticOrderTitles ...
-func (r *DiagnosticProcedureOrder) GetPatientDiagnosticProcedureTitles(patientID int) ([]string, error) {
+func (r *DiagnosticProcedureOrderRepository) GetPatientDiagnosticProcedureTitles(patientID int) ([]string, error) {
 	var procedureTitles []string
 
 	var result []map[string]interface{}
 
-	if err := DB.Raw(`
+	if err := r.DB.Raw(`
 		SELECT DISTINCT(diagnostic_procedure_type_title) 
 			FROM diagnostic_procedure_orders 
 			INNER JOIN diagnostic_procedures
@@ -181,14 +163,14 @@ func (r *DiagnosticProcedureOrder) GetPatientDiagnosticProcedureTitles(patientID
 }
 
 // Confirm ...
-func (r *DiagnosticProcedureOrder) Confirm(id int, invoiceNo string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Preload("DiagnosticProcedures.Payments").Take(&r).Error; err != nil {
+func (r *DiagnosticProcedureOrderRepository) Confirm(m *models.DiagnosticProcedureOrder, id int, invoiceNo string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", id).Preload("DiagnosticProcedures.Payments").Take(&m).Error; err != nil {
 			return err
 		}
 
-		var payments []Payment
-		for _, diagnosticProcedure := range r.DiagnosticProcedures {
+		var payments []models.Payment
+		for _, diagnosticProcedure := range m.DiagnosticProcedures {
 			payments = append(payments, diagnosticProcedure.Payments...)
 		}
 
@@ -197,30 +179,30 @@ func (r *DiagnosticProcedureOrder) Confirm(id int, invoiceNo string) error {
 			paymentIds = append(paymentIds, payment.ID)
 		}
 
-		if err := tx.Model(&Payment{}).Where("id IN ?", paymentIds).Updates(map[string]interface{}{"invoice_no": invoiceNo, "status": "PAID"}).Error; err != nil {
+		if err := tx.Model(&models.Payment{}).Where("id IN ?", paymentIds).Updates(map[string]interface{}{"invoice_no": invoiceNo, "status": "PAID"}).Error; err != nil {
 			return err
 		}
 
-		r.Status = DiagnosticProcedureOrderCompletedStatus
+		m.Status = models.DiagnosticProcedureOrderCompletedStatus
 
-		if err := tx.Updates(&r).Error; err != nil {
+		if err := tx.Updates(&m).Error; err != nil {
 			return err
 		}
 
 		// Add to Diagnostic Queue
-		var patientChart PatientChart
+		var patientChart models.PatientChart
 
-		if err := tx.Where("id = ?", r.PatientChartID).Take(&patientChart).Error; err != nil {
+		if err := tx.Where("id = ?", m.PatientChartID).Take(&patientChart).Error; err != nil {
 			return err
 		}
 
-		for _, diagnosticProcedure := range r.DiagnosticProcedures {
-			var patientQueue PatientQueue
+		for _, diagnosticProcedure := range m.DiagnosticProcedures {
+			var patientQueue models.PatientQueue
 
 			// Create new patient queue if it doesn't exists
 			if err := tx.Where("queue_name = ?", diagnosticProcedure.DiagnosticProcedureTypeTitle).Take(&patientQueue).Error; err != nil {
 				patientQueue.QueueName = diagnosticProcedure.DiagnosticProcedureTypeTitle
-				patientQueue.QueueType = DiagnosticQueue
+				patientQueue.QueueType = models.DiagnosticQueue
 				patientQueue.Queue = datatypes.JSON([]byte("[" + fmt.Sprint(patientChart.AppointmentID) + "]"))
 
 				if err := tx.Create(&patientQueue).Error; err != nil {
@@ -252,7 +234,7 @@ func (r *DiagnosticProcedureOrder) Confirm(id int, invoiceNo string) error {
 
 				queue := datatypes.JSON([]byte("[" + strings.Join(appointmentIds, ", ") + "]"))
 
-				if err := tx.Where("queue_name = ?", diagnosticProcedure.DiagnosticProcedureTypeTitle).Updates(&PatientQueue{Queue: queue}).Error; err != nil {
+				if err := tx.Where("queue_name = ?", diagnosticProcedure.DiagnosticProcedureTypeTitle).Updates(&models.PatientQueue{Queue: queue}).Error; err != nil {
 					return err
 				}
 			}
@@ -263,8 +245,8 @@ func (r *DiagnosticProcedureOrder) Confirm(id int, invoiceNo string) error {
 }
 
 // GetCount ...
-func (r *DiagnosticProcedureOrder) GetCount(filter *DiagnosticProcedureOrder, date *time.Time, searchTerm *string) (int64, error) {
-	dbOp := DB.Model(&r).Where(filter)
+func (r *DiagnosticProcedureOrderRepository) GetCount(filter *models.DiagnosticProcedureOrder, date *time.Time, searchTerm *string) (int64, error) {
+	dbOp := r.DB.Model(&models.DiagnosticProcedureOrder{}).Where(filter)
 
 	if date != nil {
 		createdAt := *date
@@ -284,10 +266,10 @@ func (r *DiagnosticProcedureOrder) GetCount(filter *DiagnosticProcedureOrder, da
 }
 
 // Search ...
-func (r *DiagnosticProcedureOrder) Search(p PaginationInput, filter *DiagnosticProcedureOrder, date *time.Time, searchTerm *string, ascending bool) ([]DiagnosticProcedureOrder, int64, error) {
-	var result []DiagnosticProcedureOrder
+func (r *DiagnosticProcedureOrderRepository) Search(p models.PaginationInput, filter *models.DiagnosticProcedureOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.DiagnosticProcedureOrder, int64, error) {
+	var result []models.DiagnosticProcedureOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("DiagnosticProcedures.Payments.Billing").Preload("DiagnosticProcedures.DiagnosticProcedureType").Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("DiagnosticProcedures.Payments.Billing").Preload("DiagnosticProcedures.DiagnosticProcedureType").Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date
@@ -317,15 +299,15 @@ func (r *DiagnosticProcedureOrder) Search(p PaginationInput, filter *DiagnosticP
 }
 
 // GetByPatientChartID ...
-func (r *DiagnosticProcedureOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("DiagnosticProcedures").Preload("DiagnosticProcedures.Payments").Preload("DiagnosticProcedures.DiagnosticProcedureType").Preload("DiagnosticProcedures.Images").Preload("DiagnosticProcedures.Documents").Take(&r).Error
+func (r *DiagnosticProcedureOrderRepository) GetByPatientChartID(m *models.DiagnosticProcedureOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("DiagnosticProcedures").Preload("DiagnosticProcedures.Payments").Preload("DiagnosticProcedures.DiagnosticProcedureType").Preload("DiagnosticProcedures.Images").Preload("DiagnosticProcedures.Documents").Take(&m).Error
 }
 
 // GetAll ...
-func (r *DiagnosticProcedureOrder) GetAll(p PaginationInput, filter *DiagnosticProcedureOrder) ([]DiagnosticProcedureOrder, int64, error) {
-	var result []DiagnosticProcedureOrder
+func (r *DiagnosticProcedureOrderRepository) GetAll(p PaginationInput, filter *models.DiagnosticProcedureOrder) ([]models.DiagnosticProcedureOrder, int64, error) {
+	var result []models.DiagnosticProcedureOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("DiagnosticProcedures").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("DiagnosticProcedures").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -340,11 +322,11 @@ func (r *DiagnosticProcedureOrder) GetAll(p PaginationInput, filter *DiagnosticP
 }
 
 // Update ...
-func (r *DiagnosticProcedureOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *DiagnosticProcedureOrderRepository) Update(m *models.DiagnosticProcedureOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *DiagnosticProcedureOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *DiagnosticProcedureOrderRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.DiagnosticProcedureOrder{}).Error
 }

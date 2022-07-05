@@ -6,75 +6,82 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveExamCategory(ctx context.Context, input model.ExamCategoryInput) (*repository.ExamCategory, error) {
-	var entity repository.ExamCategory
+func (r *mutationResolver) SaveExamCategory(ctx context.Context, input graph_models.ExamCategoryInput) (*models.ExamCategory, error) {
+	var entity models.ExamCategory
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.ExamCategoryRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateExamCategory(ctx context.Context, input model.ExamCategoryUpdateInput) (*repository.ExamCategory, error) {
-	var entity repository.ExamCategory
+func (r *mutationResolver) UpdateExamCategory(ctx context.Context, input graph_models.ExamCategoryUpdateInput) (*models.ExamCategory, error) {
+	var entity models.ExamCategory
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.ExamCategoryRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveExamFinding(ctx context.Context, input model.ExamFindingInput) (*repository.ExamFinding, error) {
-	var entity repository.ExamFinding
+func (r *mutationResolver) SaveExamFinding(ctx context.Context, input graph_models.ExamFindingInput) (*models.ExamFinding, error) {
+	var entity models.ExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.ExamFindingRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateExamFinding(ctx context.Context, input model.ExamFindingUpdateInput) (*repository.ExamFinding, error) {
-	var entity repository.ExamFinding
+func (r *mutationResolver) UpdateExamFinding(ctx context.Context, input graph_models.ExamFindingUpdateInput) (*models.ExamFinding, error) {
+	var entity models.ExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.ExamFindingRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SavePhysicalExamFinding(ctx context.Context, input model.PhysicalExamFindingInput) (*repository.PhysicalExamFinding, error) {
-	var entity repository.PhysicalExamFinding
+func (r *mutationResolver) SavePhysicalExamFinding(ctx context.Context, input graph_models.PhysicalExamFindingInput) (*models.PhysicalExamFinding, error) {
+	var entity models.PhysicalExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.PhysicalExamFindingRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePhysicalExamFinding(ctx context.Context, input model.PhysicalExamFindingUpdateInput) (*repository.PhysicalExamFinding, error) {
-	var entity repository.PhysicalExamFinding
+func (r *mutationResolver) UpdatePhysicalExamFinding(ctx context.Context, input graph_models.PhysicalExamFindingUpdateInput) (*models.PhysicalExamFinding, error) {
+	var entity models.PhysicalExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
 	if input.Abnormal != nil {
 		entity.Abnormal = *input.Abnormal
 	}
 
-	if err := entity.Update(); err != nil {
+	var repository repository.PhysicalExamFindingRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -82,122 +89,126 @@ func (r *mutationResolver) UpdatePhysicalExamFinding(ctx context.Context, input 
 }
 
 func (r *mutationResolver) DeletePhysicalExamFinding(ctx context.Context, id int) (bool, error) {
-	var entity repository.PhysicalExamFinding
-
-	if err := entity.Delete(id); err != nil {
+	var repository repository.PhysicalExamFindingRepository
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeletePhysicalExamFindingExamCategory(ctx context.Context, physicalExamFindingID int, examCategoryID int) (*repository.PhysicalExamFinding, error) {
-	var entity repository.PhysicalExamFinding
+func (r *mutationResolver) DeletePhysicalExamFindingExamCategory(ctx context.Context, physicalExamFindingID int, examCategoryID int) (*models.PhysicalExamFinding, error) {
+	var entity models.PhysicalExamFinding
 
-	if err := entity.DeleteExamCategory(physicalExamFindingID, examCategoryID); err != nil {
+	var repository repository.PhysicalExamFindingRepository
+	if err := repository.DeleteExamCategory(&entity, physicalExamFindingID, examCategoryID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) ExamCategory(ctx context.Context, id int) (*repository.ExamCategory, error) {
-	var entity repository.ExamCategory
+func (r *queryResolver) ExamCategory(ctx context.Context, id int) (*models.ExamCategory, error) {
+	var entity models.ExamCategory
+	var repository repository.ExamCategoryRepository
 
-	if err := entity.Get(id); err != nil {
+	if err := repository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) ExamCategories(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.ExamCategoryConnection, error) {
-	var entity repository.ExamCategory
-	entities, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) ExamCategories(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.ExamCategoryConnection, error) {
+	var repository repository.ExamCategoryRepository
+	entities, count, err := repository.GetAll(page, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.ExamCategoryEdge, len(entities))
+	edges := make([]*graph_models.ExamCategoryEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.ExamCategoryEdge{
+		edges[i] = &graph_models.ExamCategoryEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.ExamCategoryConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.ExamCategoryConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) ExamFinding(ctx context.Context, id int) (*repository.ExamFinding, error) {
-	var entity repository.ExamFinding
+func (r *queryResolver) ExamFinding(ctx context.Context, id int) (*models.ExamFinding, error) {
+	var entity models.ExamFinding
+	var repository repository.ExamFindingRepository
 
-	if err := entity.Get(id); err != nil {
+	if err := repository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) ExamFindings(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.ExamFindingConnection, error) {
-	var entity repository.ExamFinding
-	entities, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) ExamFindings(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.ExamFindingConnection, error) {
+	var repository repository.ExamFindingRepository
+
+	entities, count, err := repository.GetAll(page, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.ExamFindingEdge, len(entities))
+	edges := make([]*graph_models.ExamFindingEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.ExamFindingEdge{
+		edges[i] = &graph_models.ExamFindingEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.ExamFindingConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.ExamFindingConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) PhysicalExamFinding(ctx context.Context, id int) (*repository.PhysicalExamFinding, error) {
-	var entity repository.PhysicalExamFinding
+func (r *queryResolver) PhysicalExamFinding(ctx context.Context, id int) (*models.PhysicalExamFinding, error) {
+	var entity models.PhysicalExamFinding
+	var repository repository.PhysicalExamFindingRepository
 
-	if err := entity.Get(id); err != nil {
+	if err := repository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) PhysicalExamFindings(ctx context.Context, page repository.PaginationInput, filter *model.PhysicalExamFindingFilter) (*model.PhysicalExamFindingConnection, error) {
-	var f repository.PhysicalExamFinding
+func (r *queryResolver) PhysicalExamFindings(ctx context.Context, page models.PaginationInput, filter *graph_models.PhysicalExamFindingFilter) (*graph_models.PhysicalExamFindingConnection, error) {
+	var f models.PhysicalExamFinding
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.PhysicalExamFinding
-	entities, count, err := entity.GetAll(page, &f)
+	var repository repository.PhysicalExamFindingRepository
+	entities, count, err := repository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.PhysicalExamFindingEdge, len(entities))
+	edges := make([]*graph_models.PhysicalExamFindingEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.PhysicalExamFindingEdge{
+		edges[i] = &graph_models.PhysicalExamFindingEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.PhysicalExamFindingConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.PhysicalExamFindingConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

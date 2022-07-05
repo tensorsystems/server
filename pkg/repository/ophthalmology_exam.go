@@ -18,100 +18,26 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// OpthalmologyExam ...
-type OpthalmologyExam struct {
-	gorm.Model
-	ID             int `gorm:"primaryKey"`
-	PatientChartID int `json:"patientChartId" gorm:"uniqueIndex"`
-
-	// External Exam
-	RightOrbits         *string `json:"rightOrbits"`
-	LeftOrbits          *string `json:"leftOrbits"`
-	RightLids           *string `json:"rightLids"`
-	LeftLids            *string `json:"leftLids"`
-	RightLacrimalSystem *string `json:"rightLacrimalSystem"`
-	LeftLacrimalSystem  *string `json:"leftLacrimalSystem"`
-	ExternalExamNote    *string `json:"externalExamNote"`
-
-	// Ocular Motility
-	RightOcularMotility *string `json:"rightOcularMotility"`
-	LeftOcularMotility  *string `json:"leftOcularMotility"`
-	Rsr                 *string `json:"rsr"`
-	Rio                 *string `json:"rio"`
-	Rlr                 *string `json:"rlr"`
-	Rmr                 *string `json:"rmr"`
-	Rir                 *string `json:"rir"`
-	Rso                 *string `json:"rso"`
-	RightFlick          *bool   `json:"rightFlick" gorm:"default:false"`
-	Lsr                 *string `json:"lsr"`
-	Lio                 *string `json:"lio"`
-	Llr                 *string `json:"llr"`
-	Lrl                 *string `json:"lrl"`
-	Lmr                 *string `json:"lmr"`
-	Lir                 *string `json:"lir"`
-	Lso                 *string `json:"lso"`
-	LeftFlick           *bool   `json:"leftFlick" gorm:"default:false"`
-	Distance            *string `json:"distance"`
-	Near                *string `json:"near"`
-	OcularMotilityNote  *string `json:"ocularMotility"`
-
-	// Cover Test
-	RightCoverTest *string `json:"rightCoverTest"`
-	LeftCoverTest  *string `json:"leftCoverTest"`
-	CoverTestNote  *string `json:"coverTestNote"`
-
-	// Funduscopy
-	RightRetina       *string `json:"rightRetina"`
-	LeftRetina        *string `json:"leftRetina"`
-	LeftRetinaSketch  *string `json:"leftRetinaSketch"`
-	RightRetinaSketch *string `json:"rightRetinaSketch"`
-	FunduscopyNote    *string `json:"funduscopyNote"`
-
-	// Optic Disc
-	RightOpticDisc       *string `json:"rightOpticDisc"`
-	LeftOpticDisc        *string `json:"leftOpticDisc"`
-	RightOpticDiscSketch *string `json:"rightOpticDiscSketch"`
-	LeftOpticDiscSketch  *string `json:"leftOpticDiscSketch"`
-	RightCdr             *string `json:"rightCdr"`
-	LeftCdr              *string `json:"leftCdr"`
-	OpticDiscNote        *string `json:"opticDiscNote"`
-
-	// Pupils
-	RightPupils *string `json:"rightPupils"`
-	LeftPupils  *string `json:"leftPupils"`
-	PupilsNote  *string `json:"pupilsNote"`
-
-	// Slit Lamp Exam
-	RightConjunctiva     *string `json:"rightConjunctiva"`
-	LeftConjunctiva      *string `json:"leftConjunctiva"`
-	RightCornea          *string `json:"rightCornea"`
-	LeftCornea           *string `json:"leftCornea"`
-	RightCorneaSketch    *string `json:"rightCorneaSketch"`
-	LeftCorneaSketch     *string `json:"leftCorneaSketch"`
-	LeftSclera           *string `json:"leftSclera"`
-	RightSclera          *string `json:"rightSclera"`
-	RightAnteriorChamber *string `json:"rightAnteriorChamber"`
-	LeftAnteriorChamber  *string `json:"leftAnteriorChamber"`
-	RightIris            *string `json:"rightIris"`
-	LeftIris             *string `json:"leftIris"`
-	RightLens            *string `json:"rightLens"`
-	LeftLens             *string `json:"leftLens"`
-	RightLensSketch      *string `json:"rightLensSketch"`
-	LeftLensSketch       *string `json:"leftLensSketch"`
-	RightVitreos         *string `json:"rightVitreos"`
-	LeftVitreos          *string `json:"leftVitreos"`
-	SlitLampExamNote     *string `json:"slitLampExamNote"`
+type OpthalmologyExamRepository struct {
+	DB *gorm.DB
 }
 
-func (r *OpthalmologyExam) Recreate(patientChartID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Unscoped().Where("patient_chart_id = ?", patientChartID).Delete(&r).Error; err != nil {
+func ProvideOpthalmologyExamRepository(DB *gorm.DB) OpthalmologyExamRepository {
+	return OpthalmologyExamRepository{DB: DB}
+}
+
+func (r *OpthalmologyExamRepository) Recreate(m *models.OpthalmologyExam, patientChartID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Unscoped().Where("patient_chart_id = ?", patientChartID).Delete(&m).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Create(&OpthalmologyExam{PatientChartID: patientChartID}).Error; err != nil {
+		if err := tx.Create(&models.OpthalmologyExam{PatientChartID: patientChartID}).Error; err != nil {
 			return err
 		}
 
@@ -120,21 +46,21 @@ func (r *OpthalmologyExam) Recreate(patientChartID int) error {
 }
 
 // Save ...
-func (r *OpthalmologyExam) Save() error {
-	return DB.Create(&r).Error
+func (r *OpthalmologyExamRepository) Save(m *models.OpthalmologyExam) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *OpthalmologyExam) Get(filter OpthalmologyExam) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *OpthalmologyExamRepository) Get(m *models.OpthalmologyExam, filter models.OpthalmologyExam) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *OpthalmologyExam) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *OpthalmologyExamRepository) GetByPatientChart(m *models.OpthalmologyExam, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *OpthalmologyExam) Update() error {
-	return DB.Updates(&r).Error
+func (r *OpthalmologyExamRepository) Update(m *models.OpthalmologyExam) error {
+	return r.DB.Updates(&m).Error
 }

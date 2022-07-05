@@ -18,35 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// TreatmentType ...
-type TreatmentType struct {
-	gorm.Model
-	ID       int       `gorm:"primaryKey" json:"id"`
-	Title    string    `json:"title"`
-	Status   string    `json:"status"`
-	Billings []Billing `json:"billings" gorm:"many2many:treatment_type_billings"`
-	Supplies []Supply  `json:"supplies" gorm:"many2many:treatment_supplies"`
-	Active   bool      `json:"active"`
-	Count    int64     `json:"count"`
+type TreatmentTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideTreatmentTypeRepository(DB *gorm.DB) TreatmentTypeRepository {
+	return TreatmentTypeRepository{DB: DB}
 }
 
 // Save ...
-func (r *TreatmentType) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *TreatmentTypeRepository) Save(m *models.TreatmentType) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *TreatmentType) GetAll(p PaginationInput, searchTerm *string) ([]TreatmentType, int64, error) {
-	var result []TreatmentType
+func (r *TreatmentTypeRepository) GetAll(p PaginationInput, searchTerm *string) ([]models.TreatmentType, int64, error) {
+	var result []models.TreatmentType
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -67,26 +61,26 @@ func (r *TreatmentType) GetAll(p PaginationInput, searchTerm *string) ([]Treatme
 }
 
 // Get ...
-func (r *TreatmentType) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *TreatmentTypeRepository) Get(m *models.TreatmentType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *TreatmentType) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *TreatmentTypeRepository) GetByTitle(m *models.TreatmentType, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *TreatmentType) Update() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		tx.Model(&r).Association("Billings").Replace(&r.Billings)
-		tx.Model(&r).Association("Supplies").Replace(&r.Supplies)
+func (r *TreatmentTypeRepository) Update(m *models.TreatmentType) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		tx.Model(&m).Association("Billings").Replace(&m.Billings)
+		tx.Model(&m).Association("Supplies").Replace(&m.Supplies)
 
-		return tx.Updates(&r).Error
+		return tx.Updates(&m).Error
 	})
 }
 
 // Delete ...
-func (r *TreatmentType) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *TreatmentTypeRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.TreatmentType{}).Error
 }

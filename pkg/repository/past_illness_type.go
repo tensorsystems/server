@@ -18,31 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// PastIllnessType ...
-type PastIllnessType struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey" json:"id"`
-	Title string `json:"title"`
-	Count int64  `json:"count"`
+type PastIllnessTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePastIllnessTypeRepository(DB *gorm.DB) PastIllnessTypeRepository {
+	return PastIllnessTypeRepository{DB: DB}
 }
 
 // Save ...
-func (r *PastIllnessType) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastIllnessTypeRepository) Save(m *models.PastIllnessType) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *PastIllnessType) GetAll(p PaginationInput) ([]PastIllnessType, int64, error) {
-	var result []PastIllnessType
+func (r *PastIllnessTypeRepository) GetAll(p models.PaginationInput) ([]models.PastIllnessType, int64, error) {
+	var result []models.PastIllnessType
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -57,21 +55,21 @@ func (r *PastIllnessType) GetAll(p PaginationInput) ([]PastIllnessType, int64, e
 }
 
 // Get ...
-func (r *PastIllnessType) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PastIllnessTypeRepository) Get(m *models.PastIllnessType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *PastIllnessType) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *PastIllnessTypeRepository) GetByTitle(m *models.PastIllnessType, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *PastIllnessType) Update() error {
-	return DB.Updates(&r).Error
+func (r *PastIllnessTypeRepository) Update(m *models.PastIllnessType) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PastIllnessType) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *PastIllnessTypeRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PastIllnessType{}).Error
 }

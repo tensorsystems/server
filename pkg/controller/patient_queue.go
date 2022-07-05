@@ -23,12 +23,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
 // GetPatientQueues ...
 func GetPatientQueues(c *gin.Context) {
-	var repo repository.PatientQueue
+	var repo repository.PatientQueueRepository
 
 	patientQueues, err := repo.GetAll()
 
@@ -42,7 +43,7 @@ func GetPatientQueues(c *gin.Context) {
 	}
 
 	var result []*model.PatientQueueWithAppointment
-	var appointmentRepo repository.Appointment
+	var appointmentRepo repository.AppointmentRepository
 
 	for _, patientQueue := range patientQueues {
 		var ids []int
@@ -64,7 +65,7 @@ func GetPatientQueues(c *gin.Context) {
 
 		appointments, _, _ := appointmentRepo.GetByIds(ids, page)
 
-		var orderedAppointments []*repository.Appointment
+		var orderedAppointments []*models.Appointment
 
 		for _, id := range ids {
 			for _, appointment := range appointments {

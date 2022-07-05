@@ -21,43 +21,24 @@ package repository
 import (
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// ReferralOrderStatus ...
-type ReferralOrderStatus string
+type ReferralOrderRepository struct {
+	DB *gorm.DB
+}
 
-// ReferralOrderStatus statuses ...
-const (
-	ReferralOrderStatusOrdered   ReferralOrderStatus = "ORDERED"
-	ReferralOrderStatusCompleted ReferralOrderStatus = "COMPLETED"
-)
-
-// ReferralOrder ...
-type ReferralOrder struct {
-	gorm.Model
-	ID             int                 `gorm:"primaryKey"`
-	PatientChartID int                 `json:"patientChartId"`
-	PatientID      int                 `json:"patientId"`
-	FirstName      string              `json:"firstName"`
-	LastName       string              `json:"lastName"`
-	PhoneNo        string              `json:"phoneNo"`
-	UserName       string              `json:"userName"`
-	OrderedByID    int                 `json:"orderedById"`
-	OrderedBy      User                `json:"orderedBy"`
-	Status         ReferralOrderStatus `json:"status"`
-	Referrals      []Referral          `json:"referrals"`
-	Emergency      *bool               `json:"emergency"`
-	Document       string              `gorm:"type:tsvector"`
-	Count          int64               `json:"count"`
+func ProvideReferralOrderRepository(DB *gorm.DB) ReferralOrderRepository {
+	return ReferralOrderRepository{DB: DB}
 }
 
 // Save ...
-func (r *ReferralOrder) Save(patientChartID int, patientID int, orderedToID *int, referralType ReferralType, user User, receptionNote *string, reason string, providerName *string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *ReferralOrderRepository) Save(m *models.ReferralOrder, patientChartID int, patientID int, orderedToID *int, referralType models.ReferralType, user models.User, receptionNote *string, reason string, providerName *string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get Patient
-		var patient Patient
-		if err := tx.Model(&Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
+		var patient models.Patient
+		if err := tx.Model(&models.Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
@@ -73,39 +54,39 @@ func (r *ReferralOrder) Save(patientChartID int, patientID int, orderedToID *int
 			orderedByPrefix = "Dr. "
 		}
 
-		r.PatientChartID = patientChartID
-		r.PatientID = patientID
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
-		r.OrderedByID = user.ID
-		r.Status = ReferralOrderStatusOrdered
+		m.PatientChartID = patientChartID
+		m.PatientID = patientID
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
+		m.OrderedByID = user.ID
+		m.Status = models.ReferralOrderStatusOrdered
 
-		var existing ReferralOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.ReferralOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
-		var referral Referral
-		referral.ReferralOrderID = r.ID
+		var referral models.Referral
+		referral.ReferralOrderID = m.ID
 		referral.PatientChartID = patientChartID
 		referral.Reason = reason
 		referral.Type = referralType
 
-		if referral.Type == ReferralTypeInHouse {
-			referral.Status = ReferralStatusOrdered
-		} else if referral.Type == ReferralTypeOutsource {
-			referral.Status = ReferralStatusCompleted
+		if referral.Type == models.ReferralTypeInHouse {
+			referral.Status = models.ReferralStatusOrdered
+		} else if referral.Type == models.ReferralTypeOutsource {
+			referral.Status = models.ReferralStatusCompleted
 		}
 
 		if receptionNote != nil {
@@ -113,8 +94,8 @@ func (r *ReferralOrder) Save(patientChartID int, patientID int, orderedToID *int
 		}
 
 		if orderedToID != nil {
-			var referredTo User
-			if err := tx.Model(&User{}).Where("id = ?", *orderedToID).Take(&referredTo).Error; err != nil {
+			var referredTo models.User
+			if err := tx.Model(&models.User{}).Where("id = ?", *orderedToID).Take(&referredTo).Error; err != nil {
 				return err
 			}
 
@@ -131,13 +112,13 @@ func (r *ReferralOrder) Save(patientChartID int, patientID int, orderedToID *int
 }
 
 // GetTodaysOrderedCount ...
-func (r *ReferralOrder) GetTodaysOrderedCount() (count int) {
+func (r *ReferralOrderRepository) GetTodaysOrderedCount() (count int) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
 	var countTmp int64
-	err := DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", ReferralOrderStatusOrdered).Count(&countTmp).Error
+	err := r.DB.Model(&models.ReferralOrder{}).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.ReferralOrderStatusOrdered).Count(&countTmp).Error
 	if err != nil {
 		countTmp = 0
 	}
@@ -148,31 +129,31 @@ func (r *ReferralOrder) GetTodaysOrderedCount() (count int) {
 }
 
 // ConfirmOrder ...
-func (r *ReferralOrder) ConfirmOrder(referralOrderID int, referralID int, billingID *int, invoiceNo *string, roomID *int, checkInTime *time.Time) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var referral Referral
+func (r *ReferralOrderRepository) ConfirmOrder(m *models.ReferralOrder, referralOrderID int, referralID int, billingID *int, invoiceNo *string, roomID *int, checkInTime *time.Time) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var referral models.Referral
 		if err := tx.Where("id = ?", referralID).Take(&referral).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", referralOrderID).Take(&r).Error; err != nil {
+		if err := tx.Where("id = ?", referralOrderID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		if referral.Type == ReferralTypeInHouse {
-			var patientChart PatientChart
-			if err := tx.Where("id = ?", r.PatientChartID).Take(&patientChart).Error; err != nil {
+		if referral.Type == models.ReferralTypeInHouse {
+			var patientChart models.PatientChart
+			if err := tx.Where("id = ?", m.PatientChartID).Take(&patientChart).Error; err != nil {
 				return err
 			}
 
-			var previousAppointment Appointment
+			var previousAppointment models.Appointment
 			if err := tx.Where("id = ?", patientChart.AppointmentID).Take(&previousAppointment).Error; err != nil {
 				return err
 			}
 
 			// Create new appointment
-			var appointment Appointment
-			appointment.PatientID = r.PatientID
+			var appointment models.Appointment
+			appointment.PatientID = m.PatientID
 			appointment.RoomID = *roomID
 			appointment.CheckInTime = *checkInTime
 			appointment.UserID = *referral.ReferredToID
@@ -180,9 +161,9 @@ func (r *ReferralOrder) ConfirmOrder(referralOrderID int, referralID int, billin
 			appointment.MedicalDepartment = previousAppointment.MedicalDepartment
 
 			if billingID != nil {
-				var payment Payment
+				var payment models.Payment
 
-				payment.Status = PaidPaymentStatus
+				payment.Status = models.PaidPaymentStatus
 				payment.BillingID = *billingID
 
 				if invoiceNo != nil {
@@ -193,14 +174,14 @@ func (r *ReferralOrder) ConfirmOrder(referralOrderID int, referralID int, billin
 			}
 
 			// Assign treatment visit type
-			var visitType VisitType
+			var visitType models.VisitType
 			if err := tx.Where("title = ?", "Referral").Take(&visitType).Error; err != nil {
 				return err
 			}
 			appointment.VisitTypeID = visitType.ID
 
 			// Assign scheduled status
-			var status AppointmentStatus
+			var status models.AppointmentStatus
 			if err := tx.Where("title = ?", "Scheduled").Take(&status).Error; err != nil {
 				return err
 			}
@@ -212,33 +193,33 @@ func (r *ReferralOrder) ConfirmOrder(referralOrderID int, referralID int, billin
 			}
 
 			// Create new patient chart
-			var newPatientChart PatientChart
+			var newPatientChart models.PatientChart
 			newPatientChart.AppointmentID = appointment.ID
 			if err := tx.Create(&newPatientChart).Error; err != nil {
 				return err
 			}
 		}
 
-		referral.Status = ReferralStatusCompleted
+		referral.Status = models.ReferralStatusCompleted
 		if err := tx.Updates(&referral).Error; err != nil {
 			return err
 		}
 
-		var referrals []Referral
-		if err := tx.Where("referral_order_id = ?", r.ID).Find(&referrals).Error; err != nil {
+		var referrals []models.Referral
+		if err := tx.Where("referral_order_id = ?", m.ID).Find(&referrals).Error; err != nil {
 			return err
 		}
 
 		allConfirmed := true
 		for _, referral := range referrals {
-			if referral.Type == ReferralTypeInHouse && referral.Status == ReferralStatusOrdered {
+			if referral.Type == models.ReferralTypeInHouse && referral.Status == models.ReferralStatusOrdered {
 				allConfirmed = false
 			}
 		}
 
 		if allConfirmed {
-			r.Status = ReferralOrderStatusCompleted
-			if err := tx.Updates(&r).Error; err != nil {
+			m.Status = models.ReferralOrderStatusCompleted
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -248,8 +229,8 @@ func (r *ReferralOrder) ConfirmOrder(referralOrderID int, referralID int, billin
 }
 
 // GetCount ...
-func (r *ReferralOrder) GetCount(filter *ReferralOrder, date *time.Time, searchTerm *string) (int64, error) {
-	dbOp := DB.Model(&r).Where(filter)
+func (r *ReferralOrderRepository) GetCount(filter *models.ReferralOrder, date *time.Time, searchTerm *string) (int64, error) {
+	dbOp := r.DB.Model(&models.ReferralOrder{}).Where(filter)
 
 	if date != nil {
 		createdAt := *date
@@ -269,10 +250,10 @@ func (r *ReferralOrder) GetCount(filter *ReferralOrder, date *time.Time, searchT
 }
 
 // Search ...
-func (r *ReferralOrder) Search(p PaginationInput, filter *ReferralOrder, date *time.Time, searchTerm *string, ascending bool) ([]ReferralOrder, int64, error) {
-	var result []ReferralOrder
+func (r *ReferralOrderRepository) Search(p PaginationInput, filter *models.ReferralOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.ReferralOrder, int64, error) {
+	var result []models.ReferralOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals", "type = ?", ReferralTypeInHouse).Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals", "type = ?", models.ReferralTypeInHouse).Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date
@@ -302,15 +283,15 @@ func (r *ReferralOrder) Search(p PaginationInput, filter *ReferralOrder, date *t
 }
 
 // GetByPatientChartID ...
-func (r *ReferralOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("Referrals").Preload("OrderedBy.UserTypes").Take(&r).Error
+func (r *ReferralOrderRepository) GetByPatientChartID(m *models.ReferralOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("Referrals").Preload("OrderedBy.UserTypes").Take(&m).Error
 }
 
 // GetAll ...
-func (r *ReferralOrder) GetAll(p PaginationInput, filter *FollowUpOrder) ([]ReferralOrder, int64, error) {
-	var result []ReferralOrder
+func (r *ReferralOrderRepository) GetAll(p PaginationInput, filter *models.FollowUpOrder) ([]models.ReferralOrder, int64, error) {
+	var result []models.ReferralOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -325,11 +306,11 @@ func (r *ReferralOrder) GetAll(p PaginationInput, filter *FollowUpOrder) ([]Refe
 }
 
 // Update ...
-func (r *ReferralOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *ReferralOrderRepository) Update(m *models.ReferralOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ReferralOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ReferralOrderRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.ReferralOrder{}).Error
 }

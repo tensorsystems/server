@@ -6,27 +6,30 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveAllergy(ctx context.Context, input model.AllergyInput) (*repository.Allergy, error) {
-	var entity repository.Allergy
+func (r *mutationResolver) SaveAllergy(ctx context.Context, input graph_models.AllergyInput) (*models.Allergy, error) {
+	var entity models.Allergy
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var allergyRepo repository.AllergyRepository
+	if err := allergyRepo.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateAllergy(ctx context.Context, input model.AllergyUpdateInput) (*repository.Allergy, error) {
-	var entity repository.Allergy
+func (r *mutationResolver) UpdateAllergy(ctx context.Context, input graph_models.AllergyUpdateInput) (*models.Allergy, error) {
+	var entity models.Allergy
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var allergyRepo repository.AllergyRepository
+	if err := allergyRepo.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -34,38 +37,37 @@ func (r *mutationResolver) UpdateAllergy(ctx context.Context, input model.Allerg
 }
 
 func (r *mutationResolver) DeleteAllergy(ctx context.Context, id int) (bool, error) {
-	var entity repository.Allergy
-
-	if err := entity.Delete(id); err != nil {
+	var allergyRepo repository.AllergyRepository
+	if err := allergyRepo.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) Allergies(ctx context.Context, page repository.PaginationInput, filter *model.AllergyFilter) (*model.AllergyConnection, error) {
-	var f repository.Allergy
+func (r *queryResolver) Allergies(ctx context.Context, page models.PaginationInput, filter *graph_models.AllergyFilter) (*graph_models.AllergyConnection, error) {
+	var f models.Allergy
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.Allergy
-	entities, count, err := entity.GetAll(page, &f)
+	var repository repository.AllergyRepository
+	entities, count, err := repository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.AllergyEdge, len(entities))
+	edges := make([]*graph_models.AllergyEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.AllergyEdge{
+		edges[i] = &graph_models.AllergyEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.AllergyConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.AllergyConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

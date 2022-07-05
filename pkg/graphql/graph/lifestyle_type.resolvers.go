@@ -6,27 +6,30 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveLifestyleTypes(ctx context.Context, input model.LifestyleTypeInput) (*repository.LifestyleType, error) {
-	var entity repository.LifestyleType
+func (r *mutationResolver) SaveLifestyleTypes(ctx context.Context, input graph_models.LifestyleTypeInput) (*models.LifestyleType, error) {
+	var entity models.LifestyleType
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	var repository repository.LifestyleTypeRepository
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateLifestyleType(ctx context.Context, input model.LifestyleTypeUpdateInput) (*repository.LifestyleType, error) {
-	var entity repository.LifestyleType
+func (r *mutationResolver) UpdateLifestyleType(ctx context.Context, input graph_models.LifestyleTypeUpdateInput) (*models.LifestyleType, error) {
+	var entity models.LifestyleType
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.LifestyleTypeRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -34,42 +37,43 @@ func (r *mutationResolver) UpdateLifestyleType(ctx context.Context, input model.
 }
 
 func (r *mutationResolver) DeleteLifestyleType(ctx context.Context, id int) (bool, error) {
-	var entity repository.LifestyleType
+	var repository repository.LifestyleTypeRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) LifestyleType(ctx context.Context, id int) (*repository.LifestyleType, error) {
-	var entity repository.LifestyleType
-
-	if err := entity.Get(id); err != nil {
+func (r *queryResolver) LifestyleType(ctx context.Context, id int) (*models.LifestyleType, error) {
+	var entity models.LifestyleType
+	var repository repository.LifestyleTypeRepository
+	
+	if err := repository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) LifestyleTypes(ctx context.Context, page repository.PaginationInput) (*model.LifestyleTypeConnection, error) {
-	var entity repository.LifestyleType
-	result, count, err := entity.GetAll(page)
+func (r *queryResolver) LifestyleTypes(ctx context.Context, page models.PaginationInput) (*graph_models.LifestyleTypeConnection, error) {
+	var repository repository.LifestyleTypeRepository
+	result, count, err := repository.GetAll(page)
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.LifestyleTypeEdge, len(result))
+	edges := make([]*graph_models.LifestyleTypeEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.LifestyleTypeEdge{
+		edges[i] = &graph_models.LifestyleTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.LifestyleTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.LifestyleTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

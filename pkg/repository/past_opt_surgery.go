@@ -18,49 +18,35 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// PastOptSurgery ...
-type PastOptSurgery struct {
-	gorm.Model
-	ID               int    `gorm:"primaryKey"`
-	Title            string `json:"title"`
-	Description      string `json:"description"`
-	PatientHistoryID int    `json:"patientHistoryID"`
+type PastOptSurgeryRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePastOptSurgeryRepository(DB *gorm.DB) PastOptSurgeryRepository {
+	return PastOptSurgeryRepository{DB: DB}
 }
 
 // Save ...
-func (r *PastOptSurgery) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastOptSurgeryRepository) Save(m *models.PastOptSurgery) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *PastOptSurgery) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastOptSurgeryRepository) Get(m *models.PastOptSurgery, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *PastOptSurgery) Update() (*PastOptSurgery, error) {
-	err := DB.Save(&r).Error
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+func (r *PastOptSurgeryRepository) Update(m *models.PastOptSurgery) error {
+	return r.DB.Save(&m).Error
 }
 
 // Delete ...
-func (r *PastOptSurgery) Delete(ID int) error {
-	var e PastOptSurgery
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PastOptSurgeryRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PastOptSurgery{}).Error
 }

@@ -19,47 +19,33 @@
 package repository
 
 import (
-	"time"
-
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// PastHospitalization ...
-type PastHospitalization struct {
-	gorm.Model
-	ID               int        `gorm:"primaryKey"`
-	Reason           string     `json:"reason"`
-	Provider         string     `json:"provider"`
-	From             *time.Time `json:"from"`
-	To               *time.Time `json:"to"`
-	PatientHistoryID int        `json:"patientHistoryID"`
+type PastHospitalizationRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePastHospitalizationRepository(DB *gorm.DB) PastHospitalizationRepository {
+	return PastHospitalizationRepository{DB: DB}
 }
 
 // Save ...
-func (r *PastHospitalization) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastHospitalizationRepository) Save(m *models.PastHospitalization) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *PastHospitalization) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastHospitalizationRepository) Get(m *models.PastHospitalization, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientHistoryID ...
-func (r *PastHospitalization) GetByPatientHistoryID(ID int) ([]*PastHospitalization, error) {
-	var result []*PastHospitalization
+func (r *PastHospitalizationRepository) GetByPatientHistoryID(ID int) ([]*models.PastHospitalization, error) {
+	var result []*models.PastHospitalization
 
-	err := DB.Where("patient_history_id = ?", ID).Find(&result).Error
+	err := r.DB.Where("patient_history_id = ?", ID).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -69,13 +55,11 @@ func (r *PastHospitalization) GetByPatientHistoryID(ID int) ([]*PastHospitalizat
 }
 
 // Update ...
-func (r *PastHospitalization) Update() error {
-	return DB.Updates(&r).Error
+func (r *PastHospitalizationRepository) Update(m *models.PastHospitalization) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PastHospitalization) Delete(ID int) error {
-	var e PastHospitalization
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PastHospitalizationRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PastHospitalization{}).Error
 }

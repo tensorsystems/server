@@ -6,27 +6,30 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) CreateAmendment(ctx context.Context, input model.AmendmentInput) (*repository.Amendment, error) {
-	var entity repository.Amendment
+func (r *mutationResolver) CreateAmendment(ctx context.Context, input graph_models.AmendmentInput) (*models.Amendment, error) {
+	var entity models.Amendment
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Create(); err != nil {
+	var repository repository.AmendmentRepository
+	if err := repository.Create(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateAmendment(ctx context.Context, input model.AmendmentUpdateInput) (*repository.Amendment, error) {
-	var entity repository.Amendment
+func (r *mutationResolver) UpdateAmendment(ctx context.Context, input graph_models.AmendmentUpdateInput) (*models.Amendment, error) {
+	var entity models.Amendment
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.AmendmentRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -34,33 +37,31 @@ func (r *mutationResolver) UpdateAmendment(ctx context.Context, input model.Amen
 }
 
 func (r *mutationResolver) DeleteAmendment(ctx context.Context, id int) (bool, error) {
-	var entity repository.Amendment
-
-	if err := entity.Delete(id); err != nil {
+	var repository repository.AmendmentRepository
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) Amendment(ctx context.Context, id int) (*repository.Amendment, error) {
-	var entity repository.Amendment
-	if err := entity.Get(id); err != nil {
+func (r *queryResolver) Amendment(ctx context.Context, id int) (*models.Amendment, error) {
+	var entity models.Amendment
+	var repository repository.AmendmentRepository
+	if err := repository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) Amendments(ctx context.Context, filter *model.AmendmentFilter) ([]*repository.Amendment, error) {
-	var entity repository.Amendment
-
-	var f repository.Amendment
+func (r *queryResolver) Amendments(ctx context.Context, filter *graph_models.AmendmentFilter) ([]*models.Amendment, error) {
+	var f models.Amendment
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
-
-	result, err := entity.GetAll(&f)
+	var repository repository.AmendmentRepository
+	result, err := repository.GetAll(&f)
 
 	if err != nil {
 		return nil, err

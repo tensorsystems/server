@@ -7,13 +7,14 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveFavoriteMedication(ctx context.Context, input model.FavoriteMedicationInput) (*repository.FavoriteMedication, error) {
+func (r *mutationResolver) SaveFavoriteMedication(ctx context.Context, input graph_models.FavoriteMedicationInput) (*models.FavoriteMedication, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -24,29 +25,31 @@ func (r *mutationResolver) SaveFavoriteMedication(ctx context.Context, input mod
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.FavoriteMedication
+	var repository repository.FavoriteMedicationRepository
+	var entity models.FavoriteMedication
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.UserID = user.ID
 
-	if err := entity.Save(); err != nil {
+	if err := repository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateFavoriteMedication(ctx context.Context, input model.FavoriteMedicationUpdateInput) (*repository.FavoriteMedication, error) {
-	var entity repository.FavoriteMedication
+func (r *mutationResolver) UpdateFavoriteMedication(ctx context.Context, input graph_models.FavoriteMedicationUpdateInput) (*models.FavoriteMedication, error) {
+	var entity models.FavoriteMedication
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	var repository repository.FavoriteMedicationRepository
+	if err := repository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -54,43 +57,43 @@ func (r *mutationResolver) UpdateFavoriteMedication(ctx context.Context, input m
 }
 
 func (r *mutationResolver) DeleteFavoriteMedication(ctx context.Context, id int) (bool, error) {
-	var entity repository.FavoriteMedication
+	var repository repository.FavoriteMedicationRepository
 
-	if err := entity.Delete(id); err != nil {
+	if err := repository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) FavoriteMedications(ctx context.Context, page repository.PaginationInput, filter *model.FavoriteMedicationFilter, searchTerm *string) (*model.FavoriteMedicationConnection, error) {
-	var f repository.FavoriteMedication
+func (r *queryResolver) FavoriteMedications(ctx context.Context, page models.PaginationInput, filter *graph_models.FavoriteMedicationFilter, searchTerm *string) (*graph_models.FavoriteMedicationConnection, error) {
+	var f models.FavoriteMedication
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.FavoriteMedication
-	entities, count, err := entity.GetAll(page, &f, searchTerm)
+	var repository repository.FavoriteMedicationRepository
+	entities, count, err := repository.GetAll(page, &f, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.FavoriteMedicationEdge, len(entities))
+	edges := make([]*graph_models.FavoriteMedicationEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.FavoriteMedicationEdge{
+		edges[i] = &graph_models.FavoriteMedicationEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.FavoriteMedicationConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.FavoriteMedicationConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) UserFavoriteMedications(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.FavoriteMedicationConnection, error) {
+func (r *queryResolver) UserFavoriteMedications(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.FavoriteMedicationConnection, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -101,51 +104,51 @@ func (r *queryResolver) UserFavoriteMedications(ctx context.Context, page reposi
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
+	var userRepository repository.UserRepository
+	var user models.User
+	if err := userRepository.GetByEmail(&user, email); err != nil {
+		return nil, err
+	}
+
+	var repository repository.FavoriteMedicationRepository
+	entities, count, err := repository.GetAll(page, &models.FavoriteMedication{UserID: user.ID}, searchTerm)
+
 	if err != nil {
 		return nil, err
 	}
 
-	var entity repository.FavoriteMedication
-	entities, count, err := entity.GetAll(page, &repository.FavoriteMedication{UserID: user.ID}, searchTerm)
-
-	if err != nil {
-		return nil, err
-	}
-
-	edges := make([]*model.FavoriteMedicationEdge, len(entities))
+	edges := make([]*graph_models.FavoriteMedicationEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.FavoriteMedicationEdge{
+		edges[i] = &graph_models.FavoriteMedicationEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.FavoriteMedicationConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.FavoriteMedicationConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SearchFavoriteMedications(ctx context.Context, searchTerm string, page repository.PaginationInput) (*model.FavoriteMedicationConnection, error) {
-	var entity repository.FavoriteMedication
-	entities, count, err := entity.Search(page, searchTerm)
+func (r *queryResolver) SearchFavoriteMedications(ctx context.Context, searchTerm string, page models.PaginationInput) (*graph_models.FavoriteMedicationConnection, error) {
+	var repository repository.FavoriteMedicationRepository
+	entities, count, err := repository.Search(page, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.FavoriteMedicationEdge, len(entities))
+	edges := make([]*graph_models.FavoriteMedicationEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.FavoriteMedicationEdge{
+		edges[i] = &graph_models.FavoriteMedicationEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.FavoriteMedicationConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.FavoriteMedicationConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

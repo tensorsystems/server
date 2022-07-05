@@ -6,12 +6,13 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveSystem(ctx context.Context, input model.SystemInput) (*repository.System, error) {
+func (r *mutationResolver) SaveSystem(ctx context.Context, input graph_models.SystemInput) (*models.System, error) {
 	var entity repository.System
 	deepCopy.Copy(&input).To(&entity)
 
@@ -22,7 +23,7 @@ func (r *mutationResolver) SaveSystem(ctx context.Context, input model.SystemInp
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSystem(ctx context.Context, input model.SystemUpdateInput) (*repository.System, error) {
+func (r *mutationResolver) UpdateSystem(ctx context.Context, input graph_models.SystemUpdateInput) (*models.System, error) {
 	var entity repository.System
 	deepCopy.Copy(&input).To(&entity)
 
@@ -33,7 +34,7 @@ func (r *mutationResolver) UpdateSystem(ctx context.Context, input model.SystemU
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveSystemSymptom(ctx context.Context, input model.SystemSymptomInput) (*repository.SystemSymptom, error) {
+func (r *mutationResolver) SaveSystemSymptom(ctx context.Context, input graph_models.SystemSymptomInput) (*models.SystemSymptom, error) {
 	var entity repository.SystemSymptom
 	deepCopy.Copy(&input).To(&entity)
 
@@ -44,7 +45,7 @@ func (r *mutationResolver) SaveSystemSymptom(ctx context.Context, input model.Sy
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSystemSymptom(ctx context.Context, input model.SystemSymptomUpdateInput) (*repository.SystemSymptom, error) {
+func (r *mutationResolver) UpdateSystemSymptom(ctx context.Context, input graph_models.SystemSymptomUpdateInput) (*models.SystemSymptom, error) {
 	var entity repository.SystemSymptom
 	deepCopy.Copy(&input).To(&entity)
 
@@ -55,7 +56,7 @@ func (r *mutationResolver) UpdateSystemSymptom(ctx context.Context, input model.
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveReviewOfSystem(ctx context.Context, input model.ReviewOfSystemInput) (*repository.ReviewOfSystem, error) {
+func (r *mutationResolver) SaveReviewOfSystem(ctx context.Context, input graph_models.ReviewOfSystemInput) (*models.ReviewOfSystem, error) {
 	var entity repository.ReviewOfSystem
 	deepCopy.Copy(&input).To(&entity)
 
@@ -66,7 +67,7 @@ func (r *mutationResolver) SaveReviewOfSystem(ctx context.Context, input model.R
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateReviewOfSystem(ctx context.Context, input model.ReviewOfSystemUpdateInput) (*repository.ReviewOfSystem, error) {
+func (r *mutationResolver) UpdateReviewOfSystem(ctx context.Context, input graph_models.ReviewOfSystemUpdateInput) (*models.ReviewOfSystem, error) {
 	var entity repository.ReviewOfSystem
 	deepCopy.Copy(&input).To(&entity)
 
@@ -87,7 +88,7 @@ func (r *mutationResolver) DeleteReviewOfSystem(ctx context.Context, id int) (bo
 	return true, nil
 }
 
-func (r *queryResolver) System(ctx context.Context, id int) (*repository.System, error) {
+func (r *queryResolver) System(ctx context.Context, id int) (*models.System, error) {
 	var entity repository.System
 
 	if err := entity.Get(id); err != nil {
@@ -97,7 +98,7 @@ func (r *queryResolver) System(ctx context.Context, id int) (*repository.System,
 	return &entity, nil
 }
 
-func (r *queryResolver) Systems(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SystemConnection, error) {
+func (r *queryResolver) Systems(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SystemConnection, error) {
 	var entity repository.System
 	entities, count, err := entity.GetAll(page, searchTerm)
 
@@ -119,7 +120,7 @@ func (r *queryResolver) Systems(ctx context.Context, page repository.PaginationI
 	return &model.SystemConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SystemSymptom(ctx context.Context, id int) (*repository.SystemSymptom, error) {
+func (r *queryResolver) SystemSymptom(ctx context.Context, id int) (*models.SystemSymptom, error) {
 	var entity repository.SystemSymptom
 
 	if err := entity.Get(id); err != nil {
@@ -129,7 +130,7 @@ func (r *queryResolver) SystemSymptom(ctx context.Context, id int) (*repository.
 	return &entity, nil
 }
 
-func (r *queryResolver) SystemSymptoms(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SystemSymptomConnection, error) {
+func (r *queryResolver) SystemSymptoms(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SystemSymptomConnection, error) {
 	var entity repository.SystemSymptom
 	entities, count, err := entity.GetAll(page, searchTerm)
 
@@ -151,7 +152,7 @@ func (r *queryResolver) SystemSymptoms(ctx context.Context, page repository.Pagi
 	return &model.SystemSymptomConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) ReviewOfSystem(ctx context.Context, id int) (*repository.ReviewOfSystem, error) {
+func (r *queryResolver) ReviewOfSystem(ctx context.Context, id int) (*models.ReviewOfSystem, error) {
 	var entity repository.ReviewOfSystem
 
 	if err := entity.Get(id); err != nil {
@@ -161,7 +162,7 @@ func (r *queryResolver) ReviewOfSystem(ctx context.Context, id int) (*repository
 	return &entity, nil
 }
 
-func (r *queryResolver) ReviewOfSystems(ctx context.Context, page repository.PaginationInput, filter *model.ReviewOfSystemFilter) (*model.ReviewOfSystemConnection, error) {
+func (r *queryResolver) ReviewOfSystems(ctx context.Context, page models.PaginationInput, filter *graph_models.ReviewOfSystemFilter) (*graph_models.ReviewOfSystemConnection, error) {
 	var f repository.ReviewOfSystem
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)

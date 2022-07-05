@@ -19,45 +19,33 @@
 package repository
 
 import (
-	"time"
-
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// PastInjury ...
-type PastInjury struct {
-	gorm.Model
-	ID               int        `gorm:"primaryKey"`
-	Description      string     `json:"description"`
-	InjuryDate       *time.Time `json:"injuryDate"`
-	PatientHistoryID int        `json:"patientHistoryID"`
+type PastInjuryRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePastInjuryRepository(DB *gorm.DB) PastInjuryRepository {
+	return PastInjuryRepository{DB: DB}
 }
 
 // Save ...
-func (r *PastInjury) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastInjuryRepository) Save(m *models.PastInjury) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *PastInjury) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastInjuryRepository) Get(m *models.PastInjury, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientHistoryID ...
-func (r *PastInjury) GetByPatientHistoryID(ID int) ([]*PastInjury, error) {
-	var result []*PastInjury
+func (r *PastInjuryRepository) GetByPatientHistoryID(ID int) ([]*models.PastInjury, error) {
+	var result []*models.PastInjury
 
-	err := DB.Where("patient_history_id = ?", ID).Find(&result).Error
+	err := r.DB.Where("patient_history_id = ?", ID).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -67,13 +55,11 @@ func (r *PastInjury) GetByPatientHistoryID(ID int) ([]*PastInjury, error) {
 }
 
 // Update ...
-func (r *PastInjury) Update() error {
-	return DB.Updates(&r).Error
+func (r *PastInjuryRepository) Update(m *models.PastInjury) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PastInjury) Delete(ID int) error {
-	var e PastInjury
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PastInjuryRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PastInjury{}).Error
 }
