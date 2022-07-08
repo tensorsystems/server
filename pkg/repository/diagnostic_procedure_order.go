@@ -130,7 +130,7 @@ func (r *DiagnosticProcedureOrderRepository) GetTodaysOrderedCount() (count int)
 	end := start.AddDate(0, 0, 1)
 
 	var countTmp int64
-	err := r.DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.DiagnosticProcedureOrderOrderedStatus).Count(&countTmp).Error
+	err := r.DB.Model(&models.DiagnosticProcedureOrder{}).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.DiagnosticProcedureOrderOrderedStatus).Count(&countTmp).Error
 	if err != nil {
 		countTmp = 0
 	}

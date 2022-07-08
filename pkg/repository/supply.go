@@ -89,7 +89,7 @@ func (r *SupplyRepository) Update(m *models.Supply) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
 		tx.Model(&m).Association("Billings").Replace(&m.Billings)
 
-		return tx.Updates(&r).Error
+		return tx.Updates(&m).Error
 	})
 }
 

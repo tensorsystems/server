@@ -219,7 +219,7 @@ func (s *Server) NewRouter() *gin.Engine {
 	TreatmentTypeRepository := repository.ProvideTreatmentTypeRepository(s.DB)
 	TreatmentRepository := repository.ProvideTreatmentRepository(s.DB)
 	UserTypeRepository := repository.ProvideUserTypeRepository(s.DB)
-	UserRepository := repository.ProvideUserRepository(s.DB)
+	UserRepository := repository.ProvideUserRepository(s.DB, UserTypeRepository)
 	VisitTypeRepository := repository.ProvideVisitTypeRepository(s.DB)
 	VisualAcuityRepository := repository.ProvideVisualAcuityRepository(s.DB)
 	VitalSignsRepository := repository.ProvideVitalSignsRepository(s.DB)
@@ -329,7 +329,6 @@ func (s *Server) NewRouter() *gin.Engine {
 	userTypeApi := controller.UserTypeApi{UserTypeRepository: UserTypeRepository}
 	organizationDetailsApi := controller.OrganizationDetailsApi{OrganizationDetailsRepository: OrganizationDetailsRepository}
 
-
 	r.Group("/public")
 	{
 		r.POST("/login", authApi.Login())
@@ -433,8 +432,8 @@ func (m *Server) SeedData() error {
 	userTypeRepository := repository.ProvideUserTypeRepository(m.DB)
 	userTypeRepository.Seed()
 
-	userRepository := repository.ProvideUserRepository(m.DB)
-	userRepository.Seed(userTypeRepository)
+	userRepository := repository.ProvideUserRepository(m.DB, userTypeRepository)
+	userRepository.Seed()
 
 	visitTypeRepository := repository.ProvideVisitTypeRepository(m.DB)
 	visitTypeRepository.Seed()

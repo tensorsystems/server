@@ -25,16 +25,17 @@ import (
 
 type UserRepository struct {
 	DB *gorm.DB
+	UserTypeRepository UserTypeRepository
 }
 
-func ProvideUserRepository(DB *gorm.DB) UserRepository {
-	return UserRepository{DB: DB}
+func ProvideUserRepository(DB *gorm.DB, userTypeRepository UserTypeRepository) UserRepository {
+	return UserRepository{DB: DB, UserTypeRepository: userTypeRepository}
 }
 
 // Seed ...
-func (r *UserRepository) Seed(userTypeRepository UserTypeRepository) {
+func (r *UserRepository) Seed() {
 	var userType models.UserType
-	userTypeRepository.GetByTitle(&userType, "Admin")
+	r.UserTypeRepository.GetByTitle(&userType, "Admin")
 
 	var user models.User
 	user.FirstName = "Admin"
@@ -78,9 +79,8 @@ func (r *UserRepository) Save(m *models.User, userTypes []models.UserType) error
 func (r *UserRepository) SearchPhysicians(searchTerm string) ([]*models.User, error) {
 	var result []*models.User
 
-	var userTypeRepository UserTypeRepository
 	var userType models.UserType
-	if err := userTypeRepository.GetByTitle(&userType, "Physician"); err != nil {
+	if err := r.UserTypeRepository.GetByTitle(&userType, "Physician"); err != nil {
 		return nil, err
 	}
 

@@ -7,30 +7,16 @@ import (
 	"context"
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *queryResolver) Notifs(ctx context.Context) (*graph_models.Notif, error) {
-	var diagnosticOrderRepo repository.DiagnosticProcedureOrderRepository
-	diagnostics := diagnosticOrderRepo.GetTodaysOrderedCount()
-
-	var surgicalOrderRepo repository.SurgicalOrderRepository
-	surgical := surgicalOrderRepo.GetTodaysOrderedCount()
-
-	var labOrderRepo repository.LabOrderRepository
-	labs := labOrderRepo.GetTodaysOrderedCount()
-
-	var treatmentRepo repository.TreatmentOrderRepository
-	treatments := treatmentRepo.GetTodaysOrderedCount()
-
-	var followUpRepo repository.FollowUpOrderRepository
-	followUps := followUpRepo.GetTodaysOrderedCount()
-
-	var referralRepo repository.ReferralOrderRepository
-	referrals := referralRepo.GetTodaysOrderedCount()
-
-	var paymentWaiver repository.PaymentWaiverRepository
-	waivers, err := paymentWaiver.GetApprovedCount()
+	diagnostics := r.DiagnosticProcedureOrderRepository.GetTodaysOrderedCount()
+	surgical := r.SurgicalOrderRepository.GetTodaysOrderedCount()
+	labs := r.LabOrderRepository.GetTodaysOrderedCount()
+	treatments := r.TreatmentOrderRepository.GetTodaysOrderedCount()
+	followUps := r.FollowUpOrderRepository.GetTodaysOrderedCount()
+	referrals := r.ReferralOrderRepository.GetTodaysOrderedCount()
+	waivers, err := r.PaymentWaiverRepository.GetApprovedCount()
 
 	if err != nil {
 		return nil, err
