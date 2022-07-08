@@ -15,15 +15,13 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	"gorm.io/datatypes"
 )
 
 func (r *mutationResolver) SubscribeQueue(ctx context.Context, userID int, patientQueueID int) (*models.QueueSubscription, error) {
 	var entity models.QueueSubscription
 
-	var repository repository.QueueSubscriptionRepository
-	if err := repository.Subscribe(&entity, userID, patientQueueID); err != nil {
+	if err := r.QueueSubscriptionRepository.Subscribe(&entity, userID, patientQueueID); err != nil {
 		return nil, err
 	}
 
@@ -33,8 +31,7 @@ func (r *mutationResolver) SubscribeQueue(ctx context.Context, userID int, patie
 func (r *mutationResolver) UnsubscribeQueue(ctx context.Context, userID int, patientQueueID int) (*models.QueueSubscription, error) {
 	var entity models.QueueSubscription
 
-	var repository repository.QueueSubscriptionRepository
-	if err := repository.Unsubscribe(&entity, userID, patientQueueID); err != nil {
+	if err := r.QueueSubscriptionRepository.Unsubscribe(&entity, userID, patientQueueID); err != nil {
 		return nil, err
 	}
 
@@ -49,14 +46,12 @@ func (r *mutationResolver) SavePatientQueue(ctx context.Context, input graph_mod
 	queue := datatypes.JSON([]byte("[" + strings.Join(input.Queue, ", ") + "]"))
 	entity.Queue = queue
 
-	var repository repository.PatientQueueRepository
-
-	if err := repository.GetByQueueName(&entity, input.QueueName); err != nil {
-		if err := repository.Save(&entity); err != nil {
+	if err := r.PatientQueueRepository.GetByQueueName(&entity, input.QueueName); err != nil {
+		if err := r.PatientQueueRepository.Save(&entity); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := repository.UpdateQueue(input.QueueName, queue); err != nil {
+		if err := r.PatientQueueRepository.UpdateQueue(input.QueueName, queue); err != nil {
 			return nil, err
 		}
 	}
@@ -66,9 +61,8 @@ func (r *mutationResolver) SavePatientQueue(ctx context.Context, input graph_mod
 
 func (r *mutationResolver) DeleteFromQueue(ctx context.Context, patientQueueID int, appointmentID int) (*models.PatientQueue, error) {
 	var entity models.PatientQueue
-	var repository repository.PatientQueueRepository
 
-	if err := repository.DeleteFromQueue(&entity, patientQueueID, appointmentID); err != nil {
+	if err := r.PatientQueueRepository.DeleteFromQueue(&entity, patientQueueID, appointmentID); err != nil {
 		return nil, err
 	}
 
@@ -77,30 +71,27 @@ func (r *mutationResolver) DeleteFromQueue(ctx context.Context, patientQueueID i
 
 func (r *mutationResolver) CheckOutPatient(ctx context.Context, patientQueueID int, appointmentID int) (*models.PatientQueue, error) {
 	var appointment models.Appointment
-	var appointmentRepository repository.AppointmentRepository
 
-	if err := appointmentRepository.Get(&appointment, appointmentID); err != nil {
+	if err := r.AppointmentRepository.Get(&appointment, appointmentID); err != nil {
 		return nil, err
 	}
 
 	// Change appointment status to Checked Out
 	var status models.AppointmentStatus
-	var appointmentStatusRepository repository.AppointmentStatusRepository
-	if err := appointmentStatusRepository.GetByTitle(&status, "Checked-Out"); err != nil {
+	if err := r.AppointmentStatusRepository.GetByTitle(&status, "Checked-Out"); err != nil {
 		return nil, err
 	}
 
 	appointment.AppointmentStatusID = status.ID
 	appointment.CheckedOutTime = time.Now()
 
-	if err := appointmentRepository.Update(&appointment); err != nil {
+	if err := r.AppointmentRepository.Update(&appointment); err != nil {
 		return nil, err
 	}
 
 	var patientQueue models.PatientQueue
-	var patientQueueRepository repository.PatientQueueRepository
 
-	if err := patientQueueRepository.DeleteFromQueue(&patientQueue, patientQueueID, appointmentID); err != nil {
+	if err := r.PatientQueueRepository.DeleteFromQueue(&patientQueue, patientQueueID, appointmentID); err != nil {
 		return nil, err
 	}
 
@@ -109,30 +100,27 @@ func (r *mutationResolver) CheckOutPatient(ctx context.Context, patientQueueID i
 
 func (r *mutationResolver) PushPatientQueue(ctx context.Context, patientQueueID int, appointmentID int, destination graph_models.Destination) (*models.PatientQueue, error) {
 	var entity models.PatientQueue
-	var patientQueueRepository repository.PatientQueueRepository
-	var appointmentRepository repository.AppointmentRepository
 
 	if destination.String() == "PREEXAM" {
-		if err := patientQueueRepository.MoveToQueueName(patientQueueID, "Pre-Exam", appointmentID, ""); err != nil {
+		if err := r.PatientQueueRepository.MoveToQueueName(patientQueueID, "Pre-Exam", appointmentID, ""); err != nil {
 			return nil, err
 		}
 	} else if destination.String() == "PREOPERATION" {
-		if err := patientQueueRepository.MoveToQueueName(patientQueueID, "Pre-Operation", appointmentID, ""); err != nil {
+		if err := r.PatientQueueRepository.MoveToQueueName(patientQueueID, "Pre-Operation", appointmentID, ""); err != nil {
 			return nil, err
 		}
 	} else if destination.String() == "PHYSICIAN" {
 		var appointment models.Appointment
-		if err := appointmentRepository.Get(&appointment, appointmentID); err != nil {
+		if err := r.AppointmentRepository.Get(&appointment, appointmentID); err != nil {
 			return nil, err
 		}
 
-		var userRepository repository.UserRepository
 		var provider models.User
-		if err := userRepository.Get(&provider, appointment.UserID); err != nil {
+		if err := r.UserRepository.Get(&provider, appointment.UserID); err != nil {
 			return nil, err
 		}
 
-		if err := patientQueueRepository.MoveToQueueName(patientQueueID, "Dr. "+provider.FirstName+" "+provider.LastName, appointmentID, "USER"); err != nil {
+		if err := r.PatientQueueRepository.MoveToQueueName(patientQueueID, "Dr. "+provider.FirstName+" "+provider.LastName, appointmentID, "USER"); err != nil {
 			return nil, err
 		}
 	}
@@ -142,9 +130,8 @@ func (r *mutationResolver) PushPatientQueue(ctx context.Context, patientQueueID 
 
 func (r *mutationResolver) MovePatientQueue(ctx context.Context, appointmentID int, sourceQueueID int, destinationQueueID int) (*models.PatientQueue, error) {
 	var entity models.PatientQueue
-	var repository repository.PatientQueueRepository
 
-	if err := repository.Move(&entity, sourceQueueID, destinationQueueID, appointmentID); err != nil {
+	if err := r.PatientQueueRepository.Move(&entity, sourceQueueID, destinationQueueID, appointmentID); err != nil {
 		return nil, err
 	}
 
@@ -153,31 +140,26 @@ func (r *mutationResolver) MovePatientQueue(ctx context.Context, appointmentID i
 
 func (r *mutationResolver) CheckInPatient(ctx context.Context, appointmentID int, destination graph_models.Destination) (*models.Appointment, error) {
 	var appointment models.Appointment
-	var userRepository repository.UserRepository
-	var appointmentRepository repository.AppointmentRepository
-	var patientQueueRepository repository.PatientQueueRepository
 
-	if err := appointmentRepository.Get(&appointment, appointmentID); err != nil {
+	if err := r.AppointmentRepository.Get(&appointment, appointmentID); err != nil {
 		return nil, err
 	}
 
 	// Change appointment status to Checked In
 	var status models.AppointmentStatus
-	var appointmentStatusRepository repository.AppointmentStatusRepository
-	if err := appointmentStatusRepository.GetByTitle(&status, "Checked-In"); err != nil {
+	if err := r.AppointmentStatusRepository.GetByTitle(&status, "Checked-In"); err != nil {
 		return nil, err
 	}
 
 	var visitType models.VisitType
-	var visitTypeRepository repository.VisitTypeRepository
-	if err := visitTypeRepository.Get(&visitType, appointment.VisitTypeID); err != nil {
+	if err := r.VisitTypeRepository.Get(&visitType, appointment.VisitTypeID); err != nil {
 		return nil, err
 	}
 
 	if visitType.Title == "Surgery" {
 		var postOpAppointent models.Appointment
 
-		if err := appointmentRepository.SchedulePostOp(&postOpAppointent, appointment); err != nil {
+		if err := r.AppointmentRepository.SchedulePostOp(&postOpAppointent, appointment); err != nil {
 			return nil, err
 		}
 	}
@@ -186,28 +168,28 @@ func (r *mutationResolver) CheckInPatient(ctx context.Context, appointmentID int
 	checkedInTime := time.Now()
 	appointment.CheckedInTime = &checkedInTime
 
-	if err := appointmentRepository.Update(&appointment); err != nil {
+	if err := r.AppointmentRepository.Update(&appointment); err != nil {
 		return nil, err
 	}
 
 	// Add to queue
 	var patientQueue models.PatientQueue
 	if destination.String() == "PREEXAM" {
-		if err := patientQueueRepository.AddToQueue(&patientQueue, "Pre-Exam", appointmentID, "PREEXAM"); err != nil {
+		if err := r.PatientQueueRepository.AddToQueue(&patientQueue, "Pre-Exam", appointmentID, "PREEXAM"); err != nil {
 			return nil, err
 		}
 
 	} else if destination.String() == "PREOPERATION" {
-		if err := patientQueueRepository.AddToQueue(&patientQueue, "Pre-Operation", appointmentID, "PREOPERATION"); err != nil {
+		if err := r.PatientQueueRepository.AddToQueue(&patientQueue, "Pre-Operation", appointmentID, "PREOPERATION"); err != nil {
 			return nil, err
 		}
 	} else if destination.String() == "PHYSICIAN" {
 		var provider models.User
-		if err := userRepository.Get(&provider, appointment.UserID); err != nil {
+		if err := r.UserRepository.Get(&provider, appointment.UserID); err != nil {
 			return nil, err
 		}
 
-		if err := patientQueueRepository.AddToQueue(&patientQueue, "Dr. "+provider.FirstName+" "+provider.LastName, appointmentID, "USER"); err != nil {
+		if err := r.PatientQueueRepository.AddToQueue(&patientQueue, "Dr. "+provider.FirstName+" "+provider.LastName, appointmentID, "USER"); err != nil {
 			return nil, err
 		}
 	}
@@ -234,9 +216,8 @@ func (r *queryResolver) PatientQueues(ctx context.Context) ([]*graph_models.Pati
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -247,18 +228,17 @@ func (r *queryResolver) PatientQueues(ctx context.Context) ([]*graph_models.Pati
 		}
 	}
 
-	var patientQueueRepository repository.PatientQueueRepository
 	var patientQueues []*models.PatientQueue
 
 	if !isPhysician {
-		p, err := patientQueueRepository.GetAll()
+		p, err := r.PatientQueueRepository.GetAll()
 		if err != nil {
 			return nil, err
 		}
 
 		patientQueues = p
 	} else {
-		p, err := patientQueueRepository.GetAll()
+		p, err := r.PatientQueueRepository.GetAll()
 		if err != nil {
 			return nil, err
 		}
@@ -278,7 +258,6 @@ func (r *queryResolver) PatientQueues(ctx context.Context) ([]*graph_models.Pati
 
 	var result []*graph_models.PatientQueueWithAppointment
 
-	var appointmentRepo repository.AppointmentRepository
 	for _, patientQueue := range patientQueues {
 		var ids []int
 
@@ -286,9 +265,9 @@ func (r *queryResolver) PatientQueues(ctx context.Context) ([]*graph_models.Pati
 			return nil, err
 		}
 
-		page := repository.PaginationInput{Page: 0, Size: 1000}
+		page := models.PaginationInput{Page: 0, Size: 1000}
 
-		appointments, _, _ := appointmentRepo.GetByIds(ids, page)
+		appointments, _, _ := r.AppointmentRepository.GetByIds(ids, page)
 		var orderedAppointments []*models.Appointment
 
 		for _, id := range ids {
@@ -313,9 +292,8 @@ func (r *queryResolver) PatientQueues(ctx context.Context) ([]*graph_models.Pati
 
 func (r *queryResolver) UserSubscriptions(ctx context.Context, userID int) (*models.QueueSubscription, error) {
 	var entity models.QueueSubscription
-	var repository repository.QueueSubscriptionRepository
 
-	if err := repository.GetByUserId(&entity, userID); err != nil {
+	if err := r.QueueSubscriptionRepository.GetByUserId(&entity, userID); err != nil {
 		return nil, err
 	}
 

@@ -10,7 +10,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -25,9 +24,8 @@ func (r *mutationResolver) SavePaymentWaiver(ctx context.Context, input graph_mo
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -36,8 +34,7 @@ func (r *mutationResolver) SavePaymentWaiver(ctx context.Context, input graph_mo
 
 	entity.UserID = user.ID
 
-	var repository repository.PaymentWaiverRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.PaymentWaiverRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -55,20 +52,17 @@ func (r *mutationResolver) UpdatePaymentWaiver(ctx context.Context, input graph_
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
-
-	var repository repository.PaymentWaiverRepository
 
 	var entity models.PaymentWaiver
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.UserID = user.ID
 
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PaymentWaiverRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -76,9 +70,7 @@ func (r *mutationResolver) UpdatePaymentWaiver(ctx context.Context, input graph_
 }
 
 func (r *mutationResolver) DeletePaymentWaiver(ctx context.Context, id int) (bool, error) {
-	var repository repository.PaymentWaiverRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.PaymentWaiverRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -87,9 +79,8 @@ func (r *mutationResolver) DeletePaymentWaiver(ctx context.Context, id int) (boo
 
 func (r *mutationResolver) ApprovePaymentWaiver(ctx context.Context, id int, approve bool) (*models.PaymentWaiver, error) {
 	var entity models.PaymentWaiver
-	var repository repository.PaymentWaiverRepository
 
-	if err := repository.ApproveWaiver(&entity, id, approve); err != nil {
+	if err := r.PaymentWaiverRepository.ApproveWaiver(&entity, id, approve); err != nil {
 		return nil, err
 	}
 
@@ -97,8 +88,7 @@ func (r *mutationResolver) ApprovePaymentWaiver(ctx context.Context, id int, app
 }
 
 func (r *queryResolver) PaymentWaivers(ctx context.Context, page models.PaginationInput) (*graph_models.PaymentWaiverConnection, error) {
-	var repository repository.PaymentWaiverRepository
-	result, count, err := repository.GetAll(page)
+	result, count, err := r.PaymentWaiverRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
@@ -119,10 +109,9 @@ func (r *queryResolver) PaymentWaivers(ctx context.Context, page models.Paginati
 }
 
 func (r *queryResolver) PaymentWaiver(ctx context.Context, id int) (*models.PaymentWaiver, error) {
-	var repository repository.PaymentWaiverRepository
 	var entity models.PaymentWaiver
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.PaymentWaiverRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 

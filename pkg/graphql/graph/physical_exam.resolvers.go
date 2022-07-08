@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) SaveExamCategory(ctx context.Context, input graph_mod
 	var entity models.ExamCategory
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.ExamCategoryRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.ExamCategoryRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdateExamCategory(ctx context.Context, input graph_m
 	var entity models.ExamCategory
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.ExamCategoryRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.ExamCategoryRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -40,8 +37,7 @@ func (r *mutationResolver) SaveExamFinding(ctx context.Context, input graph_mode
 	var entity models.ExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.ExamFindingRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.ExamFindingRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +48,7 @@ func (r *mutationResolver) UpdateExamFinding(ctx context.Context, input graph_mo
 	var entity models.ExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.ExamFindingRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.ExamFindingRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -64,8 +59,7 @@ func (r *mutationResolver) SavePhysicalExamFinding(ctx context.Context, input gr
 	var entity models.PhysicalExamFinding
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PhysicalExamFindingRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.PhysicalExamFindingRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -80,8 +74,7 @@ func (r *mutationResolver) UpdatePhysicalExamFinding(ctx context.Context, input 
 		entity.Abnormal = *input.Abnormal
 	}
 
-	var repository repository.PhysicalExamFindingRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PhysicalExamFindingRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -89,8 +82,7 @@ func (r *mutationResolver) UpdatePhysicalExamFinding(ctx context.Context, input 
 }
 
 func (r *mutationResolver) DeletePhysicalExamFinding(ctx context.Context, id int) (bool, error) {
-	var repository repository.PhysicalExamFindingRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.PhysicalExamFindingRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -100,8 +92,7 @@ func (r *mutationResolver) DeletePhysicalExamFinding(ctx context.Context, id int
 func (r *mutationResolver) DeletePhysicalExamFindingExamCategory(ctx context.Context, physicalExamFindingID int, examCategoryID int) (*models.PhysicalExamFinding, error) {
 	var entity models.PhysicalExamFinding
 
-	var repository repository.PhysicalExamFindingRepository
-	if err := repository.DeleteExamCategory(&entity, physicalExamFindingID, examCategoryID); err != nil {
+	if err := r.PhysicalExamFindingRepository.DeleteExamCategory(&entity, physicalExamFindingID, examCategoryID); err != nil {
 		return nil, err
 	}
 
@@ -110,9 +101,8 @@ func (r *mutationResolver) DeletePhysicalExamFindingExamCategory(ctx context.Con
 
 func (r *queryResolver) ExamCategory(ctx context.Context, id int) (*models.ExamCategory, error) {
 	var entity models.ExamCategory
-	var repository repository.ExamCategoryRepository
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.ExamCategoryRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -120,8 +110,7 @@ func (r *queryResolver) ExamCategory(ctx context.Context, id int) (*models.ExamC
 }
 
 func (r *queryResolver) ExamCategories(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.ExamCategoryConnection, error) {
-	var repository repository.ExamCategoryRepository
-	entities, count, err := repository.GetAll(page, searchTerm)
+	entities, count, err := r.ExamCategoryRepository.GetAll(page, searchTerm)
 
 	if err != nil {
 		return nil, err
@@ -143,9 +132,8 @@ func (r *queryResolver) ExamCategories(ctx context.Context, page models.Paginati
 
 func (r *queryResolver) ExamFinding(ctx context.Context, id int) (*models.ExamFinding, error) {
 	var entity models.ExamFinding
-	var repository repository.ExamFindingRepository
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.ExamFindingRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -153,9 +141,7 @@ func (r *queryResolver) ExamFinding(ctx context.Context, id int) (*models.ExamFi
 }
 
 func (r *queryResolver) ExamFindings(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.ExamFindingConnection, error) {
-	var repository repository.ExamFindingRepository
-
-	entities, count, err := repository.GetAll(page, searchTerm)
+	entities, count, err := r.ExamFindingRepository.GetAll(page, searchTerm)
 
 	if err != nil {
 		return nil, err
@@ -177,9 +163,8 @@ func (r *queryResolver) ExamFindings(ctx context.Context, page models.Pagination
 
 func (r *queryResolver) PhysicalExamFinding(ctx context.Context, id int) (*models.PhysicalExamFinding, error) {
 	var entity models.PhysicalExamFinding
-	var repository repository.PhysicalExamFindingRepository
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.PhysicalExamFindingRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -192,8 +177,7 @@ func (r *queryResolver) PhysicalExamFindings(ctx context.Context, page models.Pa
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.PhysicalExamFindingRepository
-	entities, count, err := repository.GetAll(page, &f)
+	entities, count, err := r.PhysicalExamFindingRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err

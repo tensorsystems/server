@@ -250,10 +250,10 @@ func (r *ReferralOrderRepository) GetCount(filter *models.ReferralOrder, date *t
 }
 
 // Search ...
-func (r *ReferralOrderRepository) Search(p PaginationInput, filter *models.ReferralOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.ReferralOrder, int64, error) {
+func (r *ReferralOrderRepository) Search(p models.PaginationInput, filter *models.ReferralOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.ReferralOrder, int64, error) {
 	var result []models.ReferralOrder
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals", "type = ?", models.ReferralTypeInHouse).Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals", "type = ?", models.ReferralTypeInHouse).Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date
@@ -288,10 +288,10 @@ func (r *ReferralOrderRepository) GetByPatientChartID(m *models.ReferralOrder, p
 }
 
 // GetAll ...
-func (r *ReferralOrderRepository) GetAll(p PaginationInput, filter *models.FollowUpOrder) ([]models.ReferralOrder, int64, error) {
+func (r *ReferralOrderRepository) GetAll(p models.PaginationInput, filter *models.ReferralOrder) ([]models.ReferralOrder, int64, error) {
 	var result []models.ReferralOrder
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Referrals").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {

@@ -37,10 +37,10 @@ func (r *SurgicalProcedureTypeRepository) Save(m *models.SurgicalProcedureType) 
 }
 
 // GetAll ...
-func (r *SurgicalProcedureTypeRepository) GetAll(p PaginationInput, searchTerm *string) ([]models.SurgicalProcedureType, int64, error) {
+func (r *SurgicalProcedureTypeRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.SurgicalProcedureType, int64, error) {
 	var result []models.SurgicalProcedureType
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")

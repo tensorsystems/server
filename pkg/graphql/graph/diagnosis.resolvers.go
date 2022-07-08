@@ -10,7 +10,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -18,8 +17,7 @@ func (r *mutationResolver) SaveDiagnosis(ctx context.Context, input graph_models
 	var entity models.Diagnosis
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.DiagnosisRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.DiagnosisRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -30,8 +28,7 @@ func (r *mutationResolver) UpdateDiagnosis(ctx context.Context, input graph_mode
 	var entity models.Diagnosis
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.DiagnosisRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.DiagnosisRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -39,9 +36,7 @@ func (r *mutationResolver) UpdateDiagnosis(ctx context.Context, input graph_mode
 }
 
 func (r *mutationResolver) DeleteDiagnosis(ctx context.Context, id int) (bool, error) {
-	var repository repository.DiagnosisRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.DiagnosisRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -59,23 +54,21 @@ func (r *queryResolver) Diagnoses(ctx context.Context, page models.PaginationInp
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var diagnosisRepository repository.DiagnosisRepository
 	var result []models.Diagnosis
 	var count int64
 
 	if favorites != nil && *favorites == true {
-		result, count, err = diagnosisRepository.GetFavorites(page, searchTerm, user.ID)
+		result, count, err = r.DiagnosisRepository.GetFavorites(page, searchTerm, user.ID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		result, count, err = diagnosisRepository.GetAll(page, searchTerm)
+		result, count, err = r.DiagnosisRepository.GetAll(page, searchTerm)
 		if err != nil {
 			return nil, err
 		}

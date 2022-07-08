@@ -9,7 +9,6 @@ import (
 
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chiefComplaintTypeID int) (*models.FavoriteChiefComplaint, error) {
@@ -23,18 +22,16 @@ func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chief
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var favoriteChiefComplaintRepository repository.FavoriteChiefComplaintRepository
 	var entity models.FavoriteChiefComplaint
 	entity.ChiefComplaintTypeID = chiefComplaintTypeID
 	entity.UserID = user.ID
 
-	if err := favoriteChiefComplaintRepository.Save(&entity); err != nil {
+	if err := r.FavoriteChiefComplaintRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -42,8 +39,7 @@ func (r *mutationResolver) SaveFavoriteChiefComplaint(ctx context.Context, chief
 }
 
 func (r *mutationResolver) DeleteFavoriteChiefComplaint(ctx context.Context, id int) (*int, error) {
-	var repository repository.FavoriteChiefComplaintRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.FavoriteChiefComplaintRepository.Delete(id); err != nil {
 		return nil, err
 	}
 
@@ -61,14 +57,12 @@ func (r *queryResolver) FavoriteChiefComplaints(ctx context.Context) ([]*models.
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var favoriteChiefComplaintRepository repository.FavoriteChiefComplaintRepository
-	entities, err := favoriteChiefComplaintRepository.GetByUser(user.ID)
+	entities, err := r.FavoriteChiefComplaintRepository.GetByUser(user.ID)
 
 	if err != nil {
 		return nil, err

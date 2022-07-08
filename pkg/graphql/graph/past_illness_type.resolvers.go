@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) SavePastIllnessTypes(ctx context.Context, input graph
 	var entity models.PastIllnessType
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PastIllnessTypeRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.PastIllnessTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdatePastIllnessType(ctx context.Context, input grap
 	var entity models.PastIllnessType
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PastIllnessTypeRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PastIllnessTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -37,9 +34,7 @@ func (r *mutationResolver) UpdatePastIllnessType(ctx context.Context, input grap
 }
 
 func (r *mutationResolver) DeletePastIllnessType(ctx context.Context, id int) (bool, error) {
-	var repository repository.PastIllnessTypeRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.PastIllnessTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -49,8 +44,7 @@ func (r *mutationResolver) DeletePastIllnessType(ctx context.Context, id int) (b
 func (r *queryResolver) PastIllnessType(ctx context.Context, id int) (*models.PastIllnessType, error) {
 	var entity models.PastIllnessType
 
-	var repository repository.PastIllnessTypeRepository
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.PastIllnessTypeRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -58,8 +52,7 @@ func (r *queryResolver) PastIllnessType(ctx context.Context, id int) (*models.Pa
 }
 
 func (r *queryResolver) PastIllnessTypes(ctx context.Context, page models.PaginationInput) (*graph_models.PastIllnessTypeConnection, error) {
-	var repository repository.PastIllnessTypeRepository
-	result, count, err := repository.GetAll(page)
+	result, count, err := r.PastIllnessTypeRepository.GetAll(page)
 	if err != nil {
 		return nil, err
 	}

@@ -260,10 +260,10 @@ func (r *TreatmentOrderRepository) GetCount(filter *models.TreatmentOrder, date 
 }
 
 // Search ...
-func (r *TreatmentOrderRepository) Search(p PaginationInput, filter *models.TreatmentOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.TreatmentOrder, int64, error) {
+func (r *TreatmentOrderRepository) Search(p models.PaginationInput, filter *models.TreatmentOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.TreatmentOrder, int64, error) {
 	var result []models.TreatmentOrder
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Treatments.Payments.Billing").Preload("Treatments.TreatmentType").Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Treatments.Payments.Billing").Preload("Treatments.TreatmentType").Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date

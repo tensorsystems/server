@@ -40,6 +40,7 @@ import (
 	"github.com/tensoremr/server/pkg/graphql/graph"
 	"github.com/tensoremr/server/pkg/graphql/graph/generated"
 	"github.com/tensoremr/server/pkg/middleware"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 	"gorm.io/gorm"
 )
@@ -50,26 +51,28 @@ type Server struct {
 	Config        *conf.Configuration
 	DB            *gorm.DB
 	ACLEnforcer   *casbin.Enforcer
-	TestDB        *gorm.DB          // Database connection
-	ModelRegistry *repository.Model // Model registry for migration
+	TestDB        *gorm.DB      // Database connection
+	ModelRegistry *models.Model // Model registry for migration
 }
 
 // NewServer will create a new instance of the application
 func NewServer() *Server {
 	server := &Server{}
 
-	server.ModelRegistry = repository.NewModel()
+	server.ModelRegistry = models.NewModel()
 	server.NewEnforcer()
 
 	if err := server.ModelRegistry.OpenPostgres(); err != nil {
 		log.Fatalf("gorm: could not connect to db %q", err)
 	}
 
+	//injectDb(server.ModelRegistry.DB)
+
 	server.DB = server.ModelRegistry.DB
 
 	server.ModelRegistry.RegisterAllModels()
 	server.ModelRegistry.AutoMigrateAll()
-	server.ModelRegistry.SeedData()
+	server.SeedData()
 	server.RegisterJobs()
 
 	server.Gin = server.NewRouter()
@@ -86,7 +89,7 @@ func NewTestServer(config *conf.Configuration) (*Server, error) {
 	server := &Server{}
 	server.Config = config
 
-	server.ModelRegistry = repository.NewModel()
+	server.ModelRegistry = models.NewModel()
 	err := server.ModelRegistry.OpenWithConfigTest(config)
 
 	if err != nil {
@@ -114,7 +117,7 @@ func playgroundHandler() gin.HandlerFunc {
 func (s *Server) RegisterJobs() {
 	c := cron.New()
 	c.AddFunc("@hourly", func() {
-		var patientQueue repository.PatientQueue
+		var patientQueue repository.PatientQueueRepository
 		if err := patientQueue.ClearExpired(); err != nil {
 			fmt.Println(err)
 		}
@@ -123,15 +126,9 @@ func (s *Server) RegisterJobs() {
 }
 
 // Defining the Graphql handler
-func graphqlHandler(server *Server) gin.HandlerFunc {
+func graphqlHandler(server *Server, h *handler.Server) gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
-
-	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
-		Config:        server.Config,
-		AccessControl: server.ACLEnforcer,
-		DB:            server.DB,
-	}}))
 
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
@@ -140,6 +137,184 @@ func graphqlHandler(server *Server) gin.HandlerFunc {
 
 // NewRouter ...
 func (s *Server) NewRouter() *gin.Engine {
+	AllergyRepository := repository.ProvideAllergyRepository(s.DB)
+	AmendmentRepository := repository.ProvideAmendmentRepository(s.DB)
+	AppointmentQueueRepository := repository.ProvideAppointmentQueueRepository(s.DB)
+	AppointmentStatusRepository := repository.ProvideAppointmentStatusRepository(s.DB)
+	AppointmentRepository := repository.ProvideAppointmentRepository(s.DB)
+	AutoRefractionRepository := repository.ProvideAutoRefractionRepository(s.DB)
+	BillingRepository := repository.ProvideBillingRepository(s.DB)
+	ChatDeleteRepository := repository.ProvideChatDeleteRepository(s.DB)
+	ChatMemberRepository := repository.ProvideChatMemberRepository(s.DB)
+	ChatMessageRepository := repository.ProvideChatMessageRepository(s.DB)
+	ChatMuteRepository := repository.ProvideChatMuteRepository(s.DB)
+	ChatUnreadRepository := repository.ProvideChatUnreadRepository(s.DB)
+	ChatRepository := repository.ProvideChatRepository(s.DB)
+	ChiefComplaintTypeRepository := repository.ProvideChiefComplaintTypeRepository(s.DB)
+	ChiefComplaintRepository := repository.ProvideChiefComplaintRepository(s.DB)
+	CoverTestRepository := repository.ProvideCoverTestRepository(s.DB)
+	DiagnosisRepository := repository.ProvideDiagnosisRepository(s.DB)
+	DiagnosticProcedureRepository := repository.ProvideDiagnosticProcedureRepository(s.DB)
+	DiagnosticProcedureOrderRepository := repository.ProvideDiagnosticProcedureOrderRepository(s.DB)
+	DiagnosticProcedureTypeRepository := repository.ProvideDiagnosticProcedureTypeRepository(s.DB)
+	ExamCategoryRepository := repository.ProvideExamCategoryRepository(s.DB)
+	ExternalExamRepository := repository.ProvideExternalExamRepository(s.DB)
+	ExamFindingRepository := repository.ProvideExamFindingRepository(s.DB)
+	EyewearPrescriptionOrderRepository := repository.ProvideEyewearPrescriptionOrderRepository(s.DB)
+	EyewearPrescriptionRepository := repository.ProvideEyewearPrescriptionRepository(s.DB)
+	EyewearShopRepository := repository.ProvideEyewearShopRepository(s.DB)
+	FamilyIllnessRepository := repository.ProvideFamilyIllnessRepository(s.DB)
+	FavoriteChiefComplaintRepository := repository.ProvideFavoriteChiefComplaintRepository(s.DB)
+	FavoriteDiagnosisRepository := repository.ProvideFavoriteDiagnosisRepository(s.DB)
+	FavoriteMedicationRepository := repository.ProvideFavoriteMedicationRepository(s.DB)
+	FileRepository := repository.ProvideFileRepository(s.DB)
+	FollowUpOrderRepository := repository.ProvideFollowUpOrderRepository(s.DB)
+	FollowUpRepository := repository.ProvideFollowUpRepository(s.DB)
+	FunduscopyRepository := repository.ProvideFunduscopyRepository(s.DB)
+	HpiComponentTypeRepository := repository.ProvideHpiComponentTypeRepository(s.DB)
+	HpiComponentRepository := repository.ProvideHpiComponentRepository(s.DB)
+	IopRepository := repository.ProvideIopRepository(s.DB)
+	LabOrderRepository := repository.ProvideLabOrderRepository(s.DB)
+	LabTypeRepository := repository.ProvideLabTypeRepository(s.DB)
+	LabRepository := repository.ProvideLabRepository(s.DB)
+	LifestyleTypeRepository := repository.ProvideLifestyleTypeRepository(s.DB)
+	LifestyleRepository := repository.ProvideLifestyleRepository(s.DB)
+	MedicalPrescriptionOrderRepository := repository.ProvideMedicalPrescriptionOrderRepository(s.DB)
+	MedicalPrescriptionRepository := repository.ProvideMedicalPrescriptionRepository(s.DB)
+	OcularMotilityRepository := repository.ProvideOcularMotilityRepository(s.DB)
+	OpthalmologyExamRepository := repository.ProvideOpthalmologyExamRepository(s.DB)
+	OpticDiscRepository := repository.ProvideOpticDiscRepository(s.DB)
+	OrganizationDetailsRepository := repository.ProvideOrganizationDetailsRepository(s.DB)
+	PastHospitalizationRepository := repository.ProvidePastHospitalizationRepository(s.DB)
+	PastIllnessTypeRepository := repository.ProvidePastIllnessTypeRepository(s.DB)
+	PastIllnessRepository := repository.ProvidePastIllnessRepository(s.DB)
+	PastInjuryRepository := repository.ProvidePastInjuryRepository(s.DB)
+	PastOptSurgeryRepository := repository.ProvidePastOptSurgeryRepository(s.DB)
+	PastSurgeryRepository := repository.ProvidePastSurgeryRepository(s.DB)
+	PatientChartRepository := repository.ProvidePatientChartRepository(s.DB)
+	PatientDiagnosisRepository := repository.ProvidePatientDiagnosisRepository(s.DB)
+	PatientEncounterLimitRepository := repository.ProvidePatientEncounterLimitRepository(s.DB)
+	PatientHistoryRepository := repository.ProvidePatientHistoryRepository(s.DB)
+	PatientQueueRepository := repository.ProvidePatientQueueRepository(s.DB)
+	PatientRepository := repository.ProvidePatientRepository(s.DB)
+	PaymentWaiverRepository := repository.ProvidePaymentWaiverRepository(s.DB)
+	PaymentRepository := repository.ProvidePaymentRepository(s.DB)
+	PharmacyRepository := repository.ProvidePharmacyRepository(s.DB)
+	PhysicalExamFindingRepository := repository.ProvidePhysicalExamFindingRepository(s.DB)
+	PupilsRepository := repository.ProvidePupilsRepository(s.DB)
+	QueueDestinationRepository := repository.ProvideQueueDestinationRepository(s.DB)
+	QueueSubscriptionRepository := repository.ProvideQueueSubscriptionRepository(s.DB)
+	ReferralOrderRepository := repository.ProvideReferralOrderRepository(s.DB)
+	ReferralRepository := repository.ProvideReferralRepository(s.DB)
+	ReviewOfSystemRepository := repository.ProvideReviewOfSystemRepository(s.DB)
+	RoomRepository := repository.ProvideRoomRepository(s.DB)
+	SlitLampExamRepository := repository.ProvideSlitLampExamRepository(s.DB)
+	SupplyRepository := repository.ProvideSupplyRepository(s.DB)
+	SurgicalOrderRepository := repository.ProvideSurgicalOrderRepository(s.DB)
+	SurgicalProcedureTypeRepository := repository.ProvideSurgicalProcedureTypeRepository(s.DB)
+	SurgicalProcedureRepository := repository.ProvideSurgicalProcedureRepository(s.DB)
+	SystemSymptomRepository := repository.ProvideSystemSymptomRepository(s.DB)
+	SystemRepository := repository.ProvideSystemRepository(s.DB)
+	TreatmentOrderRepository := repository.ProvideTreatmentOrderRepository(s.DB)
+	TreatmentTypeRepository := repository.ProvideTreatmentTypeRepository(s.DB)
+	TreatmentRepository := repository.ProvideTreatmentRepository(s.DB)
+	UserTypeRepository := repository.ProvideUserTypeRepository(s.DB)
+	UserRepository := repository.ProvideUserRepository(s.DB)
+	VisitTypeRepository := repository.ProvideVisitTypeRepository(s.DB)
+	VisualAcuityRepository := repository.ProvideVisualAcuityRepository(s.DB)
+	VitalSignsRepository := repository.ProvideVitalSignsRepository(s.DB)
+
+	h := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+		Config:                             s.Config,
+		AccessControl:                      s.ACLEnforcer,
+		AllergyRepository:                  AllergyRepository,
+		AmendmentRepository:                AmendmentRepository,
+		AppointmentQueueRepository:         AppointmentQueueRepository,
+		AppointmentStatusRepository:        AppointmentStatusRepository,
+		AppointmentRepository:              AppointmentRepository,
+		AutoRefractionRepository:           AutoRefractionRepository,
+		BillingRepository:                  BillingRepository,
+		ChatDeleteRepository:               ChatDeleteRepository,
+		ChatMemberRepository:               ChatMemberRepository,
+		ChatMessageRepository:              ChatMessageRepository,
+		ChatMuteRepository:                 ChatMuteRepository,
+		ChatUnreadRepository:               ChatUnreadRepository,
+		ChatRepository:                     ChatRepository,
+		ChiefComplaintTypeRepository:       ChiefComplaintTypeRepository,
+		ChiefComplaintRepository:           ChiefComplaintRepository,
+		CoverTestRepository:                CoverTestRepository,
+		DiagnosisRepository:                DiagnosisRepository,
+		DiagnosticProcedureRepository:      DiagnosticProcedureRepository,
+		DiagnosticProcedureOrderRepository: DiagnosticProcedureOrderRepository,
+		DiagnosticProcedureTypeRepository:  DiagnosticProcedureTypeRepository,
+		ExamCategoryRepository:             ExamCategoryRepository,
+		ExternalExamRepository:             ExternalExamRepository,
+		ExamFindingRepository:              ExamFindingRepository,
+		EyewearPrescriptionOrderRepository: EyewearPrescriptionOrderRepository,
+		EyewearPrescriptionRepository:      EyewearPrescriptionRepository,
+		EyewearShopRepository:              EyewearShopRepository,
+		FamilyIllnessRepository:            FamilyIllnessRepository,
+		FavoriteChiefComplaintRepository:   FavoriteChiefComplaintRepository,
+		FavoriteDiagnosisRepository:        FavoriteDiagnosisRepository,
+		FavoriteMedicationRepository:       FavoriteMedicationRepository,
+		FileRepository:                     FileRepository,
+		FollowUpOrderRepository:            FollowUpOrderRepository,
+		FollowUpRepository:                 FollowUpRepository,
+		FunduscopyRepository:               FunduscopyRepository,
+		HpiComponentTypeRepository:         HpiComponentTypeRepository,
+		HpiComponentRepository:             HpiComponentRepository,
+		IopRepository:                      IopRepository,
+		LabOrderRepository:                 LabOrderRepository,
+		LabTypeRepository:                  LabTypeRepository,
+		LabRepository:                      LabRepository,
+		LifestyleTypeRepository:            LifestyleTypeRepository,
+		LifestyleRepository:                LifestyleRepository,
+		MedicalPrescriptionOrderRepository: MedicalPrescriptionOrderRepository,
+		MedicalPrescriptionRepository:      MedicalPrescriptionRepository,
+		OcularMotilityRepository:           OcularMotilityRepository,
+		OpthalmologyExamRepository:         OpthalmologyExamRepository,
+		OpticDiscRepository:                OpticDiscRepository,
+		OrganizationDetailsRepository:      OrganizationDetailsRepository,
+		PastHospitalizationRepository:      PastHospitalizationRepository,
+		PastIllnessTypeRepository:          PastIllnessTypeRepository,
+		PastIllnessRepository:              PastIllnessRepository,
+		PastInjuryRepository:               PastInjuryRepository,
+		PastOptSurgeryRepository:           PastOptSurgeryRepository,
+		PastSurgeryRepository:              PastSurgeryRepository,
+		PatientChartRepository:             PatientChartRepository,
+		PatientDiagnosisRepository:         PatientDiagnosisRepository,
+		PatientEncounterLimitRepository:    PatientEncounterLimitRepository,
+		PatientHistoryRepository:           PatientHistoryRepository,
+		PatientQueueRepository:             PatientQueueRepository,
+		PatientRepository:                  PatientRepository,
+		PaymentWaiverRepository:            PaymentWaiverRepository,
+		PaymentRepository:                  PaymentRepository,
+		PharmacyRepository:                 PharmacyRepository,
+		PhysicalExamFindingRepository:      PhysicalExamFindingRepository,
+		PupilsRepository:                   PupilsRepository,
+		QueueDestinationRepository:         QueueDestinationRepository,
+		QueueSubscriptionRepository:        QueueSubscriptionRepository,
+		ReferralOrderRepository:            ReferralOrderRepository,
+		ReferralRepository:                 ReferralRepository,
+		ReviewOfSystemRepository:           ReviewOfSystemRepository,
+		RoomRepository:                     RoomRepository,
+		SlitLampExamRepository:             SlitLampExamRepository,
+		SupplyRepository:                   SupplyRepository,
+		SurgicalOrderRepository:            SurgicalOrderRepository,
+		SurgicalProcedureTypeRepository:    SurgicalProcedureTypeRepository,
+		SurgicalProcedureRepository:        SurgicalProcedureRepository,
+		SystemSymptomRepository:            SystemSymptomRepository,
+		SystemRepository:                   SystemRepository,
+		TreatmentOrderRepository:           TreatmentOrderRepository,
+		TreatmentTypeRepository:            TreatmentTypeRepository,
+		TreatmentRepository:                TreatmentRepository,
+		UserTypeRepository:                 UserTypeRepository,
+		UserRepository:                     UserRepository,
+		VisitTypeRepository:                VisitTypeRepository,
+		VisualAcuityRepository:             VisualAcuityRepository,
+		VitalSignsRepository:               VitalSignsRepository,
+	}}))
+
 	r := gin.Default()
 	//r.Use(cors.Default())
 	r.Use(middleware.CORSMiddleware())
@@ -149,28 +324,30 @@ func (s *Server) NewRouter() *gin.Engine {
 		c.String(200, "pong")
 	})
 
+	authApi := auth.AuthApi{UserRepository: UserRepository}
+	patientQueueApi := controller.PatientQueueApi{PatientQueueRepository: PatientQueueRepository, AppointmentRepository: AppointmentRepository}
+	userTypeApi := controller.UserTypeApi{UserTypeRepository: UserTypeRepository}
+	organizationDetailsApi := controller.OrganizationDetailsApi{OrganizationDetailsRepository: OrganizationDetailsRepository}
+
+
 	r.Group("/public")
 	{
-		r.POST("/login", auth.Login())
-		r.POST("/legacy-login", auth.LegacyLogin())
-		r.POST("/signup", auth.Signup)
-		r.GET("/userTypes", controller.GetUserTypes)
-		r.GET("/patientQueues", controller.GetPatientQueues)
-		r.GET("/organizationDetails", controller.GetOrganizationDetails)
+		r.POST("/login", authApi.Login())
+		r.POST("/legacy-login", authApi.LegacyLogin())
+		r.POST("/signup", authApi.Signup)
+		r.GET("/userTypes", userTypeApi.GetUserTypes)
+		r.GET("/patientQueues", patientQueueApi.GetPatientQueues)
+		r.GET("/organizationDetails", organizationDetailsApi.GetOrganizationDetails)
 
 		r.Static("/files", "./files")
-
-		r.GET("/recreate-opthalmology-exam", controller.RecreateOpthalmologyExam)
 
 		r.GET("/rxnorm-drugs", controller.GetDrugs)
 		r.GET("/rxnorm-intractions", controller.GetDrugIntractions)
 	}
 
-	r.GET("/clean", controller.ClearPatientsRecord)
-
 	r.Use(middleware.AuthMiddleware())
 	r.GET("/api", playgroundHandler())
-	r.POST("/query", graphqlHandler(s))
+	r.POST("/query", graphqlHandler(s, h))
 
 	return r
 }
@@ -186,7 +363,7 @@ func (s *Server) GetConfig() *conf.Configuration {
 }
 
 // GetModelRegistry returns the model registry
-func (s *Server) GetModelRegistry() *repository.Model {
+func (s *Server) GetModelRegistry() *models.Model {
 	return s.ModelRegistry
 }
 
@@ -246,4 +423,53 @@ func (s *Server) ShutdownTest() {
 		db, _ := s.TestDB.DB()
 		db.Close()
 	}
+}
+
+// SeedData ...
+func (m *Server) SeedData() error {
+	appointmentStatusRepository := repository.ProvideAppointmentStatusRepository(m.DB)
+	appointmentStatusRepository.Seed()
+
+	userTypeRepository := repository.ProvideUserTypeRepository(m.DB)
+	userTypeRepository.Seed()
+
+	userRepository := repository.ProvideUserRepository(m.DB)
+	userRepository.Seed(userTypeRepository)
+
+	visitTypeRepository := repository.ProvideVisitTypeRepository(m.DB)
+	visitTypeRepository.Seed()
+
+	// Save default patient encounter limits
+	// var user repository.UserRepository
+	// physicians, err := user.GetByUserTypeTitle("Physician")
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, p := range physicians {
+	// 	user := *p
+
+	// 	var patientEncounterLimit PatientEncounterLimit
+	// 	if err := patientEncounterLimit.GetByUser(user.ID); err != nil {
+	// 		patientEncounterLimit.UserID = user.ID
+	// 		patientEncounterLimit.MondayLimit = 150
+	// 		patientEncounterLimit.TuesdayLimit = 150
+	// 		patientEncounterLimit.WednesdayLimit = 150
+	// 		patientEncounterLimit.ThursdayLimit = 150
+	// 		patientEncounterLimit.FridayLimit = 150
+	// 		patientEncounterLimit.SaturdayLimit = 150
+	// 		patientEncounterLimit.SundayLimit = 150
+	// 		patientEncounterLimit.Overbook = 150
+
+	// 		if err := patientEncounterLimit.Save(); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+
+	// var queueDestination QueueDestination
+	// queueDestination.Seed()
+
+	return nil
 }

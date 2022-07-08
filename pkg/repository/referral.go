@@ -99,10 +99,10 @@ func (r *ReferralRepository) GetByOrderID(m *models.Referral, ID int) error {
 // }
 
 // GetAll ...
-func (r *ReferralRepository) GetAll(p PaginationInput, filter *models.Referral) ([]models.Referral, int64, error) {
+func (r *ReferralRepository) GetAll(p models.PaginationInput, filter *models.Referral) ([]models.Referral, int64, error) {
 	var result []models.Referral
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {

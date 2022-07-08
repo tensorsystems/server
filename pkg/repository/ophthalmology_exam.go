@@ -31,19 +31,6 @@ func ProvideOpthalmologyExamRepository(DB *gorm.DB) OpthalmologyExamRepository {
 	return OpthalmologyExamRepository{DB: DB}
 }
 
-func (r *OpthalmologyExamRepository) Recreate(m *models.OpthalmologyExam, patientChartID int) error {
-	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Unscoped().Where("patient_chart_id = ?", patientChartID).Delete(&m).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Create(&models.OpthalmologyExam{PatientChartID: patientChartID}).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
-}
 
 // Save ...
 func (r *OpthalmologyExamRepository) Save(m *models.OpthalmologyExam) error {

@@ -32,8 +32,7 @@ func ProvideUserRepository(DB *gorm.DB) UserRepository {
 }
 
 // Seed ...
-func (r *UserRepository) Seed() {
-	var userTypeRepository UserTypeRepository
+func (r *UserRepository) Seed(userTypeRepository UserTypeRepository) {
 	var userType models.UserType
 	userTypeRepository.GetByTitle(&userType, "Admin")
 
@@ -110,10 +109,10 @@ func (r *UserRepository) GetAll(p PaginationInput) ([]models.User, int64, error)
 }
 
 // Search ...
-func (r *UserRepository) Search(p PaginationInput, filter *models.User, searchTerm *string) ([]models.User, int64, error) {
+func (r *UserRepository) Search(p models.PaginationInput, filter *models.User, searchTerm *string) ([]models.User, int64, error) {
 	var result []models.User
 
-	tx := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Preload("UserTypes").Preload("Signature").Preload("ProfilePic")
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Preload("UserTypes").Preload("Signature").Preload("ProfilePic")
 
 	if searchTerm != nil {
 

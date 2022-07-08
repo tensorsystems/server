@@ -21,31 +21,10 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
-
-// RecreateOpthalmologyExam ...
-func RecreateOpthalmologyExam(c *gin.Context) {
-	patientChartIdQuery := c.Query("patientChartId")
-
-	patientChartId, err := strconv.Atoi(patientChartIdQuery)
-	if err != nil {
-		c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
-	}
-
-	var repo repository.OpthalmologyExamRepository
-	var opthalmologyExam models.OpthalmologyExam
-
-	if err := repo.Recreate(&opthalmologyExam, patientChartId); err != nil {
-		c.String(http.StatusNotFound, fmt.Sprintf("error: %s", err))
-	}
-
-	c.JSON(200, opthalmologyExam)
-}
 
 // ClearPatientsRecord ...
 func ClearPatientsRecord(c *gin.Context) {

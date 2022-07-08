@@ -8,23 +8,21 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
 func (r *mutationResolver) SaveSupply(ctx context.Context, input graph_models.SupplyInput) (*models.Supply, error) {
-	var entity repository.Supply
+	var entity models.Supply
 	deepCopy.Copy(&input).To(&entity)
 
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Billings = billings
 
-	if err := entity.Save(); err != nil {
+	if err := r.SupplyRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -32,18 +30,17 @@ func (r *mutationResolver) SaveSupply(ctx context.Context, input graph_models.Su
 }
 
 func (r *mutationResolver) UpdateSupply(ctx context.Context, input graph_models.SupplyUpdateInput) (*models.Supply, error) {
-	var entity repository.Supply
+	var entity models.Supply
 	deepCopy.Copy(&input).To(&entity)
 
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Billings = billings
 
-	if err := entity.Update(); err != nil {
+	if err := r.SupplyRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -51,9 +48,7 @@ func (r *mutationResolver) UpdateSupply(ctx context.Context, input graph_models.
 }
 
 func (r *mutationResolver) DeleteSupply(ctx context.Context, id int) (bool, error) {
-	var entity repository.Supply
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.SupplyRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -61,22 +56,21 @@ func (r *mutationResolver) DeleteSupply(ctx context.Context, id int) (bool, erro
 }
 
 func (r *queryResolver) Supplies(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SupplyConnection, error) {
-	var entity repository.Supply
-	result, count, err := entity.GetAll(page, searchTerm)
+	result, count, err := r.SupplyRepository.GetAll(page, searchTerm)
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SupplyEdge, len(result))
+	edges := make([]*graph_models.SupplyEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.SupplyEdge{
+		edges[i] = &graph_models.SupplyEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.SupplyConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SupplyConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

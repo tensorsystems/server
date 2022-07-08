@@ -325,10 +325,10 @@ func (r *AppointmentRepository) FindTodaysCheckedInAppointments(p models.Paginat
 }
 
 // GetByIds ...
-func (r *AppointmentRepository) GetByIds(ids []int, p PaginationInput) ([]models.Appointment, int64, error) {
+func (r *AppointmentRepository) GetByIds(ids []int, p models.PaginationInput) ([]models.Appointment, int64, error) {
 	var result []models.Appointment
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("id IN ?", ids).Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where("id IN ?", ids).Find(&result)
 
 	var count int64
 	if len(result) > 0 {

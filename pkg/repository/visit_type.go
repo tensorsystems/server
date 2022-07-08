@@ -95,7 +95,7 @@ func (r *VisitTypeRepository) Count(dbString string) (int64, error) {
 }
 
 // GetAll ...
-func (r *VisitTypeRepository) GetAll(p PaginationInput) ([]models.VisitType, int64, error) {
+func (r *VisitTypeRepository) GetAll(p models.PaginationInput) ([]models.VisitType, int64, error) {
 	var result []models.VisitType
 
 	var count int64
@@ -104,7 +104,7 @@ func (r *VisitTypeRepository) GetAll(p PaginationInput) ([]models.VisitType, int
 		return result, 0, countErr
 	}
 
-	err := r.DB.Scopes(Paginate(&p)).Order("id ASC").Find(&result).Error
+	err := r.DB.Scopes(models.Paginate(&p)).Order("id ASC").Find(&result).Error
 	if err != nil {
 		return result, 0, err
 	}

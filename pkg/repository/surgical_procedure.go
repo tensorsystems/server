@@ -47,10 +47,10 @@ func (r *SurgicalProcedureRepository) GetByPatientChart(m *models.SurgicalProced
 }
 
 // GetAll ...
-func (r *SurgicalProcedureRepository) GetAll(p PaginationInput, filter *models.SurgicalProcedure) ([]models.SurgicalProcedure, int64, error) {
+func (r *SurgicalProcedureRepository) GetAll(p models.PaginationInput, filter *models.SurgicalProcedure) ([]models.SurgicalProcedure, int64, error) {
 	var result []models.SurgicalProcedure
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("SurgicalProcedureType").Preload("PreanestheticDocuments").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("SurgicalProcedureType").Preload("PreanestheticDocuments").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -70,10 +70,10 @@ func (r *SurgicalProcedureRepository) DeleteFile(association string, surgicalPro
 }
 
 // GetByPatient ...
-func (r *SurgicalProcedureRepository) GetByPatient(p PaginationInput, patientID int) ([]models.SurgicalProcedure, int64, error) {
+func (r *SurgicalProcedureRepository) GetByPatient(p models.PaginationInput, patientID int) ([]models.SurgicalProcedure, int64, error) {
 	var result []models.SurgicalProcedure
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Joins("INNER JOIN orders ON orders.id = surgical_procedures.order_id").Where("orders.patient_id = ?", patientID).Preload("Order").Preload("Order.Payments").Preload("Order.User").Preload("SurgicalProcedureType").Order("surgical_procedures.id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Joins("INNER JOIN orders ON orders.id = surgical_procedures.order_id").Where("orders.patient_id = ?", patientID).Preload("Order").Preload("Order.Payments").Preload("Order.User").Preload("SurgicalProcedureType").Order("surgical_procedures.id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -93,23 +93,25 @@ func (r *SurgicalProcedureRepository) Update(m *models.SurgicalProcedure) error 
 }
 
 // Delete ...
-func (r *SurgicalProcedureRepository) Delete(m *models.SurgicalProcedure, ID int) error {
+func (r *SurgicalProcedureRepository) Delete(ID int) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", ID).Take(&m).Error; err != nil {
+		var surgicalProcedure models.SurgicalProcedure
+
+		if err := tx.Where("id = ?", ID).Take(&surgicalProcedure).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", ID).Delete(&m).Error; err != nil {
+		if err := tx.Where("id = ?", ID).Delete(&surgicalProcedure).Error; err != nil {
 			return err
 		}
 
 		var surgicalCount int64
-		if err := tx.Model(&models.SurgicalProcedure{}).Where("surgical_order_id = ?", m.SurgicalOrderID).Count(&surgicalCount).Error; err != nil {
+		if err := tx.Model(&models.SurgicalProcedure{}).Where("surgical_order_id = ?", surgicalProcedure.SurgicalOrderID).Count(&surgicalCount).Error; err != nil {
 			return err
 		}
 
 		if surgicalCount == 0 {
-			if err := tx.Where("id = ?", m.SurgicalOrderID).Delete(&models.SurgicalOrder{}).Error; err != nil {
+			if err := tx.Where("id = ?", surgicalProcedure.SurgicalOrderID).Delete(&models.SurgicalOrder{}).Error; err != nil {
 				return err
 			}
 		}

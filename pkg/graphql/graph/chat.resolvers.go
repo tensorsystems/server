@@ -12,7 +12,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *mutationResolver) CreateChat(ctx context.Context, input graph_models.ChatInput) (*models.Chat, error) {
@@ -27,31 +26,26 @@ func (r *mutationResolver) CreateChat(ctx context.Context, input graph_models.Ch
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
-
 	var user models.User
-	if err := userRepository.GetByEmail(&user,email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
 	var recipient models.User
-	if err := userRepository.Get(&recipient, input.RecipientID); err != nil {
+	if err := r.UserRepository.Get(&recipient, input.RecipientID); err != nil {
 		return nil, err
 	}
 
-	var chatMemberRepository repository.ChatMemberRepository
-	chatID, err := chatMemberRepository.FindCommonChatID(user.ID, recipient.ID)
+	chatID, err := r.ChatMemberRepository.FindCommonChatID(user.ID, recipient.ID)
 	if err != nil {
 		return nil, err
 	}
-
-	var chatRepository repository.ChatRepository
 
 	var chat models.Chat
 	chat.RecentMessage = input.Message
 
 	if chatID != 0 {
-		if err := chatRepository.Get(&chat, chatID); err != nil {
+		if err := r.ChatRepository.Get(&chat, chatID); err != nil {
 			return nil, err
 		}
 	} else {
@@ -64,30 +58,24 @@ func (r *mutationResolver) CreateChat(ctx context.Context, input graph_models.Ch
 		}
 	}
 
-	if err := chatRepository.Save(&chat); err != nil {
+	if err := r.ChatRepository.Save(&chat); err != nil {
 		return nil, err
 	}
 
-
-
 	// Save message
-	var chatMessageRepository repository.ChatMessageRepository
-
 	var chatMessage models.ChatMessage
 	chatMessage.Body = input.Message
 	chatMessage.ChatID = chat.ID
 	chatMessage.UserID = user.ID
-	if err := chatMessageRepository.Save(&chatMessage); err != nil {
+	if err := r.ChatMessageRepository.Save(&chatMessage); err != nil {
 		return nil, err
 	}
 
 	// Save unread message
-	var chatUnreadMessageRepository repository.ChatUnreadRepository
-
 	var unreadMessage models.ChatUnreadMessage
 	unreadMessage.ChatID = chat.ID
 	unreadMessage.UserID = recipient.ID
-	if err := chatUnreadMessageRepository.Save(&unreadMessage); err != nil {
+	if err := r.ChatUnreadRepository.Save(&unreadMessage); err != nil {
 		return nil, err
 	}
 
@@ -106,33 +94,29 @@ func (r *mutationResolver) SendMessage(ctx context.Context, input graph_models.C
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
 	// Save message
-	var chatMessageRepository repository.ChatMessageRepository
 	var chatMessage models.ChatMessage
 	chatMessage.Body = input.Body
 	chatMessage.ChatID = input.ChatID
 	chatMessage.UserID = user.ID
-	if err := chatMessageRepository.Save(&chatMessage); err != nil {
+	if err := r.ChatMessageRepository.Save(&chatMessage); err != nil {
 		return nil, err
 	}
 
 	// Update chat
-	var chatRepository repository.ChatRepository
 	var chat models.Chat
 	chat.ID = input.ChatID
 	chat.RecentMessage = chatMessage.Body
-	if err := chatRepository.Update(&chat); err != nil {
+	if err := r.ChatRepository.Update(&chat); err != nil {
 		return nil, err
 	}
 
-	var chatMemeberRepository repository.ChatMemberRepository
-	chatMembers, err := chatMemeberRepository.GetByChatID(input.ChatID)
+	chatMembers, err := r.ChatMemberRepository.GetByChatID(input.ChatID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,11 +129,10 @@ func (r *mutationResolver) SendMessage(ctx context.Context, input graph_models.C
 	}
 
 	// Save unread message
-	var unreadMessageRepository repository.ChatUnreadRepository
 	var unreadMessage models.ChatUnreadMessage
 	unreadMessage.ChatID = input.ChatID
 	unreadMessage.UserID = recipient.UserID
-	if err := unreadMessageRepository.Save(&unreadMessage); err != nil {
+	if err := r.ChatUnreadRepository.Save(&unreadMessage); err != nil {
 		return nil, err
 	}
 
@@ -168,17 +151,15 @@ func (r *mutationResolver) MuteChat(ctx context.Context, id int) (*models.ChatMu
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var chatMuteRepository repository.ChatMuteRepository
 	var chatMute models.ChatMute
 	chatMute.ChatID = id
 	chatMute.UserID = user.ID
-	if err := chatMuteRepository.Save(&chatMute); err != nil {
+	if err := r.ChatMuteRepository.Save(&chatMute); err != nil {
 		return nil, err
 	}
 
@@ -197,14 +178,12 @@ func (r *mutationResolver) UnmuteChat(ctx context.Context, id int) (bool, error)
 		return false, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return false, err
 	}
 
-	var chatMuteRepository repository.ChatMuteRepository
-	if err := chatMuteRepository.Delete(user.ID, id); err != nil {
+	if err := r.ChatMuteRepository.Delete(user.ID, id); err != nil {
 		return false, err
 	}
 
@@ -216,8 +195,7 @@ func (r *mutationResolver) DeleteChat(ctx context.Context, id int) (bool, error)
 }
 
 func (r *mutationResolver) DeleteUnreadMessages(ctx context.Context, userID int, chatID int) (bool, error) {
-	var repository repository.ChatUnreadRepository
-	if err := repository.DeleteForUserChat(userID, chatID); err != nil {
+	if err := r.ChatUnreadRepository.DeleteForUserChat(userID, chatID); err != nil {
 		return false, err
 	}
 
@@ -240,14 +218,12 @@ func (r *queryResolver) GetUserChats(ctx context.Context) ([]*models.Chat, error
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var chatRepository repository.ChatRepository
-	results, err := chatRepository.GetUserChats(user.ID)
+	results, err := r.ChatRepository.GetUserChats(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -267,14 +243,12 @@ func (r *queryResolver) GetChatMessages(ctx context.Context, id int) ([]*models.
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var chatMessageRepository repository.ChatMessageRepository
-	results, err := chatMessageRepository.GetByChatID(id)
+	results, err := r.ChatMessageRepository.GetByChatID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -294,14 +268,12 @@ func (r *queryResolver) GetChatMembers(ctx context.Context, id int) ([]*models.C
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var chatMemberRepository repository.ChatMemberRepository
-	results, err := chatMemberRepository.GetByChatID(id)
+	results, err := r.ChatMemberRepository.GetByChatID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -321,14 +293,12 @@ func (r *queryResolver) GetUnreadMessages(ctx context.Context) ([]*models.ChatUn
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var unreadMessageRepositoy repository.ChatUnreadRepository
-	results, err := unreadMessageRepositoy.GetByUserID(user.ID)
+	results, err := r.ChatUnreadRepository.GetByUserID(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -348,26 +318,23 @@ func (r *queryResolver) GetCommonChat(ctx context.Context, recipientID int) (*mo
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
 	var recipient models.User
-	if err := userRepository.Get(&recipient, recipientID); err != nil {
+	if err := r.UserRepository.Get(&recipient, recipientID); err != nil {
 		return nil, err
 	}
 
-	var chatMemberRepository repository.ChatMemberRepository
-	chatID, err := chatMemberRepository.FindCommonChatID(user.ID, recipient.ID)
+	chatID, err := r.ChatMemberRepository.FindCommonChatID(user.ID, recipient.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	var chatRepository repository.ChatRepository
 	var chat models.Chat
-	if err := chatRepository.Get(&chat, chatID); err != nil {
+	if err := r.ChatRepository.Get(&chat, chatID); err != nil {
 		return nil, err
 	}
 

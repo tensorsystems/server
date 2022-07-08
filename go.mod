@@ -8,6 +8,7 @@ require (
 	github.com/casbin/casbin/v2 v2.31.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.7.4
+	github.com/google/wire v0.5.0
 	github.com/joho/godotenv v1.3.0
 	github.com/lib/pq v1.10.3
 	github.com/robfig/cron/v3 v3.0.0

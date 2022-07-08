@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) CreatePharmacy(ctx context.Context, input graph_model
 	var entity models.Pharmacy
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PharmacyRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.PharmacyRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdatePharmacy(ctx context.Context, input graph_model
 	var entity models.Pharmacy
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PharmacyRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PharmacyRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -37,26 +34,23 @@ func (r *mutationResolver) UpdatePharmacy(ctx context.Context, input graph_model
 }
 
 func (r *mutationResolver) DeletePharmacy(ctx context.Context, id int) (bool, error) {
-	var repository repository.PharmacyRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.PharmacyRepository.Delete(id); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
 func (r *queryResolver) Pharmacy(ctx context.Context, id int) (*models.Pharmacy, error) {
-	var repository repository.PharmacyRepository
 	var entity models.Pharmacy
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.PharmacyRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 	return &entity, nil
 }
 
 func (r *queryResolver) Pharmacies(ctx context.Context, page models.PaginationInput) (*graph_models.PharmacyConnection, error) {
-	var repository repository.PharmacyRepository
-	result, count, err := repository.GetAll(page, nil)
+	result, count, err := r.PharmacyRepository.GetAll(page, nil)
 
 	if err != nil {
 		return nil, err

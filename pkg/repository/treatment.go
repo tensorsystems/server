@@ -56,10 +56,10 @@ func (r *TreatmentRepository) GetByPatientChart(m *models.Treatment, ID int) err
 }
 
 // GetAll ...
-func (r *TreatmentRepository) GetAll(p PaginationInput, filter *models.Treatment) ([]models.Treatment, int64, error) {
+func (r *TreatmentRepository) GetAll(p models.PaginationInput, filter *models.Treatment) ([]models.Treatment, int64, error) {
 	var result []models.Treatment
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Order").Preload("Order.Payments").Preload("TreatmentType").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Order").Preload("Order.Payments").Preload("TreatmentType").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -74,10 +74,10 @@ func (r *TreatmentRepository) GetAll(p PaginationInput, filter *models.Treatment
 }
 
 // GetByPatient ...
-func (r *TreatmentRepository) GetByPatient(p PaginationInput, patientID int) ([]models.Treatment, int64, error) {
+func (r *TreatmentRepository) GetByPatient(p models.PaginationInput, patientID int) ([]models.Treatment, int64, error) {
 	var result []models.Treatment
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Joins("INNER JOIN orders ON orders.id = treatments.order_id").Where("orders.patient_id = ?", patientID).Preload("Order").Preload("Order.Payments").Preload("Order.User").Preload("TreatmentType").Order("treatments.id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Joins("INNER JOIN orders ON orders.id = treatments.order_id").Where("orders.patient_id = ?", patientID).Preload("Order").Preload("Order.Payments").Preload("Order.User").Preload("TreatmentType").Order("treatments.id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -97,23 +97,25 @@ func (r *TreatmentRepository) Update(m *models.Treatment) error {
 }
 
 // Delete ...
-func (r *TreatmentRepository) Delete(m *models.Treatment, ID int) error {
+func (r *TreatmentRepository) Delete(ID int) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", ID).Take(&m).Error; err != nil {
+		var treatment models.Treatment
+
+		if err := tx.Where("id = ?", ID).Take(&treatment).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", ID).Delete(&m).Error; err != nil {
+		if err := tx.Where("id = ?", ID).Delete(&treatment).Error; err != nil {
 			return err
 		}
 
 		var treatmentsCount int64
-		if err := tx.Model(&m).Where("treatment_order_id = ?", m.TreatmentOrderID).Count(&treatmentsCount).Error; err != nil {
+		if err := tx.Model(&treatment).Where("treatment_order_id = ?", treatment.TreatmentOrderID).Count(&treatmentsCount).Error; err != nil {
 			return err
 		}
 
 		if treatmentsCount == 0 {
-			if err := tx.Where("id = ?", m.TreatmentOrderID).Delete(&models.TreatmentOrder{}).Error; err != nil {
+			if err := tx.Where("id = ?", treatment.TreatmentOrderID).Delete(&models.TreatmentOrder{}).Error; err != nil {
 				return err
 			}
 		}

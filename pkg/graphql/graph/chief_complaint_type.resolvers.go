@@ -10,7 +10,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -18,8 +17,7 @@ func (r *mutationResolver) SaveChiefComplaintType(ctx context.Context, input gra
 	var entity models.ChiefComplaintType
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.ChiefComplaintTypeRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -30,8 +28,7 @@ func (r *mutationResolver) UpdateChiefComplaintType(ctx context.Context, input g
 	var entity models.ChiefComplaintType
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.ChiefComplaintTypeRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -39,8 +36,7 @@ func (r *mutationResolver) UpdateChiefComplaintType(ctx context.Context, input g
 }
 
 func (r *mutationResolver) DeleteChiefComplaintType(ctx context.Context, id int) (bool, error) {
-	var repository repository.ChiefComplaintTypeRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -49,9 +45,8 @@ func (r *mutationResolver) DeleteChiefComplaintType(ctx context.Context, id int)
 
 func (r *queryResolver) ChiefComplaintType(ctx context.Context, id int) (*models.ChiefComplaintType, error) {
 	var entity models.ChiefComplaintType
-	var repository repository.ChiefComplaintTypeRepository
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -68,28 +63,23 @@ func (r *queryResolver) ChiefComplaintTypes(ctx context.Context, page models.Pag
 	if len(email) == 0 {
 		return nil, errors.New("Cannot find user")
 	}
-	
 
-	var userRepository repository.UserRepository
 	var user models.User
-	err = userRepository.GetByEmail(&user, email)
+	err = r.UserRepository.GetByEmail(&user, email)
 	if err != nil {
 		return nil, err
 	}
 
-	var repository repository.ChiefComplaintTypeRepository
-	
 	var result []models.ChiefComplaintType
 	var count int64
 
-
 	if favorites != nil && *favorites == true {
-		result, count, err = repository.GetFavorites(page, searchTerm, user.ID)
+		result, count, err = r.ChiefComplaintTypeRepository.GetFavorites(page, searchTerm, user.ID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		result, count, err = repository.GetAll(page, searchTerm)
+		result, count, err = r.ChiefComplaintTypeRepository.GetAll(page, searchTerm)
 		if err != nil {
 			return nil, err
 		}

@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -18,8 +17,7 @@ func (r *mutationResolver) SavePatientEncounterLimit(ctx context.Context, input 
 
 	entity.Overbook = 5
 
-	var repository repository.PatientEncounterLimitRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.PatientEncounterLimitRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -30,8 +28,7 @@ func (r *mutationResolver) UpdatePatientEncounterLimit(ctx context.Context, inpu
 	var entity models.PatientEncounterLimit
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PatientEncounterLimitRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PatientEncounterLimitRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -39,9 +36,7 @@ func (r *mutationResolver) UpdatePatientEncounterLimit(ctx context.Context, inpu
 }
 
 func (r *mutationResolver) DeletePatientEncounterLimit(ctx context.Context, id int) (bool, error) {
-	var repository repository.PatientEncounterLimitRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.PatientEncounterLimitRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -51,8 +46,7 @@ func (r *mutationResolver) DeletePatientEncounterLimit(ctx context.Context, id i
 func (r *queryResolver) PatientEncounterLimit(ctx context.Context, id int) (*models.PatientEncounterLimit, error) {
 	var entity models.PatientEncounterLimit
 
-	var repository repository.PatientEncounterLimitRepository
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.PatientEncounterLimitRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -60,9 +54,7 @@ func (r *queryResolver) PatientEncounterLimit(ctx context.Context, id int) (*mod
 }
 
 func (r *queryResolver) PatientEncounterLimits(ctx context.Context, page models.PaginationInput) (*graph_models.PatientEncounterLimitConnection, error) {
-	var repository repository.PatientEncounterLimitRepository
-
-	result, count, err := repository.GetAll(page)
+	result, count, err := r.PatientEncounterLimitRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
@@ -84,9 +76,8 @@ func (r *queryResolver) PatientEncounterLimits(ctx context.Context, page models.
 
 func (r *queryResolver) PatientEncounterLimitByUser(ctx context.Context, userID int) (*models.PatientEncounterLimit, error) {
 	var entity models.PatientEncounterLimit
-	var repository repository.PatientEncounterLimitRepository
 
-	if err := repository.GetByUser(&entity, userID); err != nil {
+	if err := r.PatientEncounterLimitRepository.GetByUser(&entity, userID); err != nil {
 		return nil, err
 	}
 

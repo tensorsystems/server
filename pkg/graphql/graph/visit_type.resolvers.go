@@ -8,16 +8,14 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
 func (r *mutationResolver) SaveVisitType(ctx context.Context, input graph_models.VisitTypeInput) (*models.VisitType, error) {
-	var visitType repository.VisitType
+	var visitType models.VisitType
 	deepCopy.Copy(&input).To(&visitType)
 
-	err := visitType.Save()
-	if err != nil {
+	if err := r.VisitTypeRepository.Save(&visitType); err != nil {
 		return nil, err
 	}
 
@@ -25,11 +23,12 @@ func (r *mutationResolver) SaveVisitType(ctx context.Context, input graph_models
 }
 
 func (r *mutationResolver) UpdateVisitType(ctx context.Context, input graph_models.VisitTypeInput, id int) (*models.VisitType, error) {
-	var visitType repository.VisitType
+	var visitType models.VisitType
 	deepCopy.Copy(&input).To(&visitType)
+
 	visitType.ID = id
 
-	if err := visitType.Update(); err != nil {
+	if err := r.VisitTypeRepository.Update(&visitType); err != nil {
 		return nil, err
 	}
 
@@ -37,9 +36,7 @@ func (r *mutationResolver) UpdateVisitType(ctx context.Context, input graph_mode
 }
 
 func (r *mutationResolver) DeleteVisitType(ctx context.Context, id int) (bool, error) {
-	var visitType repository.VisitType
-	err := visitType.Delete(id)
-	if err != nil {
+	if err := r.VisitTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -47,23 +44,22 @@ func (r *mutationResolver) DeleteVisitType(ctx context.Context, id int) (bool, e
 }
 
 func (r *queryResolver) VisitTypes(ctx context.Context, page models.PaginationInput) (*graph_models.VisitTypeConnection, error) {
-	var visitType repository.VisitType
-	visitTypes, count, err := visitType.GetAll(page)
+	visitTypes, count, err := r.VisitTypeRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.VisitTypeEdge, len(visitTypes))
+	edges := make([]*graph_models.VisitTypeEdge, len(visitTypes))
 
 	for i, entity := range visitTypes {
 		e := entity
 
-		edges[i] = &model.VisitTypeEdge{
+		edges[i] = &graph_models.VisitTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(visitTypes, count, page)
-	return &model.VisitTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.VisitTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/tensoremr/server/pkg/graphql/graph/generated"
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 )
 
 func (r *mutationResolver) CreateTodo(ctx context.Context, input graph_models.NewTodo) (*graph_models.Todo, error) {
@@ -24,24 +24,21 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*graph_models.Todo, error)
 }
 
 func (r *queryResolver) GetHealthCheck(ctx context.Context) (*graph_models.HealthCheckReport, error) {
-	var entity repository.User
-
-	pingErr := entity.Ping()
+	pingErr := r.UserRepository.Ping()
 	if pingErr != nil {
-		return &model.HealthCheckReport{
+		return &graph_models.HealthCheckReport{
 			Health: "NOT",
 			Db:     false,
 		}, pingErr
 	}
 
-	return &model.HealthCheckReport{Health: "YES", Db: true}, nil
+	return &graph_models.HealthCheckReport{Health: "YES", Db: true}, nil
 }
 
 func (r *queryResolver) ReceptionHomeStats(ctx context.Context) (*graph_models.HomeStats, error) {
-	var entity repository.Appointment
-	scheduled, checkedIn, checkedOut, err := entity.ReceptionHomeStats()
+	scheduled, checkedIn, checkedOut, err := r.AppointmentRepository.ReceptionHomeStats()
 
-	return &model.HomeStats{
+	return &graph_models.HomeStats{
 		Scheduled:  scheduled,
 		CheckedIn:  checkedIn,
 		CheckedOut: checkedOut,
@@ -49,10 +46,9 @@ func (r *queryResolver) ReceptionHomeStats(ctx context.Context) (*graph_models.H
 }
 
 func (r *queryResolver) NurseHomeStats(ctx context.Context) (*graph_models.HomeStats, error) {
-	var entity repository.Appointment
-	scheduled, checkedIn, checkedOut, err := entity.NurseHomeStats()
+	scheduled, checkedIn, checkedOut, err := r.AppointmentRepository.NurseHomeStats()
 
-	return &model.HomeStats{
+	return &graph_models.HomeStats{
 		Scheduled:  scheduled,
 		CheckedIn:  checkedIn,
 		CheckedOut: checkedOut,
@@ -70,16 +66,14 @@ func (r *queryResolver) PhysicianHomeStats(ctx context.Context) (*graph_models.H
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.Appointment
-	scheduled, checkedIn, checkedOut, err := entity.PhysicianHomeStats(user.ID)
+	scheduled, checkedIn, checkedOut, err := r.AppointmentRepository.PhysicianHomeStats(user.ID)
 
-	return &model.HomeStats{
+	return &graph_models.HomeStats{
 		Scheduled:  scheduled,
 		CheckedIn:  checkedIn,
 		CheckedOut: checkedOut,

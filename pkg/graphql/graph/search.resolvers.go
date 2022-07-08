@@ -7,24 +7,20 @@ import (
 	"context"
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
 )
 
 func (r *queryResolver) Search(ctx context.Context, searchTerm string) (*graph_models.SearchResult, error) {
-	var patient repository.Patient
-
-	patients, err := patient.Search(searchTerm)
+	patients, err := r.PatientRepository.Search(searchTerm)
 	if err != nil {
 		return nil, err
 	}
 
-	var user repository.User
-	providers, err := user.SearchPhysicians(searchTerm)
+	providers, err := r.UserRepository.SearchPhysicians(searchTerm)
 	if err != nil {
 		return nil, err
 	}
 
-	searchResult := &model.SearchResult{
+	searchResult := &graph_models.SearchResult{
 		Patients:  patients,
 		Providers: providers,
 	}

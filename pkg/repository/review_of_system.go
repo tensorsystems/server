@@ -37,10 +37,10 @@ func (r *ReviewOfSystemRepository) Save(m *models.ReviewOfSystem) error {
 }
 
 // GetAll ...
-func (r *ReviewOfSystemRepository) GetAll(p PaginationInput, filter *models.ReviewOfSystem) ([]models.ReviewOfSystem, int64, error) {
+func (r *ReviewOfSystemRepository) GetAll(p models.PaginationInput, filter *models.ReviewOfSystem) ([]models.ReviewOfSystem, int64, error) {
 	var result []models.ReviewOfSystem
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("SystemSymptom.System").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("SystemSymptom.System").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {

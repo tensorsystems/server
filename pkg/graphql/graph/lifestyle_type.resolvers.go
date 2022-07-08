@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) SaveLifestyleTypes(ctx context.Context, input graph_m
 	var entity models.LifestyleType
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.LifestyleTypeRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.LifestyleTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdateLifestyleType(ctx context.Context, input graph_
 	var entity models.LifestyleType
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.LifestyleTypeRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.LifestyleTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -37,9 +34,7 @@ func (r *mutationResolver) UpdateLifestyleType(ctx context.Context, input graph_
 }
 
 func (r *mutationResolver) DeleteLifestyleType(ctx context.Context, id int) (bool, error) {
-	var repository repository.LifestyleTypeRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.LifestyleTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -48,9 +43,8 @@ func (r *mutationResolver) DeleteLifestyleType(ctx context.Context, id int) (boo
 
 func (r *queryResolver) LifestyleType(ctx context.Context, id int) (*models.LifestyleType, error) {
 	var entity models.LifestyleType
-	var repository repository.LifestyleTypeRepository
-	
-	if err := repository.Get(&entity, id); err != nil {
+
+	if err := r.LifestyleTypeRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -58,8 +52,7 @@ func (r *queryResolver) LifestyleType(ctx context.Context, id int) (*models.Life
 }
 
 func (r *queryResolver) LifestyleTypes(ctx context.Context, page models.PaginationInput) (*graph_models.LifestyleTypeConnection, error) {
-	var repository repository.LifestyleTypeRepository
-	result, count, err := repository.GetAll(page)
+	result, count, err := r.LifestyleTypeRepository.GetAll(page)
 	if err != nil {
 		return nil, err
 	}

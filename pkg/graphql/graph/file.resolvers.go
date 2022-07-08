@@ -9,7 +9,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -17,8 +16,7 @@ func (r *mutationResolver) SaveFile(ctx context.Context, input graph_models.File
 	var entity models.File
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.FileRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.FileRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -27,8 +25,7 @@ func (r *mutationResolver) SaveFile(ctx context.Context, input graph_models.File
 
 func (r *mutationResolver) UpdateFile(ctx context.Context, input graph_models.FileUpdateInput) (*models.File, error) {
 	var entity models.File
-	var repository repository.FileRepository
-	if err := repository.Get(&entity, input.ID); err != nil {
+	if err := r.FileRepository.Get(&entity, input.ID); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +41,7 @@ func (r *mutationResolver) UpdateFile(ctx context.Context, input graph_models.Fi
 	// Update file entity
 	entity.FileName = fileName
 	entity.Hash = hash
-	if err := repository.Update(&entity); err != nil {
+	if err := r.FileRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -58,8 +55,7 @@ func (r *mutationResolver) DeleteFile(ctx context.Context, id int) (bool, error)
 func (r *queryResolver) File(ctx context.Context, id int) (*models.File, error) {
 	var entity models.File
 
-	var repository repository.FileRepository
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.FileRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 

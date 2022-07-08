@@ -37,10 +37,10 @@ func (r *SystemSymptomRepository) Save(m *models.SystemSymptom) error {
 }
 
 // GetAll ...
-func (r *SystemSymptomRepository) GetAll(p PaginationInput, searchTerm *string) ([]models.SystemSymptom, int64, error) {
+func (r *SystemSymptomRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.SystemSymptom, int64, error) {
 	var result []models.SystemSymptom
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("System")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("System")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")

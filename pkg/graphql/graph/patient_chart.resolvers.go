@@ -11,7 +11,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -19,8 +18,7 @@ func (r *mutationResolver) SavePatientChart(ctx context.Context, input graph_mod
 	var entity models.PatientChart
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PatientChartRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.PatientChartRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -31,8 +29,7 @@ func (r *mutationResolver) UpdatePatientChart(ctx context.Context, input graph_m
 	var entity models.PatientChart
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PatientChartRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PatientChartRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -55,9 +52,8 @@ func (r *mutationResolver) LockPatientChart(ctx context.Context, id int) (*model
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -72,9 +68,8 @@ func (r *mutationResolver) LockPatientChart(ctx context.Context, id int) (*model
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var patientChartRepository repository.PatientChartRepository
 	var entity models.PatientChart
-	if err := patientChartRepository.SignAndLock(&entity, id, &user.ID); err != nil {
+	if err := r.PatientChartRepository.SignAndLock(&entity, id, &user.ID); err != nil {
 		return nil, err
 	}
 
@@ -85,8 +80,7 @@ func (r *mutationResolver) SaveVitalSigns(ctx context.Context, input graph_model
 	var entity models.VitalSigns
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.VitalSignsRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.VitalSignsRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -97,8 +91,7 @@ func (r *mutationResolver) UpdateVitalSigns(ctx context.Context, input graph_mod
 	var entity models.VitalSigns
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.VitalSignsRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.VitalSignsRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -109,8 +102,7 @@ func (r *mutationResolver) SaveOphthalmologyExam(ctx context.Context, input grap
 	var entity models.OpthalmologyExam
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.OpthalmologyExamRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.OpthalmologyExamRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -121,8 +113,7 @@ func (r *mutationResolver) UpdateOphthalmologyExam(ctx context.Context, input gr
 	var entity models.OpthalmologyExam
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.OpthalmologyExamRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.OpthalmologyExamRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -132,13 +123,12 @@ func (r *mutationResolver) UpdateOphthalmologyExam(ctx context.Context, input gr
 func (r *queryResolver) PatientChart(ctx context.Context, id int, details *bool) (*models.PatientChart, error) {
 	var patientChart models.PatientChart
 
-	var repository repository.PatientChartRepository
 	if details != nil && *details == true {
-		if err := repository.GetWithDetails(&patientChart, id); err != nil {
+		if err := r.PatientChartRepository.GetWithDetails(&patientChart, id); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := repository.Get(&patientChart, id); err != nil {
+		if err := r.PatientChartRepository.Get(&patientChart, id); err != nil {
 			return nil, err
 		}
 	}
@@ -155,8 +145,7 @@ func (r *queryResolver) VitalSigns(ctx context.Context, filter graph_models.Vita
 	deepCopy.Copy(&filter).To(&f)
 
 	var entity models.VitalSigns
-	var repository repository.VitalSignsRepository
-	if err := repository.Get(&entity, f); err != nil {
+	if err := r.VitalSignsRepository.Get(&entity, f); err != nil {
 		return nil, err
 	}
 
@@ -168,8 +157,7 @@ func (r *queryResolver) OpthalmologyExam(ctx context.Context, filter graph_model
 	deepCopy.Copy(&filter).To(&f)
 
 	var entity models.OpthalmologyExam
-	var repository repository.OpthalmologyExamRepository
-	if err := repository.Get(&entity, f); err != nil {
+	if err := r.OpthalmologyExamRepository.Get(&entity, f); err != nil {
 		return nil, err
 	}
 

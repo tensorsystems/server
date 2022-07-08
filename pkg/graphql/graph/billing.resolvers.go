@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -17,10 +16,8 @@ func (r *mutationResolver) SaveBilling(ctx context.Context, input graph_models.B
 	var billing models.Billing
 	deepCopy.Copy(&input).To(&billing)
 
-	var repository repository.BillingRepository
-
 	// Save
-	if err := repository.Save(&billing); err != nil {
+	if err := r.BillingRepository.Save(&billing); err != nil {
 		return nil, err
 	}
 
@@ -33,9 +30,7 @@ func (r *mutationResolver) UpdateBilling(ctx context.Context, input graph_models
 	deepCopy.Copy(&input).To(&billing)
 	billing.ID = id
 
-	var repository repository.BillingRepository
-
-	if err := repository.Update(&billing); err != nil {
+	if err := r.BillingRepository.Update(&billing); err != nil {
 		return nil, err
 	}
 
@@ -43,9 +38,8 @@ func (r *mutationResolver) UpdateBilling(ctx context.Context, input graph_models
 }
 
 func (r *mutationResolver) DeleteBilling(ctx context.Context, id int) (bool, error) {
-	var repository repository.BillingRepository
 
-	if err := repository.Delete(id); err != nil {
+	if err := r.BillingRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -53,9 +47,7 @@ func (r *mutationResolver) DeleteBilling(ctx context.Context, id int) (bool, err
 }
 
 func (r *queryResolver) ConsultationBillings(ctx context.Context) ([]*models.Billing, error) {
-	var repository repository.BillingRepository
-
-	billings, err := repository.GetConsultationBillings()
+	billings, err := r.BillingRepository.GetConsultationBillings()
 
 	if err != nil {
 		return nil, err
@@ -70,8 +62,7 @@ func (r *queryResolver) Billings(ctx context.Context, page models.PaginationInpu
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.BillingRepository
-	billings, count, err := repository.Search(page, &f, searchTerm)
+	billings, count, err := r.BillingRepository.Search(page, &f, searchTerm)
 
 	if err != nil {
 		return nil, err
@@ -92,10 +83,8 @@ func (r *queryResolver) Billings(ctx context.Context, page models.PaginationInpu
 }
 
 func (r *queryResolver) Billing(ctx context.Context, id int) (*models.Billing, error) {
-	var repository repository.BillingRepository
-
 	var billing models.Billing
-	if err := repository.Get(&billing, id); err != nil {
+	if err := r.BillingRepository.Get(&billing, id); err != nil {
 		return nil, err
 	}
 

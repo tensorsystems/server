@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -32,16 +31,15 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input gr
 		}
 	}
 
-	var organizationDetailsRepository repository.OrganizationDetailsRepository
 	var existing models.OrganizationDetails
-	if err := organizationDetailsRepository.Get(&existing); err == nil {
+	if err := r.OrganizationDetailsRepository.Get(&existing); err == nil {
 		entity.ID = existing.ID
 
-		if err := organizationDetailsRepository.Update(&entity); err != nil {
+		if err := r.OrganizationDetailsRepository.Update(&entity); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := organizationDetailsRepository.Save(&entity); err != nil {
+		if err := r.OrganizationDetailsRepository.Save(&entity); err != nil {
 			return nil, err
 		}
 	}
@@ -52,8 +50,7 @@ func (r *mutationResolver) SaveOrganizationDetails(ctx context.Context, input gr
 func (r *queryResolver) OrganizationDetails(ctx context.Context) (*models.OrganizationDetails, error) {
 	var entity models.OrganizationDetails
 
-	var repository repository.OrganizationDetailsRepository
-	if err := repository.Get(&entity); err != nil {
+	if err := r.OrganizationDetailsRepository.Get(&entity); err != nil {
 		return nil, err
 	}
 

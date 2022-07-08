@@ -37,10 +37,10 @@ func (r *SystemRepository) Save(m *models.System) error {
 }
 
 // GetAll ...
-func (r *SystemRepository) GetAll(p PaginationInput, searchTerm *string) ([]models.System, int64, error) {
+func (r *SystemRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.System, int64, error) {
 	var result []models.System
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")

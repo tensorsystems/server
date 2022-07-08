@@ -33,7 +33,7 @@ import (
 
 	"github.com/casbin/casbin/v2"
 	"github.com/tensoremr/server/pkg/conf"
-	"gorm.io/gorm"
+	"github.com/tensoremr/server/pkg/repository"
 )
 
 // This file will not be regenerated automatically.
@@ -42,9 +42,94 @@ import (
 
 // Resolver ...
 type Resolver struct {
-	Config        *conf.Configuration
-	AccessControl *casbin.Enforcer
-	DB            *gorm.DB
+	Config                             *conf.Configuration
+	AccessControl                      *casbin.Enforcer
+	AllergyRepository                  repository.AllergyRepository
+	AmendmentRepository                repository.AmendmentRepository
+	AppointmentQueueRepository         repository.AppointmentQueueRepository
+	AppointmentStatusRepository        repository.AppointmentStatusRepository
+	AppointmentRepository              repository.AppointmentRepository
+	AutoRefractionRepository           repository.AutoRefractionRepository
+	BillingRepository                  repository.BillingRepository
+	ChatDeleteRepository               repository.ChatDeleteRepository
+	ChatMemberRepository               repository.ChatMemberRepository
+	ChatMessageRepository              repository.ChatMessageRepository
+	ChatMuteRepository                 repository.ChatMuteRepository
+	ChatUnreadRepository               repository.ChatUnreadRepository
+	ChatRepository                     repository.ChatRepository
+	ChiefComplaintTypeRepository       repository.ChiefComplaintTypeRepository
+	ChiefComplaintRepository           repository.ChiefComplaintRepository
+	CoverTestRepository                repository.CoverTestRepository
+	DiagnosisRepository                repository.DiagnosisRepository
+	DiagnosticProcedureRepository      repository.DiagnosticProcedureRepository
+	DiagnosticProcedureOrderRepository repository.DiagnosticProcedureOrderRepository
+	DiagnosticProcedureTypeRepository  repository.DiagnosticProcedureTypeRepository
+	ExamCategoryRepository             repository.ExamCategoryRepository
+	ExternalExamRepository             repository.ExternalExamRepository
+	ExamFindingRepository              repository.ExamFindingRepository
+	EyewearPrescriptionOrderRepository repository.EyewearPrescriptionOrderRepository
+	EyewearPrescriptionRepository      repository.EyewearPrescriptionRepository
+	EyewearShopRepository              repository.EyewearShopRepository
+	FamilyIllnessRepository            repository.FamilyIllnessRepository
+	FavoriteChiefComplaintRepository   repository.FavoriteChiefComplaintRepository
+	FavoriteDiagnosisRepository        repository.FavoriteDiagnosisRepository
+	FavoriteMedicationRepository       repository.FavoriteMedicationRepository
+	FileRepository                     repository.FileRepository
+	FollowUpOrderRepository            repository.FollowUpOrderRepository
+	FollowUpRepository                 repository.FollowUpRepository
+	FunduscopyRepository               repository.FunduscopyRepository
+	HpiComponentTypeRepository         repository.HpiComponentTypeRepository
+	HpiComponentRepository             repository.HpiComponentRepository
+	IopRepository                      repository.IopRepository
+	LabOrderRepository                 repository.LabOrderRepository
+	LabTypeRepository                  repository.LabTypeRepository
+	LabRepository                      repository.LabRepository
+	LifestyleTypeRepository            repository.LifestyleTypeRepository
+	LifestyleRepository                repository.LifestyleRepository
+	MedicalPrescriptionOrderRepository repository.MedicalPrescriptionOrderRepository
+	MedicalPrescriptionRepository      repository.MedicalPrescriptionRepository
+	OcularMotilityRepository           repository.OcularMotilityRepository
+	OpthalmologyExamRepository         repository.OpthalmologyExamRepository
+	OpticDiscRepository                repository.OpticDiscRepository
+	OrganizationDetailsRepository      repository.OrganizationDetailsRepository
+	PastHospitalizationRepository      repository.PastHospitalizationRepository
+	PastIllnessTypeRepository          repository.PastIllnessTypeRepository
+	PastIllnessRepository              repository.PastIllnessRepository
+	PastInjuryRepository               repository.PastInjuryRepository
+	PastOptSurgeryRepository           repository.PastOptSurgeryRepository
+	PastSurgeryRepository              repository.PastSurgeryRepository
+	PatientChartRepository             repository.PatientChartRepository
+	PatientDiagnosisRepository         repository.PatientDiagnosisRepository
+	PatientEncounterLimitRepository    repository.PatientEncounterLimitRepository
+	PatientHistoryRepository           repository.PatientHistoryRepository
+	PatientQueueRepository             repository.PatientQueueRepository
+	PatientRepository                  repository.PatientRepository
+	PaymentWaiverRepository            repository.PaymentWaiverRepository
+	PaymentRepository                  repository.PaymentRepository
+	PharmacyRepository                 repository.PharmacyRepository
+	PhysicalExamFindingRepository      repository.PhysicalExamFindingRepository
+	PupilsRepository                   repository.PupilsRepository
+	QueueDestinationRepository         repository.QueueDestinationRepository
+	QueueSubscriptionRepository        repository.QueueSubscriptionRepository
+	ReferralOrderRepository            repository.ReferralOrderRepository
+	ReferralRepository                 repository.ReferralRepository
+	ReviewOfSystemRepository           repository.ReviewOfSystemRepository
+	RoomRepository                     repository.RoomRepository
+	SlitLampExamRepository             repository.SlitLampExamRepository
+	SupplyRepository                   repository.SupplyRepository
+	SurgicalOrderRepository            repository.SurgicalOrderRepository
+	SurgicalProcedureTypeRepository    repository.SurgicalProcedureTypeRepository
+	SurgicalProcedureRepository        repository.SurgicalProcedureRepository
+	SystemSymptomRepository            repository.SystemSymptomRepository
+	SystemRepository                   repository.SystemRepository
+	TreatmentOrderRepository           repository.TreatmentOrderRepository
+	TreatmentTypeRepository            repository.TreatmentTypeRepository
+	TreatmentRepository                repository.TreatmentRepository
+	UserTypeRepository                 repository.UserTypeRepository
+	UserRepository                     repository.UserRepository
+	VisitTypeRepository                repository.VisitTypeRepository
+	VisualAcuityRepository             repository.VisualAcuityRepository
+	VitalSignsRepository               repository.VitalSignsRepository
 }
 
 // WriteFile ...

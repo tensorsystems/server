@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) CreateAmendment(ctx context.Context, input graph_mode
 	var entity models.Amendment
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.AmendmentRepository
-	if err := repository.Create(&entity); err != nil {
+	if err := r.AmendmentRepository.Create(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdateAmendment(ctx context.Context, input graph_mode
 	var entity models.Amendment
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.AmendmentRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.AmendmentRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -37,8 +34,7 @@ func (r *mutationResolver) UpdateAmendment(ctx context.Context, input graph_mode
 }
 
 func (r *mutationResolver) DeleteAmendment(ctx context.Context, id int) (bool, error) {
-	var repository repository.AmendmentRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.AmendmentRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -47,8 +43,7 @@ func (r *mutationResolver) DeleteAmendment(ctx context.Context, id int) (bool, e
 
 func (r *queryResolver) Amendment(ctx context.Context, id int) (*models.Amendment, error) {
 	var entity models.Amendment
-	var repository repository.AmendmentRepository
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.AmendmentRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -60,8 +55,7 @@ func (r *queryResolver) Amendments(ctx context.Context, filter *graph_models.Ame
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
-	var repository repository.AmendmentRepository
-	result, err := repository.GetAll(&f)
+	result, err := r.AmendmentRepository.GetAll(&f)
 
 	if err != nil {
 		return nil, err

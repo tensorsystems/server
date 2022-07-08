@@ -10,7 +10,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -25,19 +24,17 @@ func (r *mutationResolver) SaveFavoriteMedication(ctx context.Context, input gra
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var repository repository.FavoriteMedicationRepository
 	var entity models.FavoriteMedication
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.UserID = user.ID
 
-	if err := repository.Save(&entity); err != nil {
+	if err := r.FavoriteMedicationRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -48,8 +45,7 @@ func (r *mutationResolver) UpdateFavoriteMedication(ctx context.Context, input g
 	var entity models.FavoriteMedication
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.FavoriteMedicationRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.FavoriteMedicationRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -57,9 +53,7 @@ func (r *mutationResolver) UpdateFavoriteMedication(ctx context.Context, input g
 }
 
 func (r *mutationResolver) DeleteFavoriteMedication(ctx context.Context, id int) (bool, error) {
-	var repository repository.FavoriteMedicationRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.FavoriteMedicationRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -72,8 +66,7 @@ func (r *queryResolver) FavoriteMedications(ctx context.Context, page models.Pag
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.FavoriteMedicationRepository
-	entities, count, err := repository.GetAll(page, &f, searchTerm)
+	entities, count, err := r.FavoriteMedicationRepository.GetAll(page, &f, searchTerm)
 
 	if err != nil {
 		return nil, err
@@ -104,14 +97,12 @@ func (r *queryResolver) UserFavoriteMedications(ctx context.Context, page models
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var repository repository.FavoriteMedicationRepository
-	entities, count, err := repository.GetAll(page, &models.FavoriteMedication{UserID: user.ID}, searchTerm)
+	entities, count, err := r.FavoriteMedicationRepository.GetAll(page, &models.FavoriteMedication{UserID: user.ID}, searchTerm)
 
 	if err != nil {
 		return nil, err
@@ -132,8 +123,7 @@ func (r *queryResolver) UserFavoriteMedications(ctx context.Context, page models
 }
 
 func (r *queryResolver) SearchFavoriteMedications(ctx context.Context, searchTerm string, page models.PaginationInput) (*graph_models.FavoriteMedicationConnection, error) {
-	var repository repository.FavoriteMedicationRepository
-	entities, count, err := repository.Search(page, searchTerm)
+	entities, count, err := r.FavoriteMedicationRepository.Search(page, searchTerm)
 
 	if err != nil {
 		return nil, err

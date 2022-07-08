@@ -162,8 +162,8 @@ func (r *User) CheckPasswordEquality(password1 string, password2 string) bool {
 }
 
 // CheckPassword checks user password
-func (r *User) CheckPassword(m *User, providedPassword string) error {
-	err := bcrypt.CompareHashAndPassword([]byte(m.Password), []byte(providedPassword))
+func (r *User) CheckPassword(password1 string, password2 string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(password1), []byte(password2))
 	if err != nil {
 		return err
 	}

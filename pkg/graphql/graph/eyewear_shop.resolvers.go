@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) CreateEyewearShop(ctx context.Context, input graph_mo
 	var entity models.EyewearShop
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.EyewearShopRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.EyewearShopRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdateEyewearShop(ctx context.Context, input graph_mo
 	var entity models.EyewearShop
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.EyewearShopRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.EyewearShopRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -37,26 +34,23 @@ func (r *mutationResolver) UpdateEyewearShop(ctx context.Context, input graph_mo
 }
 
 func (r *mutationResolver) DeleteEyewearShop(ctx context.Context, id int) (bool, error) {
-	var repository repository.EyewearShopRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.EyewearShopRepository.Delete(id); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
 func (r *queryResolver) EyewearShop(ctx context.Context, id int) (*models.EyewearShop, error) {
-	var repository repository.EyewearShopRepository
 	var entity models.EyewearShop
 
-	if err := repository.Get(&entity, id); err != nil {
+	if err := r.EyewearShopRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 	return &entity, nil
 }
 
 func (r *queryResolver) EyewearShops(ctx context.Context, page models.PaginationInput) (*graph_models.EyewearShopConnection, error) {
-	var repository repository.EyewearShopRepository
-	result, count, err := repository.GetAll(page, nil)
+	result, count, err := r.EyewearShopRepository.GetAll(page, nil)
 
 	if err != nil {
 		return nil, err

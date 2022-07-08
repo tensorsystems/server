@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) SaveHpiComponentType(ctx context.Context, input graph
 	var hpiComponentType models.HpiComponentType
 	deepCopy.Copy(&input).To(&hpiComponentType)
 
-	var repository repository.HpiComponentTypeRepository
-	if err := repository.Save(&hpiComponentType); err != nil {
+	if err := r.HpiComponentTypeRepository.Save(&hpiComponentType); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdateHpiComponentType(ctx context.Context, input gra
 	var hpiComponentType models.HpiComponentType
 	deepCopy.Copy(&input).To(&hpiComponentType)
 
-	var repository repository.HpiComponentTypeRepository
-	if err := repository.Update(&hpiComponentType); err != nil {
+	if err := r.HpiComponentTypeRepository.Update(&hpiComponentType); err != nil {
 		return nil, err
 	}
 
@@ -37,9 +34,7 @@ func (r *mutationResolver) UpdateHpiComponentType(ctx context.Context, input gra
 }
 
 func (r *mutationResolver) DeleteHpiComponentType(ctx context.Context, id int) (bool, error) {
-	var repository repository.HpiComponentTypeRepository
-	
-	if err := repository.Delete(id); err != nil {
+	if err := r.HpiComponentTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -50,8 +45,7 @@ func (r *mutationResolver) SaveHpiComponent(ctx context.Context, input graph_mod
 	var hpiComponent models.HpiComponent
 	deepCopy.Copy(&input).To(&hpiComponent)
 
-	var repository repository.HpiComponentRepository
-	if err := repository.Save(&hpiComponent); err != nil {
+	if err := r.HpiComponentRepository.Save(&hpiComponent); err != nil {
 		return nil, err
 	}
 
@@ -62,8 +56,7 @@ func (r *mutationResolver) UpdateHpiComponent(ctx context.Context, input graph_m
 	var hpiComponent models.HpiComponent
 	deepCopy.Copy(&input).To(&hpiComponent)
 
-	var repository repository.HpiComponentRepository
-	if err := repository.Update(&hpiComponent); err != nil {
+	if err := r.HpiComponentRepository.Update(&hpiComponent); err != nil {
 		return nil, err
 	}
 
@@ -71,9 +64,7 @@ func (r *mutationResolver) UpdateHpiComponent(ctx context.Context, input graph_m
 }
 
 func (r *mutationResolver) DeleteHpiComponent(ctx context.Context, id int) (bool, error) {
-	var repository repository.HpiComponentRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.HpiComponentRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -81,9 +72,7 @@ func (r *mutationResolver) DeleteHpiComponent(ctx context.Context, id int) (bool
 }
 
 func (r *queryResolver) HpiComponentTypes(ctx context.Context, page models.PaginationInput) (*graph_models.HpiComponentTypeConnection, error) {
-	var repository repository.HpiComponentTypeRepository
-
-	hpiComponentTypes, count, err := repository.GetAll(page)
+	hpiComponentTypes, count, err := r.HpiComponentTypeRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
@@ -109,9 +98,7 @@ func (r *queryResolver) HpiComponents(ctx context.Context, page models.Paginatio
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.HpiComponentRepository
-
-	hpiComponents, count, err := repository.Search(page, &f, searchTerm)
+	hpiComponents, count, err := r.HpiComponentRepository.Search(page, &f, searchTerm)
 
 	if err != nil {
 		return nil, err

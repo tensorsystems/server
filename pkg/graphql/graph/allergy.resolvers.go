@@ -8,7 +8,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -16,8 +15,7 @@ func (r *mutationResolver) SaveAllergy(ctx context.Context, input graph_models.A
 	var entity models.Allergy
 	deepCopy.Copy(&input).To(&entity)
 
-	var allergyRepo repository.AllergyRepository
-	if err := allergyRepo.Save(&entity); err != nil {
+	if err := r.AllergyRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -28,8 +26,7 @@ func (r *mutationResolver) UpdateAllergy(ctx context.Context, input graph_models
 	var entity models.Allergy
 	deepCopy.Copy(&input).To(&entity)
 
-	var allergyRepo repository.AllergyRepository
-	if err := allergyRepo.Update(&entity); err != nil {
+	if err := r.AllergyRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -37,8 +34,7 @@ func (r *mutationResolver) UpdateAllergy(ctx context.Context, input graph_models
 }
 
 func (r *mutationResolver) DeleteAllergy(ctx context.Context, id int) (bool, error) {
-	var allergyRepo repository.AllergyRepository
-	if err := allergyRepo.Delete(id); err != nil {
+	if err := r.AllergyRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -51,8 +47,7 @@ func (r *queryResolver) Allergies(ctx context.Context, page models.PaginationInp
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.AllergyRepository
-	entities, count, err := repository.GetAll(page, &f)
+	entities, count, err := r.AllergyRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err

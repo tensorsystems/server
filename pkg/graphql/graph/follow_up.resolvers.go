@@ -12,7 +12,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -28,16 +27,13 @@ func (r *mutationResolver) OrderFollowUp(ctx context.Context, input graph_models
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var repository repository.FollowUpOrderRepository
-
 	var entity models.FollowUpOrder
-	if err := repository.Save(&entity, input.PatientChartID, input.PatientID, user, input.ReceptionNote); err != nil {
+	if err := r.FollowUpOrderRepository.Save(&entity, input.PatientChartID, input.PatientID, user, input.ReceptionNote); err != nil {
 		return nil, err
 	}
 
@@ -46,9 +42,8 @@ func (r *mutationResolver) OrderFollowUp(ctx context.Context, input graph_models
 
 func (r *mutationResolver) ConfirmFollowUpOrder(ctx context.Context, input graph_models.ConfirmFollowUpOrderInput) (*graph_models.ConfirmFollowUpOrderResult, error) {
 	var entity models.FollowUpOrder
-	var repository repository.FollowUpOrderRepository
 
-	if err := repository.ConfirmOrder(&entity, input.FollowUpOrderID, input.FollowUpID, input.BillingID, input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
+	if err := r.FollowUpOrderRepository.ConfirmOrder(&entity, input.FollowUpOrderID, input.FollowUpID, input.BillingID, input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
 		return nil, err
 	}
 
@@ -61,9 +56,7 @@ func (r *mutationResolver) ConfirmFollowUpOrder(ctx context.Context, input graph
 }
 
 func (r *mutationResolver) DeleteFollowUp(ctx context.Context, id int) (bool, error) {
-	var repository repository.FollowUpRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.FollowUpRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -74,8 +67,7 @@ func (r *mutationResolver) SaveFollowUp(ctx context.Context, input graph_models.
 	var entity models.FollowUp
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.FollowUpRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.FollowUpRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -86,8 +78,7 @@ func (r *mutationResolver) UpdateFollowUp(ctx context.Context, input graph_model
 	var entity models.FollowUp
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.FollowUpRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.FollowUpRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -104,8 +95,7 @@ func (r *queryResolver) FollowUps(ctx context.Context, page models.PaginationInp
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.FollowUpRepository
-	entities, count, err := repository.GetAll(page, &f)
+	entities, count, err := r.FollowUpRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
@@ -128,8 +118,7 @@ func (r *queryResolver) FollowUps(ctx context.Context, page models.PaginationInp
 func (r *queryResolver) FollowUpOrder(ctx context.Context, patientChartID int) (*models.FollowUpOrder, error) {
 	var entity models.FollowUpOrder
 
-	var repository repository.FollowUpOrderRepository
-	if err := repository.GetByPatientChartID(&entity, patientChartID); err != nil {
+	if err := r.FollowUpOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
@@ -146,8 +135,7 @@ func (r *queryResolver) SearchFollowUpOrders(ctx context.Context, page models.Pa
 		f.Status = models.FollowUpOrderStatus(*filter.Status)
 	}
 
-	var repository repository.FollowUpOrderRepository
-	result, count, err := repository.Search(page, &f, date, searchTerm, false)
+	result, count, err := r.FollowUpOrderRepository.Search(page, &f, date, searchTerm, false)
 
 	if err != nil {
 		return nil, err

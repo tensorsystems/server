@@ -85,10 +85,10 @@ func (r *RoomRepository) Delete(ID int) error {
 }
 
 // GetAll ...
-func (r *RoomRepository) GetAll(p PaginationInput) ([]models.Room, int64, error) {
+func (r *RoomRepository) GetAll(p models.PaginationInput) ([]models.Room, int64, error) {
 	var result []models.Room
 
-	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {

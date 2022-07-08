@@ -12,12 +12,11 @@ import (
 	"github.com/tensoremr/server/pkg/jwt"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
 func (r *mutationResolver) Signup(ctx context.Context, input graph_models.UserInput) (*models.User, error) {
-	var entity repository.User
+	var entity models.User
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.Active = true
@@ -33,7 +32,7 @@ func (r *mutationResolver) Signup(ctx context.Context, input graph_models.UserIn
 			return nil, err
 		}
 
-		entity.Signature = &repository.File{
+		entity.Signature = &models.File{
 			ContentType: input.Signature.File.ContentType,
 			Size:        input.Signature.File.Size,
 			FileName:    fileName,
@@ -49,7 +48,7 @@ func (r *mutationResolver) Signup(ctx context.Context, input graph_models.UserIn
 			return nil, err
 		}
 
-		entity.ProfilePic = &repository.File{
+		entity.ProfilePic = &models.File{
 			ContentType: input.ProfilePic.File.ContentType,
 			Size:        input.ProfilePic.File.Size,
 			FileName:    fileName,
@@ -58,13 +57,12 @@ func (r *mutationResolver) Signup(ctx context.Context, input graph_models.UserIn
 		}
 	}
 
-	var userType repository.UserType
-	userTypes, err := userType.GetByIds(input.UserTypeIds)
+	userTypes, err := r.UserTypeRepository.GetByIds(input.UserTypeIds)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := entity.Save(userTypes); err != nil {
+	if err := r.UserRepository.Save(&entity, userTypes); err != nil {
 		return nil, err
 	}
 
@@ -72,16 +70,15 @@ func (r *mutationResolver) Signup(ctx context.Context, input graph_models.UserIn
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input graph_models.LoginInput) (string, error) {
-	var user repository.User
+	var user models.User
 
 	// Check if user exists
-	err := user.GetByEmail(input.Email)
-	if err != nil {
+	if err := r.UserRepository.GetByEmail(&user, input.Email); err != nil {
 		return "", err
 	}
 
 	// Check password validity
-	pErr := user.CheckPassword(input.Password)
+	pErr := user.CheckPassword(user.Password, input.Password)
 	if pErr != nil {
 		return "", pErr
 	}
@@ -102,8 +99,8 @@ func (r *mutationResolver) Login(ctx context.Context, input graph_models.LoginIn
 }
 
 func (r *mutationResolver) ResetPassword(ctx context.Context, id int) (*models.User, error) {
-	var entity repository.User
-	if err := entity.Get(id); err != nil {
+	var entity models.User
+	if err := r.UserRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +110,7 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, id int) (*models.U
 		return nil, err
 	}
 
-	if err := entity.Update(nil); err != nil {
+	if err := r.UserRepository.Update(&entity, nil); err != nil {
 		return nil, err
 	}
 
@@ -121,7 +118,7 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, id int) (*models.U
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input graph_models.UserUpdateInput) (*models.User, error) {
-	var entity repository.User
+	var entity models.User
 	deepCopy.Copy(&input).To(&entity)
 
 	if input.Signature != nil {
@@ -131,7 +128,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input graph_models.Us
 			return nil, err
 		}
 
-		entity.Signature = &repository.File{
+		entity.Signature = &models.File{
 			ContentType: input.Signature.File.ContentType,
 			Size:        input.Signature.File.Size,
 			FileName:    fileName,
@@ -147,7 +144,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input graph_models.Us
 			return nil, err
 		}
 
-		entity.ProfilePic = &repository.File{
+		entity.ProfilePic = &models.File{
 			ContentType: input.ProfilePic.File.ContentType,
 			Size:        input.ProfilePic.File.Size,
 			FileName:    fileName,
@@ -156,13 +153,12 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input graph_models.Us
 		}
 	}
 
-	var userType repository.UserType
-	userTypes, err := userType.GetByIds(input.UserTypeIds)
+	userTypes, err := r.UserTypeRepository.GetByIds(input.UserTypeIds)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := entity.Update(userTypes); err != nil {
+	if err := r.UserRepository.Update(&entity, userTypes); err != nil {
 		return nil, err
 	}
 
@@ -180,14 +176,13 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input graph_model
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
 	// Check password validity
-	if user.CheckPassword(input.PreviousPassword) != nil {
+	if user.CheckPassword(user.Password, input.PreviousPassword) != nil {
 		return nil, err
 	}
 
@@ -201,7 +196,7 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input graph_model
 		return nil, err
 	}
 
-	if err := user.Update(nil); err != nil {
+	if err := r.UserRepository.Update(&user, nil); err != nil {
 		return nil, err
 	}
 
@@ -209,11 +204,10 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input graph_model
 }
 
 func (r *mutationResolver) SaveUserType(ctx context.Context, input graph_models.UserTypeInput) (*models.UserType, error) {
-	var entity repository.UserType
+	var entity models.UserType
 	deepCopy.Copy(&input).To(&entity)
 
-	err := entity.Save()
-	if err != nil {
+	if err := r.UserTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -221,12 +215,10 @@ func (r *mutationResolver) SaveUserType(ctx context.Context, input graph_models.
 }
 
 func (r *mutationResolver) UpdateUserType(ctx context.Context, input graph_models.UserTypeUpdateInput) (*models.UserType, error) {
-	var userType repository.UserType
-
+	var userType models.UserType
 	deepCopy.Copy(&input).To(&userType)
 
-	_, err := userType.Update()
-	if err != nil {
+	if err := r.UserTypeRepository.Update(&userType); err != nil {
 		return nil, err
 	}
 
@@ -234,9 +226,7 @@ func (r *mutationResolver) UpdateUserType(ctx context.Context, input graph_model
 }
 
 func (r *mutationResolver) DeleteUserType(ctx context.Context, id int) (bool, error) {
-	var userType repository.UserType
-	err := userType.Delete(id)
-	if err != nil {
+	if err := r.UserTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -244,62 +234,60 @@ func (r *mutationResolver) DeleteUserType(ctx context.Context, id int) (bool, er
 }
 
 func (r *queryResolver) User(ctx context.Context, id int) (*models.User, error) {
-	var entity repository.User
-	err := entity.Get(id)
-	if err != nil {
+	var entity models.User
+
+	if err := r.UserRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
-	return &entity, err
+	return &entity, nil
 }
 
 func (r *queryResolver) Users(ctx context.Context, page models.PaginationInput, filter *graph_models.UserFilter, searchTerm *string) (*graph_models.UserConnection, error) {
-	var f repository.User
+	var f models.User
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.User
-	entities, count, err := entity.Search(page, &f, searchTerm)
+	entities, count, err := r.UserRepository.Search(page, &f, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.UserEdge, len(entities))
+	edges := make([]*graph_models.UserEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.UserEdge{
+		edges[i] = &graph_models.UserEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.UserConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.UserConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
 func (r *queryResolver) UserTypes(ctx context.Context, page models.PaginationInput) (*graph_models.UserTypeConnection, error) {
-	var entity repository.UserType
-	entities, count, err := entity.GetAll(page)
+	entities, count, err := r.UserTypeRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.UserTypeEdge, len(entities))
+	edges := make([]*graph_models.UserTypeEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.UserTypeEdge{
+		edges[i] = &graph_models.UserTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.UserTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.UserTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
 func (r *queryResolver) SearchUsers(ctx context.Context, input graph_models.UserSearchInput) ([]*models.User, error) {
@@ -307,9 +295,7 @@ func (r *queryResolver) SearchUsers(ctx context.Context, input graph_models.User
 }
 
 func (r *queryResolver) GetByUserTypeTitle(ctx context.Context, input string) ([]*models.User, error) {
-	var user repository.User
-
-	users, err := user.GetByUserTypeTitle(input)
+	users, err := r.UserRepository.GetByUserTypeTitle(input)
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -27,9 +26,8 @@ func (r *mutationResolver) SaveMedicationPrescription(ctx context.Context, input
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -70,8 +68,7 @@ func (r *mutationResolver) SaveMedicationPrescription(ctx context.Context, input
 		Status:              *input.Status,
 	}
 
-	var medicalPrescriptionOrderRepository repository.MedicalPrescriptionOrderRepository
-	if err := medicalPrescriptionOrderRepository.SaveMedicalPrescription(&medicalPrescriptionOrder, medicalPrescription, input.PatientID); err != nil {
+	if err := r.MedicalPrescriptionOrderRepository.SaveMedicalPrescription(&medicalPrescriptionOrder, medicalPrescription, input.PatientID); err != nil {
 		return nil, err
 	}
 
@@ -98,8 +95,7 @@ func (r *mutationResolver) SavePastMedication(ctx context.Context, input graph_m
 		Status:              *input.Status,
 	}
 
-	var medicalPrescriptionRepository repository.MedicalPrescriptionRepository
-	if err := medicalPrescriptionRepository.Save(&medicalPrescription); err != nil {
+	if err := r.MedicalPrescriptionRepository.Save(&medicalPrescription); err != nil {
 		return nil, err
 	}
 
@@ -118,9 +114,8 @@ func (r *mutationResolver) SaveEyewearPrescription(ctx context.Context, input gr
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -165,8 +160,7 @@ func (r *mutationResolver) SaveEyewearPrescription(ctx context.Context, input gr
 		Status:             *input.Status,
 	}
 
-	var eyewearPrescriptionOrderRepository repository.EyewearPrescriptionOrderRepository
-	if err := eyewearPrescriptionOrderRepository.SaveEyewearPrescription(&eyewearPrescriptionOrder, eyewearPrescription, input.PatientID); err != nil {
+	if err := r.EyewearPrescriptionOrderRepository.SaveEyewearPrescription(&eyewearPrescriptionOrder, eyewearPrescription, input.PatientID); err != nil {
 		return nil, err
 	}
 
@@ -177,8 +171,7 @@ func (r *mutationResolver) UpdateMedicationPrescription(ctx context.Context, inp
 	var entity models.MedicalPrescription
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.MedicalPrescriptionRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.MedicalPrescriptionRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -189,8 +182,7 @@ func (r *mutationResolver) UpdateEyewearPrescription(ctx context.Context, input 
 	var entity models.EyewearPrescription
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.EyewearPrescriptionRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.EyewearPrescriptionRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -200,8 +192,7 @@ func (r *mutationResolver) UpdateEyewearPrescription(ctx context.Context, input 
 func (r *mutationResolver) DeleteMedicalPrescription(ctx context.Context, id int) (bool, error) {
 	var entity models.MedicalPrescription
 
-	var repository repository.MedicalPrescriptionRepository
-	if err := repository.Delete(&entity, id); err != nil {
+	if err := r.MedicalPrescriptionRepository.Delete(&entity, id); err != nil {
 		return false, err
 	}
 
@@ -209,8 +200,7 @@ func (r *mutationResolver) DeleteMedicalPrescription(ctx context.Context, id int
 }
 
 func (r *mutationResolver) DeleteEyewearPrescription(ctx context.Context, id int) (bool, error) {
-	var repository repository.EyewearPrescriptionRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.EyewearPrescriptionRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -221,8 +211,7 @@ func (r *mutationResolver) UpdateMedicationPrescriptionOrder(ctx context.Context
 	var entity models.MedicalPrescriptionOrder
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.MedicalPrescriptionOrderRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.MedicalPrescriptionOrderRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -233,8 +222,7 @@ func (r *mutationResolver) UpdateEyewearPrescriptionOrder(ctx context.Context, i
 	var entity models.EyewearPrescriptionOrder
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.EyewearPrescriptionOrderRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.EyewearPrescriptionOrderRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -247,8 +235,7 @@ func (r *queryResolver) SearchMedicalPrescriptions(ctx context.Context, page mod
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.MedicalPrescriptionRepository
-	entities, count, err := repository.Search(page, &f, prescribedDate, searchTerm, false)
+	entities, count, err := r.MedicalPrescriptionRepository.Search(page, &f, prescribedDate, searchTerm, false)
 
 	if err != nil {
 		return nil, err
@@ -271,8 +258,7 @@ func (r *queryResolver) SearchMedicalPrescriptions(ctx context.Context, page mod
 func (r *queryResolver) MedicationPrescriptionOrder(ctx context.Context, patientChartID int) (*models.MedicalPrescriptionOrder, error) {
 	var entity models.MedicalPrescriptionOrder
 
-	var repository repository.MedicalPrescriptionOrderRepository
-	if err := repository.GetByPatientChartID(&entity, patientChartID); err != nil {
+	if err := r.MedicalPrescriptionOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, nil
 	}
 
@@ -282,8 +268,7 @@ func (r *queryResolver) MedicationPrescriptionOrder(ctx context.Context, patient
 func (r *queryResolver) EyewearPrescriptionOrder(ctx context.Context, patientChartID int) (*models.EyewearPrescriptionOrder, error) {
 	var entity models.EyewearPrescriptionOrder
 
-	var repository repository.EyewearPrescriptionOrderRepository
-	if err := repository.GetByPatientChartID(&entity, patientChartID); err != nil {
+	if err := r.EyewearPrescriptionOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, nil
 	}
 
@@ -296,8 +281,7 @@ func (r *queryResolver) SearchMedicationPrescriptionOrders(ctx context.Context, 
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.MedicalPrescriptionOrderRepository
-	result, count, err := repository.Search(page, &f, prescribedDate, searchTerm, false)
+	result, count, err := r.MedicalPrescriptionOrderRepository.Search(page, &f, prescribedDate, searchTerm, false)
 
 	if err != nil {
 		return nil, err
@@ -323,8 +307,7 @@ func (r *queryResolver) SearchEyewearPrescriptionOrders(ctx context.Context, pag
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.EyewearPrescriptionOrderRepository
-	result, count, err := repository.Search(page, &f, prescribedDate, searchTerm, false)
+	result, count, err := r.EyewearPrescriptionOrderRepository.Search(page, &f, prescribedDate, searchTerm, false)
 
 	if err != nil {
 		return nil, err

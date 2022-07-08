@@ -11,7 +11,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -27,9 +26,8 @@ func (r *mutationResolver) SavePatientDiagnosis(ctx context.Context, input graph
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -47,8 +45,7 @@ func (r *mutationResolver) SavePatientDiagnosis(ctx context.Context, input graph
 	var entity models.PatientDiagnosis
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PatientDiagnosisRepository
-	if err := repository.Save(&entity, input.DiagnosisID); err != nil {
+	if err := r.PatientDiagnosisRepository.Save(&entity, input.DiagnosisID); err != nil {
 		return nil, err
 	}
 
@@ -67,9 +64,8 @@ func (r *mutationResolver) UpdatePatientDiagnosis(ctx context.Context, input gra
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -87,8 +83,7 @@ func (r *mutationResolver) UpdatePatientDiagnosis(ctx context.Context, input gra
 	var entity models.PatientDiagnosis
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.PatientDiagnosisRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.PatientDiagnosisRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -107,9 +102,8 @@ func (r *mutationResolver) DeletePatientDiagnosis(ctx context.Context, id int) (
 		return false, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return false, err
 	}
 
@@ -124,8 +118,7 @@ func (r *mutationResolver) DeletePatientDiagnosis(ctx context.Context, id int) (
 		return false, errors.New("You are not authorized to perform this action")
 	}
 
-	var repository repository.PatientDiagnosisRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.PatientDiagnosisRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -138,8 +131,7 @@ func (r *queryResolver) PatientDiagnoses(ctx context.Context, page models.Pagina
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.PatientDiagnosisRepository
-	diagnoses, count, err := repository.GetAll(page, &f)
+	diagnoses, count, err := r.PatientDiagnosisRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err

@@ -24,12 +24,15 @@ import (
 	"github.com/tensoremr/server/pkg/repository"
 )
 
+type OrganizationDetailsApi struct {
+	OrganizationDetailsRepository repository.OrganizationDetailsRepository
+}
+
 // GetOrganizationDetails ...
-func GetOrganizationDetails(c *gin.Context) {
-	var repository repository.OrganizationDetailsRepository
+func (s *OrganizationDetailsApi) GetOrganizationDetails(c *gin.Context) {
 	var organizationDetails models.OrganizationDetails
 
-	if err := repository.Get(&organizationDetails); err != nil {
+	if err := s.OrganizationDetailsRepository.Get(&organizationDetails); err != nil {
 		c.JSON(500, "Something went wrong")
 		return
 	}

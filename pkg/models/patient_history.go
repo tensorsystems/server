@@ -33,5 +33,5 @@ type PatientHistory struct {
 	PastSurgeries        []PastSurgery         `json:"pastSurgeries"`
 	FamilyIllnesses      []FamilyIllness       `json:"familyIllnesses"`
 	Lifestyles           []Lifestyle           `json:"lifestyles"`
-	Allergies            []PatientHistory      `json:"allergies"`
+	Allergies            []Allergy             `json:"allergies"`
 }

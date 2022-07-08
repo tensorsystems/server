@@ -12,7 +12,6 @@ import (
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -28,17 +27,15 @@ func (r *mutationResolver) OrderDiagnosticProcedure(ctx context.Context, input g
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
 
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var repository repository.DiagnosticProcedureOrderRepository
 	// Save diagnostic procedure
 	var diagnosticProcedureOrder models.DiagnosticProcedureOrder
-	if err := repository.Save(&diagnosticProcedureOrder, input.DiagnosticProcedureTypeID, input.PatientChartID, input.PatientID, input.BillingID, user, input.OrderNote, input.ReceptionNote); err != nil {
+	if err := r.DiagnosticProcedureOrderRepository.Save(&diagnosticProcedureOrder, input.DiagnosticProcedureTypeID, input.PatientChartID, input.PatientID, input.BillingID, user, input.OrderNote, input.ReceptionNote); err != nil {
 		return nil, err
 	}
 
@@ -57,32 +54,27 @@ func (r *mutationResolver) OrderAndConfirmDiagnosticProcedure(ctx context.Contex
 		return nil, errors.New("Cannot find user")
 	}
 
-	var userRepository repository.UserRepository
 	var user models.User
-
-	if err := userRepository.GetByEmail(&user, email); err != nil {
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var appointmentRepository repository.AppointmentRepository
 	var appointment models.Appointment
-	if err := appointmentRepository.Get(&appointment, input.AppointmentID); err != nil {
+	if err := r.AppointmentRepository.Get(&appointment, input.AppointmentID); err != nil {
 		return nil, err
 	}
 
-	var patientChartRepository repository.PatientChartRepository
 	var patientChart models.PatientChart
-	if err := patientChartRepository.GetByAppointmentID(&patientChart, appointment.ID); err != nil {
+	if err := r.PatientChartRepository.GetByAppointmentID(&patientChart, appointment.ID); err != nil {
 		return nil, err
 	}
 
-	var repository repository.DiagnosticProcedureOrderRepository
 	var diagnosticProcedureOrder models.DiagnosticProcedureOrder
-	if err := repository.Save(&diagnosticProcedureOrder, input.DiagnosticProcedureTypeID, patientChart.ID, appointment.PatientID, input.BillingID, user, input.OrderNote, ""); err != nil {
+	if err := r.DiagnosticProcedureOrderRepository.Save(&diagnosticProcedureOrder, input.DiagnosticProcedureTypeID, patientChart.ID, appointment.PatientID, input.BillingID, user, input.OrderNote, ""); err != nil {
 		return nil, err
 	}
 
-	if err := repository.Confirm(&diagnosticProcedureOrder, diagnosticProcedureOrder.ID, input.InvoiceNo); err != nil {
+	if err := r.DiagnosticProcedureOrderRepository.Confirm(&diagnosticProcedureOrder, diagnosticProcedureOrder.ID, input.InvoiceNo); err != nil {
 		return nil, err
 	}
 
@@ -91,9 +83,8 @@ func (r *mutationResolver) OrderAndConfirmDiagnosticProcedure(ctx context.Contex
 
 func (r *mutationResolver) ConfirmDiagnosticProcedureOrder(ctx context.Context, id int, invoiceNo string) (*models.DiagnosticProcedureOrder, error) {
 	var entity models.DiagnosticProcedureOrder
-	var repository repository.DiagnosticProcedureOrderRepository
 
-	if err := repository.Confirm(&entity, id, invoiceNo); err != nil {
+	if err := r.DiagnosticProcedureOrderRepository.Confirm(&entity, id, invoiceNo); err != nil {
 		return nil, err
 	}
 
@@ -104,12 +95,11 @@ func (r *mutationResolver) UpdateDiagnosticProcedureOrder(ctx context.Context, i
 	var entity models.DiagnosticProcedureOrder
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.DiagnosticProcedureOrderRepository
 	if input.Status != nil {
 		entity.Status = models.DiagnosticProcedureOrderStatus(*input.Status)
 	}
 
-	if err := repository.Update(&entity); err != nil {
+	if err := r.DiagnosticProcedureOrderRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -120,8 +110,7 @@ func (r *mutationResolver) SaveDiagnosticProcedure(ctx context.Context, input gr
 	var entity models.DiagnosticProcedure
 	deepCopy.Copy(&input).To(&entity)
 
-	var repository repository.DiagnosticProcedureRepository
-	if err := repository.Save(&entity); err != nil {
+	if err := r.DiagnosticProcedureRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
@@ -171,8 +160,7 @@ func (r *mutationResolver) UpdateDiagnosticProcedure(ctx context.Context, input 
 		entity.Status = models.DiagnosticProcedureStatus(*input.Status)
 	}
 
-	var repository repository.DiagnosticProcedureRepository
-	if err := repository.Update(&entity); err != nil {
+	if err := r.DiagnosticProcedureRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -180,9 +168,7 @@ func (r *mutationResolver) UpdateDiagnosticProcedure(ctx context.Context, input 
 }
 
 func (r *mutationResolver) DeleteDiagnosticProcedure(ctx context.Context, id int) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.DiagnosticProcedureRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -193,16 +179,14 @@ func (r *mutationResolver) SaveDiagnosticProcedureType(ctx context.Context, inpu
 	var entity models.DiagnosticProcedureType
 	deepCopy.Copy(&input).To(&entity)
 
-	var billingRepository repository.BillingRepository
-	billings, err := billingRepository.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Billings = billings
 
-	var diagnosticProcedureTypeRepository repository.DiagnosticProcedureTypeRepository
-	if err := diagnosticProcedureTypeRepository.Save(&entity); err != nil {
+	if err := r.DiagnosticProcedureTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 	return &entity, nil
@@ -212,17 +196,14 @@ func (r *mutationResolver) UpdateDiagnosticProcedureType(ctx context.Context, in
 	var entity models.DiagnosticProcedureType
 	deepCopy.Copy(&input).To(&entity)
 
-	var billingRepository repository.BillingRepository
-	billings, err := billingRepository.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Billings = billings
 
-	var diagnosticProcedureTypeRepository repository.DiagnosticProcedureTypeRepository
-
-	if err := diagnosticProcedureTypeRepository.Update(&entity); err != nil {
+	if err := r.DiagnosticProcedureTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -230,8 +211,7 @@ func (r *mutationResolver) UpdateDiagnosticProcedureType(ctx context.Context, in
 }
 
 func (r *mutationResolver) DeleteDiagnosticProcedureType(ctx context.Context, id int) (bool, error) {
-	var repository repository.DiagnosticProcedureTypeRepository
-	if err := repository.Delete(id); err != nil {
+	if err := r.DiagnosticProcedureTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -239,8 +219,7 @@ func (r *mutationResolver) DeleteDiagnosticProcedureType(ctx context.Context, id
 }
 
 func (r *mutationResolver) DeleteDiagnosticImage(ctx context.Context, input graph_models.DiagnosticProcedureDeleteFileInput) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-	if err := repository.DeleteFile("Images", input.DiagnosticProcedureID, input.FileID); err != nil {
+	if err := r.DiagnosticProcedureRepository.DeleteFile("Images", input.DiagnosticProcedureID, input.FileID); err != nil {
 		return false, err
 	}
 
@@ -248,9 +227,7 @@ func (r *mutationResolver) DeleteDiagnosticImage(ctx context.Context, input grap
 }
 
 func (r *mutationResolver) DeleteDiagnosticRightEyeImage(ctx context.Context, input graph_models.DiagnosticProcedureDeleteFileInput) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-
-	if err := repository.DeleteFile("RightEyeImages", input.DiagnosticProcedureID, input.FileID); err != nil {
+	if err := r.DiagnosticProcedureRepository.DeleteFile("RightEyeImages", input.DiagnosticProcedureID, input.FileID); err != nil {
 		return false, err
 	}
 
@@ -258,9 +235,7 @@ func (r *mutationResolver) DeleteDiagnosticRightEyeImage(ctx context.Context, in
 }
 
 func (r *mutationResolver) DeleteDiagnosticLeftEyeImage(ctx context.Context, input graph_models.DiagnosticProcedureDeleteFileInput) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-
-	if err := repository.DeleteFile("LeftEyeImages", input.DiagnosticProcedureID, input.FileID); err != nil {
+	if err := r.DiagnosticProcedureRepository.DeleteFile("LeftEyeImages", input.DiagnosticProcedureID, input.FileID); err != nil {
 		return false, err
 	}
 
@@ -268,9 +243,7 @@ func (r *mutationResolver) DeleteDiagnosticLeftEyeImage(ctx context.Context, inp
 }
 
 func (r *mutationResolver) DeleteDiagnosticRightEyeSketch(ctx context.Context, input graph_models.DiagnosticProcedureDeleteFileInput) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-
-	if err := repository.DeleteFile("RightEyeSketches", input.DiagnosticProcedureID, input.FileID); err != nil {
+	if err := r.DiagnosticProcedureRepository.DeleteFile("RightEyeSketches", input.DiagnosticProcedureID, input.FileID); err != nil {
 		return false, err
 	}
 
@@ -278,9 +251,7 @@ func (r *mutationResolver) DeleteDiagnosticRightEyeSketch(ctx context.Context, i
 }
 
 func (r *mutationResolver) DeleteDiagnosticLeftEyeSketch(ctx context.Context, input graph_models.DiagnosticProcedureDeleteFileInput) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-
-	if err := repository.DeleteFile("LeftEyeSketches", input.DiagnosticProcedureID, input.FileID); err != nil {
+	if err := r.DiagnosticProcedureRepository.DeleteFile("LeftEyeSketches", input.DiagnosticProcedureID, input.FileID); err != nil {
 		return false, err
 	}
 
@@ -288,9 +259,7 @@ func (r *mutationResolver) DeleteDiagnosticLeftEyeSketch(ctx context.Context, in
 }
 
 func (r *mutationResolver) DeleteDiagnosticDocument(ctx context.Context, input graph_models.DiagnosticProcedureDeleteFileInput) (bool, error) {
-	var repository repository.DiagnosticProcedureRepository
-
-	if err := repository.DeleteFile("Documents", input.DiagnosticProcedureID, input.FileID); err != nil {
+	if err := r.DiagnosticProcedureRepository.DeleteFile("Documents", input.DiagnosticProcedureID, input.FileID); err != nil {
 		return false, err
 	}
 
@@ -307,8 +276,7 @@ func (r *queryResolver) DiagnosticProcedures(ctx context.Context, page models.Pa
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var repository repository.DiagnosticProcedureRepository
-	procedures, count, err := repository.GetAll(page, &f)
+	procedures, count, err := r.DiagnosticProcedureRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
@@ -330,8 +298,8 @@ func (r *queryResolver) DiagnosticProcedures(ctx context.Context, page models.Pa
 
 func (r *queryResolver) DiagnosticProcedureOrder(ctx context.Context, patientChartID int) (*models.DiagnosticProcedureOrder, error) {
 	var entity models.DiagnosticProcedureOrder
-	var repository repository.DiagnosticProcedureOrderRepository
-	if err := repository.GetByPatientChartID(&entity, patientChartID); err != nil {
+
+	if err := r.DiagnosticProcedureOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
@@ -348,8 +316,7 @@ func (r *queryResolver) SearchDiagnosticProcedureOrders(ctx context.Context, pag
 		f.Status = models.DiagnosticProcedureOrderStatus(*filter.Status)
 	}
 
-	var repository repository.DiagnosticProcedureOrderRepository
-	result, count, err := repository.Search(page, &f, date, searchTerm, false)
+	result, count, err := r.DiagnosticProcedureOrderRepository.Search(page, &f, date, searchTerm, false)
 
 	if err != nil {
 		return nil, err
@@ -370,8 +337,7 @@ func (r *queryResolver) SearchDiagnosticProcedureOrders(ctx context.Context, pag
 }
 
 func (r *queryResolver) DiagnosticProcedureTypes(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.DiagnosticProcedureTypeConnection, error) {
-	var repository repository.DiagnosticProcedureTypeRepository
-	result, count, err := repository.GetAll(page, searchTerm)
+	result, count, err := r.DiagnosticProcedureTypeRepository.GetAll(page, searchTerm)
 	if err != nil {
 		return nil, err
 	}
@@ -391,10 +357,9 @@ func (r *queryResolver) DiagnosticProcedureTypes(ctx context.Context, page model
 }
 
 func (r *queryResolver) Refraction(ctx context.Context, patientChartID int) (*models.DiagnosticProcedure, error) {
-	var repository repository.DiagnosticProcedureRepository
 	var entity models.DiagnosticProcedure
 
-	if err := repository.GetRefraction(&entity, patientChartID); err != nil {
+	if err := r.DiagnosticProcedureRepository.GetRefraction(&entity, patientChartID); err != nil {
 		return nil, nil
 	}
 

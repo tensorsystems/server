@@ -9,7 +9,6 @@ import (
 
 	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/models"
-	"github.com/tensoremr/server/pkg/repository"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
@@ -52,10 +51,8 @@ func (r *mutationResolver) SavePatient(ctx context.Context, input graph_models.P
 		})
 	}
 
-	var patientRepository repository.PatientRepository
-
 	// Save
-	if err := patientRepository.Save(&patient); err != nil {
+	if err := r.PatientRepository.Save(&patient); err != nil {
 		return nil, err
 	}
 
@@ -115,11 +112,8 @@ func (r *mutationResolver) SavePatientV2(ctx context.Context, input graph_models
 			Hash:        hash,
 		})
 	}
-
-	var patientRepository repository.PatientRepository
-
 	// Save
-	if err := patientRepository.Save(&patient); err != nil {
+	if err := r.PatientRepository.Save(&patient); err != nil {
 		return nil, err
 	}
 
@@ -165,8 +159,7 @@ func (r *mutationResolver) UpdatePatient(ctx context.Context, input graph_models
 		})
 	}
 
-	var patientRepository repository.PatientRepository
-	if err := patientRepository.Update(&patient); err != nil {
+	if err := r.PatientRepository.Update(&patient); err != nil {
 		return nil, err
 	}
 
@@ -174,9 +167,7 @@ func (r *mutationResolver) UpdatePatient(ctx context.Context, input graph_models
 }
 
 func (r *mutationResolver) DeletePatient(ctx context.Context, id int) (bool, error) {
-	var repository repository.PatientRepository
-
-	if err := repository.Delete(id); err != nil {
+	if err := r.PatientRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -186,8 +177,7 @@ func (r *mutationResolver) DeletePatient(ctx context.Context, id int) (bool, err
 func (r *queryResolver) Patient(ctx context.Context, id int) (*models.Patient, error) {
 	var patient models.Patient
 
-	var repository repository.PatientRepository
-	if err := repository.Get(&patient, id); err != nil {
+	if err := r.PatientRepository.Get(&patient, id); err != nil {
 		return nil, err
 	}
 
@@ -195,8 +185,7 @@ func (r *queryResolver) Patient(ctx context.Context, id int) (*models.Patient, e
 }
 
 func (r *queryResolver) SearchPatients(ctx context.Context, term string) ([]*models.Patient, error) {
-	var repository repository.PatientRepository
-	patients, err := repository.Search(term)
+	patients, err := r.PatientRepository.Search(term)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +195,7 @@ func (r *queryResolver) SearchPatients(ctx context.Context, term string) ([]*mod
 
 func (r *queryResolver) GetByCardNo(ctx context.Context, cardNo string) (*models.Patient, error) {
 	var patient models.Patient
-	var repository repository.PatientRepository
-	if err := repository.FindByCardNo(&patient, cardNo); err != nil {
+	if err := r.PatientRepository.FindByCardNo(&patient, cardNo); err != nil {
 		return nil, err
 	}
 
@@ -215,9 +203,7 @@ func (r *queryResolver) GetByCardNo(ctx context.Context, cardNo string) (*models
 }
 
 func (r *queryResolver) GetProgressNotes(ctx context.Context, appointmentID int) (*graph_models.ProgressNote, error) {
-	var repository repository.PatientRepository
-
-	patientHistory, appointments, err := repository.GetAllProgressNotes(appointmentID)
+	patientHistory, appointments, err := r.PatientRepository.GetAllProgressNotes(appointmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -229,9 +215,7 @@ func (r *queryResolver) GetProgressNotes(ctx context.Context, appointmentID int)
 }
 
 func (r *queryResolver) GetAllPatientProgress(ctx context.Context, patientID int) (*graph_models.ProgressNote, error) {
-	var repository repository.PatientRepository
-
-	patientHistory, appointments, err := repository.GetAllProgress(patientID)
+	patientHistory, appointments, err := r.PatientRepository.GetAllProgress(patientID)
 	if err != nil {
 		return nil, err
 	}
@@ -243,9 +227,7 @@ func (r *queryResolver) GetAllPatientProgress(ctx context.Context, patientID int
 }
 
 func (r *queryResolver) GetVitalSignsProgress(ctx context.Context, patientID int) (*graph_models.VitalSignsProgress, error) {
-	var repository repository.PatientRepository
-
-	appointments, err := repository.GetVitalSignsProgress(patientID)
+	appointments, err := r.PatientRepository.GetVitalSignsProgress(patientID)
 	if err != nil {
 		return nil, err
 	}
@@ -256,9 +238,7 @@ func (r *queryResolver) GetVitalSignsProgress(ctx context.Context, patientID int
 }
 
 func (r *queryResolver) GetPatientDiagnosticProgress(ctx context.Context, patientID int, procedureTypeTitle string) ([]*models.Appointment, error) {
-	var repository repository.PatientRepository
-
-	appointments, err := repository.GetPatientDiagnosticProcedures(patientID, procedureTypeTitle)
+	appointments, err := r.PatientRepository.GetPatientDiagnosticProcedures(patientID, procedureTypeTitle)
 	if err != nil {
 		return nil, err
 	}
@@ -267,13 +247,11 @@ func (r *queryResolver) GetPatientDiagnosticProgress(ctx context.Context, patien
 }
 
 func (r *queryResolver) GetPatientDiagnosticProcedureTitles(ctx context.Context, patientID int) ([]string, error) {
-	var repository repository.DiagnosticProcedureOrderRepository
-	return repository.GetPatientDiagnosticProcedureTitles(patientID)
+	return r.DiagnosticProcedureOrderRepository.GetPatientDiagnosticProcedureTitles(patientID)
 }
 
 func (r *queryResolver) Patients(ctx context.Context, page models.PaginationInput) (*graph_models.PatientConnection, error) {
-	var repository repository.PatientRepository
-	patients, count, err := repository.GetAll(page)
+	patients, count, err := r.PatientRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
@@ -294,38 +272,32 @@ func (r *queryResolver) Patients(ctx context.Context, page models.PaginationInpu
 }
 
 func (r *queryResolver) GetPatientOrderCount(ctx context.Context, patientID int) (*graph_models.OrdersCount, error) {
-	var diagnosticRepo repository.DiagnosticProcedureOrderRepository
-	diagnosticCount, err := diagnosticRepo.GetCount(&models.DiagnosticProcedureOrder{PatientID: patientID}, nil, nil)
+	diagnosticCount, err := r.DiagnosticProcedureOrderRepository.GetCount(&models.DiagnosticProcedureOrder{PatientID: patientID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var labRepo repository.LabOrderRepository
-	labCount, err := labRepo.GetCount(&models.LabOrder{PatientID: patientID}, nil, nil)
+	labCount, err := r.LabOrderRepository.GetCount(&models.LabOrder{PatientID: patientID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var surgeryRepo repository.SurgicalOrderRepository
-	surgeryCount, err := surgeryRepo.GetCount(&models.SurgicalOrder{PatientID: patientID}, nil, nil)
+	surgeryCount, err := r.SurgicalOrderRepository.GetCount(&models.SurgicalOrder{PatientID: patientID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var treatmentRepo repository.TreatmentOrderRepository
-	treatmentCount, err := treatmentRepo.GetCount(&models.TreatmentOrder{PatientID: patientID}, nil, nil)
+	treatmentCount, err := r.TreatmentOrderRepository.GetCount(&models.TreatmentOrder{PatientID: patientID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var followUpRepo repository.FollowUpOrderRepository
-	followUpCount, err := followUpRepo.GetCount(&models.FollowUpOrder{PatientID: patientID}, nil, nil)
+	followUpCount, err := r.FollowUpOrderRepository.GetCount(&models.FollowUpOrder{PatientID: patientID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var referralRepo repository.ReferralOrderRepository
-	referralCount, err := referralRepo.GetCount(&models.ReferralOrder{PatientID: patientID}, nil, nil)
+	referralCount, err := r.ReferralOrderRepository.GetCount(&models.ReferralOrder{PatientID: patientID}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -341,20 +313,17 @@ func (r *queryResolver) GetPatientOrderCount(ctx context.Context, patientID int)
 }
 
 func (r *queryResolver) GetPatientFiles(ctx context.Context, patientID int) ([]*models.File, error) {
-	var repository repository.PatientRepository
-	files, err := repository.GetPatientFiles(patientID)
+	files, err := r.PatientRepository.GetPatientFiles(patientID)
 	return files, err
 }
 
 func (r *queryResolver) FindSimilarPatients(ctx context.Context, input graph_models.SimilarPatientsInput) (*graph_models.SimilarPatients, error) {
-	var repository repository.PatientRepository
-
-	byName, err := repository.FindByName(input.FirstName, input.LastName)
+	byName, err := r.PatientRepository.FindByName(input.FirstName, input.LastName)
 	if err != nil {
 		return nil, err
 	}
 
-	byPhone, err := repository.FindByPhoneNo(input.PhoneNo)
+	byPhone, err := r.PatientRepository.FindByPhoneNo(input.PhoneNo)
 	if err != nil {
 		return nil, err
 	}
