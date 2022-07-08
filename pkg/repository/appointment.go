@@ -31,10 +31,11 @@ import (
 
 type AppointmentRepository struct {
 	DB *gorm.DB
+	AppointmentStatusRepository AppointmentStatusRepository
 }
 
-func ProvideAppointmentRepository(DB *gorm.DB) AppointmentRepository {
-	return AppointmentRepository{DB: DB}
+func ProvideAppointmentRepository(DB *gorm.DB, appointmentStatusRepository AppointmentStatusRepository) AppointmentRepository {
+	return AppointmentRepository{DB: DB, AppointmentStatusRepository: appointmentStatusRepository}
 }
 
 // Save ...
@@ -287,9 +288,8 @@ func (r *AppointmentRepository) FindTodaysCheckedInAppointments(p models.Paginat
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	var appointmentStatusRepository AppointmentStatusRepository
 	var appointmentStatus models.AppointmentStatus
-	if err := appointmentStatusRepository.GetByTitle(&appointmentStatus, "Checked-In"); err != nil {
+	if err := r.AppointmentStatusRepository.GetByTitle(&appointmentStatus, "Checked-In"); err != nil {
 		return result, 0, err
 	}
 
@@ -394,9 +394,8 @@ func (r *AppointmentRepository) FindByProvider(p models.PaginationInput, searchT
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
-	var appointmentStatusRepository AppointmentStatusRepository
 	var appointmentStatus models.AppointmentStatus
-	if err := appointmentStatusRepository.GetByTitle(&appointmentStatus, "Checked-In"); err != nil {
+	if err := r.AppointmentStatusRepository.GetByTitle(&appointmentStatus, "Checked-In"); err != nil {
 		return result, 0, err
 	}
 

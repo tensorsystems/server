@@ -25,10 +25,11 @@ import (
 
 type ChiefComplaintTypeRepository struct {
 	DB *gorm.DB
+	FavoriteChiefComplaintRepository FavoriteChiefComplaintRepository
 }
 
-func ProvideChiefComplaintTypeRepository(DB *gorm.DB) ChiefComplaintTypeRepository {
-	return ChiefComplaintTypeRepository{DB: DB}
+func ProvideChiefComplaintTypeRepository(DB *gorm.DB, favoriteChiefComplaintRepository FavoriteChiefComplaintRepository) ChiefComplaintTypeRepository {
+	return ChiefComplaintTypeRepository{DB: DB, FavoriteChiefComplaintRepository: favoriteChiefComplaintRepository}
 }
 
 // Save ...
@@ -67,8 +68,7 @@ func (r *ChiefComplaintTypeRepository) GetFavorites(p models.PaginationInput, se
 	var err error
 
 	var favoriteIds []int
-	var favoriteChiefComplaintRepository FavoriteChiefComplaintRepository
-	favoriteChiefComplaints, _ := favoriteChiefComplaintRepository.GetByUser(userId)
+	favoriteChiefComplaints, _ := r.FavoriteChiefComplaintRepository.GetByUser(userId)
 	for _, e := range favoriteChiefComplaints {
 		favoriteIds = append(favoriteIds, e.ChiefComplaintTypeID)
 	}

@@ -115,10 +115,11 @@ func playgroundHandler() gin.HandlerFunc {
 
 // RegisterJobs ...
 func (s *Server) RegisterJobs() {
+	patientQueueRepository := repository.ProvidePatientQueueRepository(s.DB)
+
 	c := cron.New()
 	c.AddFunc("@hourly", func() {
-		var patientQueue repository.PatientQueueRepository
-		if err := patientQueue.ClearExpired(); err != nil {
+		if err := patientQueueRepository.ClearExpired(); err != nil {
 			fmt.Println(err)
 		}
 	})
@@ -141,7 +142,7 @@ func (s *Server) NewRouter() *gin.Engine {
 	AmendmentRepository := repository.ProvideAmendmentRepository(s.DB)
 	AppointmentQueueRepository := repository.ProvideAppointmentQueueRepository(s.DB)
 	AppointmentStatusRepository := repository.ProvideAppointmentStatusRepository(s.DB)
-	AppointmentRepository := repository.ProvideAppointmentRepository(s.DB)
+	AppointmentRepository := repository.ProvideAppointmentRepository(s.DB, AppointmentStatusRepository)
 	AutoRefractionRepository := repository.ProvideAutoRefractionRepository(s.DB)
 	BillingRepository := repository.ProvideBillingRepository(s.DB)
 	ChatDeleteRepository := repository.ProvideChatDeleteRepository(s.DB)
@@ -150,10 +151,8 @@ func (s *Server) NewRouter() *gin.Engine {
 	ChatMuteRepository := repository.ProvideChatMuteRepository(s.DB)
 	ChatUnreadRepository := repository.ProvideChatUnreadRepository(s.DB)
 	ChatRepository := repository.ProvideChatRepository(s.DB)
-	ChiefComplaintTypeRepository := repository.ProvideChiefComplaintTypeRepository(s.DB)
 	ChiefComplaintRepository := repository.ProvideChiefComplaintRepository(s.DB)
 	CoverTestRepository := repository.ProvideCoverTestRepository(s.DB)
-	DiagnosisRepository := repository.ProvideDiagnosisRepository(s.DB)
 	DiagnosticProcedureRepository := repository.ProvideDiagnosticProcedureRepository(s.DB)
 	DiagnosticProcedureOrderRepository := repository.ProvideDiagnosticProcedureOrderRepository(s.DB)
 	DiagnosticProcedureTypeRepository := repository.ProvideDiagnosticProcedureTypeRepository(s.DB)
@@ -165,7 +164,9 @@ func (s *Server) NewRouter() *gin.Engine {
 	EyewearShopRepository := repository.ProvideEyewearShopRepository(s.DB)
 	FamilyIllnessRepository := repository.ProvideFamilyIllnessRepository(s.DB)
 	FavoriteChiefComplaintRepository := repository.ProvideFavoriteChiefComplaintRepository(s.DB)
+	ChiefComplaintTypeRepository := repository.ProvideChiefComplaintTypeRepository(s.DB, FavoriteChiefComplaintRepository)
 	FavoriteDiagnosisRepository := repository.ProvideFavoriteDiagnosisRepository(s.DB)
+	DiagnosisRepository := repository.ProvideDiagnosisRepository(s.DB, FavoriteDiagnosisRepository)
 	FavoriteMedicationRepository := repository.ProvideFavoriteMedicationRepository(s.DB)
 	FileRepository := repository.ProvideFileRepository(s.DB)
 	FollowUpOrderRepository := repository.ProvideFollowUpOrderRepository(s.DB)

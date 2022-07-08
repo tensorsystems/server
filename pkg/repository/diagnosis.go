@@ -24,11 +24,12 @@ import (
 )
 
 type DiagnosisRepository struct {
-	DB *gorm.DB
+	DB                          *gorm.DB
+	FavoriteDiagnosisRepository FavoriteDiagnosisRepository
 }
 
-func ProvideDiagnosisRepository(DB *gorm.DB) DiagnosisRepository {
-	return DiagnosisRepository{DB: DB}
+func ProvideDiagnosisRepository(DB *gorm.DB, favoriteDiagnosisRepository FavoriteDiagnosisRepository) DiagnosisRepository {
+	return DiagnosisRepository{DB: DB, FavoriteDiagnosisRepository: favoriteDiagnosisRepository}
 }
 
 // Save ...
@@ -67,8 +68,7 @@ func (r *DiagnosisRepository) GetFavorites(p models.PaginationInput, searchTerm 
 	var err error
 
 	var favoriteIds []int
-	var favoriteDiagnosisRepository FavoriteDiagnosisRepository
-	favoriteDiagnosis, _ := favoriteDiagnosisRepository.GetByUser(userId)
+	favoriteDiagnosis, _ := r.FavoriteDiagnosisRepository.GetByUser(userId)
 	for _, e := range favoriteDiagnosis {
 		favoriteIds = append(favoriteIds, e.DiagnosisID)
 	}
