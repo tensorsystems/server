@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) OrderFollowUp(ctx context.Context, input model.OrderFollowUpInput) (*repository.FollowUpOrder, error) {
+func (r *mutationResolver) OrderFollowUp(ctx context.Context, input graph_models.OrderFollowUpInput) (*models.FollowUpOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -27,28 +27,27 @@ func (r *mutationResolver) OrderFollowUp(ctx context.Context, input model.OrderF
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.FollowUpOrder
-	if err := entity.Save(input.PatientChartID, input.PatientID, user, input.ReceptionNote); err != nil {
+	var entity models.FollowUpOrder
+	if err := r.FollowUpOrderRepository.Save(&entity, input.PatientChartID, input.PatientID, user, input.ReceptionNote); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) ConfirmFollowUpOrder(ctx context.Context, input model.ConfirmFollowUpOrderInput) (*model.ConfirmFollowUpOrderResult, error) {
-	var entity repository.FollowUpOrder
+func (r *mutationResolver) ConfirmFollowUpOrder(ctx context.Context, input graph_models.ConfirmFollowUpOrderInput) (*graph_models.ConfirmFollowUpOrderResult, error) {
+	var entity models.FollowUpOrder
 
-	if err := entity.ConfirmOrder(input.FollowUpOrderID, input.FollowUpID, input.BillingID, input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
+	if err := r.FollowUpOrderRepository.ConfirmOrder(&entity, input.FollowUpOrderID, input.FollowUpID, input.BillingID, input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
 		return nil, err
 	}
 
-	return &model.ConfirmFollowUpOrderResult{
+	return &graph_models.ConfirmFollowUpOrderResult{
 		FollowUpOrder: &entity,
 		FollowUpID:    input.FollowUpID,
 		InvoiceNo:     input.InvoiceNo,
@@ -57,104 +56,101 @@ func (r *mutationResolver) ConfirmFollowUpOrder(ctx context.Context, input model
 }
 
 func (r *mutationResolver) DeleteFollowUp(ctx context.Context, id int) (bool, error) {
-	var entity repository.FollowUp
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.FollowUpRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveFollowUp(ctx context.Context, input model.FollowUpInput) (*repository.FollowUp, error) {
-	var entity repository.FollowUp
+func (r *mutationResolver) SaveFollowUp(ctx context.Context, input graph_models.FollowUpInput) (*models.FollowUp, error) {
+	var entity models.FollowUp
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.FollowUpRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateFollowUp(ctx context.Context, input model.FollowUpUpdateInput) (*repository.FollowUp, error) {
-	var entity repository.FollowUp
+func (r *mutationResolver) UpdateFollowUp(ctx context.Context, input graph_models.FollowUpUpdateInput) (*models.FollowUp, error) {
+	var entity models.FollowUp
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.FollowUpRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) FollowUp(ctx context.Context, filter model.FollowUpFilter) (*repository.FollowUp, error) {
+func (r *queryResolver) FollowUp(ctx context.Context, filter graph_models.FollowUpFilter) (*models.FollowUp, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) FollowUps(ctx context.Context, page repository.PaginationInput, filter *model.FollowUpFilter) (*model.FollowUpConnection, error) {
-	var f repository.FollowUp
+func (r *queryResolver) FollowUps(ctx context.Context, page models.PaginationInput, filter *graph_models.FollowUpFilter) (*graph_models.FollowUpConnection, error) {
+	var f models.FollowUp
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.FollowUp
-	entities, count, err := entity.GetAll(page, &f)
+	entities, count, err := r.FollowUpRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.FollowUpEdge, len(entities))
+	edges := make([]*graph_models.FollowUpEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.FollowUpEdge{
+		edges[i] = &graph_models.FollowUpEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.FollowUpConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.FollowUpConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) FollowUpOrder(ctx context.Context, patientChartID int) (*repository.FollowUpOrder, error) {
-	var entity repository.FollowUpOrder
-	if err := entity.GetByPatientChartID(patientChartID); err != nil {
+func (r *queryResolver) FollowUpOrder(ctx context.Context, patientChartID int) (*models.FollowUpOrder, error) {
+	var entity models.FollowUpOrder
+
+	if err := r.FollowUpOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchFollowUpOrders(ctx context.Context, page repository.PaginationInput, filter *model.FollowUpOrderFilter, date *time.Time, searchTerm *string) (*model.FollowUpOrderConnection, error) {
-	var f repository.FollowUpOrder
+func (r *queryResolver) SearchFollowUpOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.FollowUpOrderFilter, date *time.Time, searchTerm *string) (*graph_models.FollowUpOrderConnection, error) {
+	var f models.FollowUpOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
 	if filter.Status != nil {
-		f.Status = repository.FollowUpOrderStatus(*filter.Status)
+		f.Status = models.FollowUpOrderStatus(*filter.Status)
 	}
 
-	var entity repository.FollowUpOrder
-	result, count, err := entity.Search(page, &f, date, searchTerm, false)
+	result, count, err := r.FollowUpOrderRepository.Search(page, &f, date, searchTerm, false)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.FollowUpOrderEdge, len(result))
+	edges := make([]*graph_models.FollowUpOrderEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.FollowUpOrderEdge{
+		edges[i] = &graph_models.FollowUpOrderEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.FollowUpOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.FollowUpOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

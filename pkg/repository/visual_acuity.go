@@ -19,51 +19,41 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// VisualAcuity ...
-type VisualAcuity struct {
-	gorm.Model
-	ID                       int     `gorm:"primaryKey"`
-	RightDistanceUncorrected *string `json:"rightDistanceUncorrected"`
-	LeftDistanceUncorrected  *string `json:"leftDistanceUncorrected"`
-	RightDistancePinhole     *string `json:"rightDistancePinhole"`
-	LeftDistancePinhole      *string `json:"leftDistancePinhole"`
-	RightDistanceCorrected   *string `json:"rightDistanceCorrected"`
-	LeftDistanceCorrected    *string `json:"leftDistanceCorrected"`
-	RightNearUncorrected     *string `json:"rightNearUncorrected"`
-	LeftNearUncorrected      *string `json:"leftNearUncorrected"`
-	RightNearPinhole         *string `json:"rightNearPinhole"`
-	LeftNearPinhole          *string `json:"leftNearPinhole"`
-	RightNearCorrected       *string `json:"rightNearCorrected"`
-	LeftNearCorrected        *string `json:"leftNearCorrected"`
-	PatientChartID           int     `json:"patientChartId" gorm:"unique"`
+type VisualAcuityRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideVisualAcuityRepository(DB *gorm.DB) VisualAcuityRepository {
+	return VisualAcuityRepository{DB: DB}
 }
 
 // Save ...
-func (r *VisualAcuity) Save() error {
-	return DB.Create(&r).Error
+func (r *VisualAcuityRepository) Save(m *models.VisualAcuity) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *VisualAcuity) Get(filter VisualAcuity) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *VisualAcuityRepository) Get(m *models.VisualAcuity, filter models.VisualAcuity) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *VisualAcuity) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing VisualAcuity
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *VisualAcuityRepository) SaveForPatientChart(m *models.VisualAcuity) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.VisualAcuity
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -73,11 +63,11 @@ func (r *VisualAcuity) SaveForPatientChart() error {
 }
 
 // GetByPatientChart ...
-func (r *VisualAcuity) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *VisualAcuityRepository) GetByPatientChart(m *models.VisualAcuity, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *VisualAcuity) Update() error {
-	return DB.Updates(&r).Error
+func (r *VisualAcuityRepository) Update(m *models.VisualAcuity) error {
+	return r.DB.Updates(&m).Error
 }

@@ -21,43 +21,24 @@ package repository
 import (
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// FollowUpOrderStatus ...
-type FollowUpOrderStatus string
+type FollowUpOrderRepository struct {
+	DB *gorm.DB
+}
 
-// FollowUpOrderStatus statuses ...
-const (
-	FollowUpOrderStatusOrdered   FollowUpOrderStatus = "ORDERED"
-	FollowUpOrderStatusCompleted FollowUpOrderStatus = "COMPLETED"
-)
-
-// FollowUpOrder ...
-type FollowUpOrder struct {
-	gorm.Model
-	ID             int                 `gorm:"primaryKey"`
-	PatientChartID int                 `json:"patientChartId"`
-	PatientID      int                 `json:"patientId"`
-	FirstName      string              `json:"firstName"`
-	LastName       string              `json:"lastName"`
-	PhoneNo        string              `json:"phoneNo"`
-	UserName       string              `json:"userName"`
-	OrderedByID    int                 `json:"orderedById"`
-	OrderedBy      User                `json:"orderedBy"`
-	Status         FollowUpOrderStatus `json:"status"`
-	FollowUps      []FollowUp          `json:"followUps"`
-	Emergency      *bool               `json:"emergency"`
-	Document       string              `gorm:"type:tsvector"`
-	Count          int64               `json:"count"`
+func ProvideFollowUpOrderRepository(DB *gorm.DB) FollowUpOrderRepository {
+	return FollowUpOrderRepository{DB: DB}
 }
 
 // Save ...
-func (r *FollowUpOrder) Save(patientChartID int, patientID int, user User, receptionNote string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *FollowUpOrderRepository) Save(m *models.FollowUpOrder, patientChartID int, patientID int, user models.User, receptionNote string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get Patient
-		var patient Patient
-		if err := tx.Model(&Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
+		var patient models.Patient
+		if err := tx.Model(&models.Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
@@ -73,34 +54,34 @@ func (r *FollowUpOrder) Save(patientChartID int, patientID int, user User, recep
 			orderedByPrefix = "Dr. "
 		}
 
-		r.PatientChartID = patientChartID
-		r.PatientID = patientID
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
-		r.OrderedByID = user.ID
-		r.Status = FollowUpOrderStatusOrdered
+		m.PatientChartID = patientChartID
+		m.PatientID = patientID
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
+		m.OrderedByID = user.ID
+		m.Status = models.FollowUpOrderStatusOrdered
 
-		var existing FollowUpOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.FollowUpOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
-		var followUp FollowUp
-		followUp.FollowUpOrderID = r.ID
+		var followUp models.FollowUp
+		followUp.FollowUpOrderID = m.ID
 		followUp.PatientChartID = patientChartID
 		followUp.ReceptionNote = receptionNote
-		followUp.Status = FollowUpStatusOrdered
+		followUp.Status = models.FollowUpStatusOrdered
 
 		if err := tx.Create(&followUp).Error; err != nil {
 			return err
@@ -111,13 +92,13 @@ func (r *FollowUpOrder) Save(patientChartID int, patientID int, user User, recep
 }
 
 // GetTodaysOrderedCount ...
-func (r *FollowUpOrder) GetTodaysOrderedCount() (count int) {
+func (r *FollowUpOrderRepository) GetTodaysOrderedCount() (count int) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
 	var countTmp int64
-	err := DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", FollowUpOrderStatusOrdered).Count(&countTmp).Error
+	err := r.DB.Model(&models.FollowUpOrder{}).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.FollowUpOrderStatusOrdered).Count(&countTmp).Error
 	if err != nil {
 		countTmp = 0
 	}
@@ -128,40 +109,40 @@ func (r *FollowUpOrder) GetTodaysOrderedCount() (count int) {
 }
 
 // ConfirmOrder ...
-func (r *FollowUpOrder) ConfirmOrder(followUpOrderID int, followUpID int, billingID *int, invoiceNo *string, roomID int, checkInTime time.Time) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var followUp FollowUp
+func (r *FollowUpOrderRepository) ConfirmOrder(m *models.FollowUpOrder, followUpOrderID int, followUpID int, billingID *int, invoiceNo *string, roomID int, checkInTime time.Time) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var followUp models.FollowUp
 		if err := tx.Where("id = ?", followUpID).Take(&followUp).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", followUpOrderID).Take(&r).Error; err != nil {
+		if err := tx.Where("id = ?", followUpOrderID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		var previousPatientChart PatientChart
+		var previousPatientChart models.PatientChart
 		if err := tx.Where("id = ?", followUp.PatientChartID).Take(&previousPatientChart).Error; err != nil {
 			return err
 		}
 
-		var previousAppointment Appointment
+		var previousAppointment models.Appointment
 		if err := tx.Where("id = ?", previousPatientChart.AppointmentID).Take(&previousAppointment).Error; err != nil {
 			return err
 		}
 
 		// Create new appointment
-		var appointment Appointment
-		appointment.PatientID = r.PatientID
+		var appointment models.Appointment
+		appointment.PatientID = m.PatientID
 		appointment.RoomID = roomID
 		appointment.CheckInTime = checkInTime
-		appointment.UserID = r.OrderedByID
+		appointment.UserID = m.OrderedByID
 		appointment.MedicalDepartment = previousAppointment.MedicalDepartment
 		appointment.Credit = false
 
 		if billingID != nil {
-			var payment Payment
+			var payment models.Payment
 
-			payment.Status = PaidPaymentStatus
+			payment.Status = models.PaidPaymentStatus
 			payment.BillingID = *billingID
 
 			if invoiceNo != nil {
@@ -172,14 +153,14 @@ func (r *FollowUpOrder) ConfirmOrder(followUpOrderID int, followUpID int, billin
 		}
 
 		// Assign treatment visit type
-		var visitType VisitType
+		var visitType models.VisitType
 		if err := tx.Where("title = ?", "Follow-Up").Take(&visitType).Error; err != nil {
 			return err
 		}
 		appointment.VisitTypeID = visitType.ID
 
 		// Assign scheduled status
-		var status AppointmentStatus
+		var status models.AppointmentStatus
 		if err := tx.Where("title = ?", "Scheduled").Take(&status).Error; err != nil {
 			return err
 		}
@@ -191,32 +172,32 @@ func (r *FollowUpOrder) ConfirmOrder(followUpOrderID int, followUpID int, billin
 		}
 
 		// Create new patient chart
-		var newPatientChart PatientChart
+		var newPatientChart models.PatientChart
 		newPatientChart.AppointmentID = appointment.ID
 		if err := tx.Create(&newPatientChart).Error; err != nil {
 			return err
 		}
 
-		followUp.Status = FollowUpStatusCompleted
+		followUp.Status = models.FollowUpStatusCompleted
 		if err := tx.Updates(&followUp).Error; err != nil {
 			return err
 		}
 
-		var followUps []FollowUp
-		if err := tx.Where("follow_up_order_id = ?", r.ID).Find(&followUps).Error; err != nil {
+		var followUps []models.FollowUp
+		if err := tx.Where("follow_up_order_id = ?", m.ID).Find(&followUps).Error; err != nil {
 			return err
 		}
 
 		allConfirmed := true
 		for _, followUp := range followUps {
-			if followUp.Status == FollowUpStatusOrdered {
+			if followUp.Status == models.FollowUpStatusOrdered {
 				allConfirmed = false
 			}
 		}
 
 		if allConfirmed {
-			r.Status = FollowUpOrderStatusCompleted
-			if err := tx.Updates(&r).Error; err != nil {
+			m.Status = models.FollowUpOrderStatusCompleted
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -226,8 +207,8 @@ func (r *FollowUpOrder) ConfirmOrder(followUpOrderID int, followUpID int, billin
 }
 
 // GetCount ...
-func (r *FollowUpOrder) GetCount(filter *FollowUpOrder, date *time.Time, searchTerm *string) (int64, error) {
-	dbOp := DB.Model(&r).Where(filter)
+func (r *FollowUpOrderRepository) GetCount(filter *models.FollowUpOrder, date *time.Time, searchTerm *string) (int64, error) {
+	dbOp := r.DB.Model(&models.FollowUpOrder{}).Where(filter)
 
 	if date != nil {
 		createdAt := *date
@@ -247,10 +228,10 @@ func (r *FollowUpOrder) GetCount(filter *FollowUpOrder, date *time.Time, searchT
 }
 
 // Search ...
-func (r *FollowUpOrder) Search(p PaginationInput, filter *FollowUpOrder, date *time.Time, searchTerm *string, ascending bool) ([]FollowUpOrder, int64, error) {
-	var result []FollowUpOrder
+func (r *FollowUpOrderRepository) Search(p models.PaginationInput, filter *models.FollowUpOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.FollowUpOrder, int64, error) {
+	var result []models.FollowUpOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("FollowUps").Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("FollowUps").Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date
@@ -280,15 +261,15 @@ func (r *FollowUpOrder) Search(p PaginationInput, filter *FollowUpOrder, date *t
 }
 
 // GetByPatientChartID ...
-func (r *FollowUpOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("FollowUps").Take(&r).Error
+func (r *FollowUpOrderRepository) GetByPatientChartID(m *models.FollowUpOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("FollowUps").Take(&m).Error
 }
 
 // GetAll ...
-func (r *FollowUpOrder) GetAll(p PaginationInput, filter *FollowUpOrder) ([]FollowUpOrder, int64, error) {
-	var result []FollowUpOrder
+func (r *FollowUpOrderRepository) GetAll(p PaginationInput, filter *models.FollowUpOrder) ([]models.FollowUpOrder, int64, error) {
+	var result []models.FollowUpOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("FollowUps").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("FollowUps").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -303,11 +284,11 @@ func (r *FollowUpOrder) GetAll(p PaginationInput, filter *FollowUpOrder) ([]Foll
 }
 
 // Update ...
-func (r *FollowUpOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *FollowUpOrderRepository) Update(m *models.FollowUpOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *FollowUpOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *FollowUpOrderRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.FollowUpOrder{}).Error
 }

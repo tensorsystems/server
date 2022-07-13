@@ -8,13 +8,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input model.OrderSurgicalInput) (*repository.SurgicalOrder, error) {
+func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input graph_models.OrderSurgicalInput) (*models.SurgicalOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -26,9 +26,8 @@ func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input mod
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -43,30 +42,30 @@ func (r *mutationResolver) OrderSurgicalProcedure(ctx context.Context, input mod
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var surgicalProcedure repository.SurgicalOrder
-	if err := surgicalProcedure.SaveOpthalmologyOrder(input.SurgicalProcedureTypeID, input.PatientChartID, input.PatientID, input.BillingID, user, input.PerformOnEye, input.OrderNote, input.ReceptionNote); err != nil {
+	var surgicalProcedure models.SurgicalOrder
+	if err := r.SurgicalOrderRepository.SaveOpthalmologyOrder(&surgicalProcedure, input.SurgicalProcedureTypeID, input.PatientChartID, input.PatientID, input.BillingID, user, input.PerformOnEye, input.OrderNote, input.ReceptionNote); err != nil {
 		return nil, err
 	}
 
 	return &surgicalProcedure, nil
 }
 
-func (r *mutationResolver) ConfirmSurgicalOrder(ctx context.Context, input model.ConfirmSurgicalOrderInput) (*model.ConfirmSurgicalOrderResult, error) {
-	var entity repository.SurgicalOrder
+func (r *mutationResolver) ConfirmSurgicalOrder(ctx context.Context, input graph_models.ConfirmSurgicalOrderInput) (*graph_models.ConfirmSurgicalOrderResult, error) {
+	var entity models.SurgicalOrder
 
-	if err := entity.ConfirmOrder(input.SurgicalOrderID, input.SurgicalProcedureID, *input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
+	if err := r.SurgicalOrderRepository.ConfirmOrder(&entity, input.SurgicalOrderID, input.SurgicalProcedureID, *input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
 		return nil, err
 	}
 
-	return &model.ConfirmSurgicalOrderResult{
+	return &graph_models.ConfirmSurgicalOrderResult{
 		SurgicalOrder:       &entity,
 		SurgicalProcedureID: input.SurgicalProcedureID,
 		InvoiceNo:           *input.InvoiceNo,
 	}, nil
 }
 
-func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input model.SurgicalProcedureInput) (*repository.SurgicalProcedure, error) {
-	var entity repository.SurgicalProcedure
+func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input graph_models.SurgicalProcedureInput) (*models.SurgicalProcedure, error) {
+	var entity models.SurgicalProcedure
 	deepCopy.Copy(&input).To(&entity)
 
 	// Preanesthetic documents
@@ -78,7 +77,7 @@ func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input mode
 			return nil, err
 		}
 
-		entity.PreanestheticDocuments = append(entity.PreanestheticDocuments, repository.File{
+		entity.PreanestheticDocuments = append(entity.PreanestheticDocuments, models.File{
 			ContentType: fileUpload.File.ContentType,
 			Size:        fileUpload.File.Size,
 			FileName:    fileName,
@@ -87,14 +86,15 @@ func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input mode
 		})
 	}
 
-	var existing repository.SurgicalProcedure
-	if err := existing.GetByPatientChart(input.PatientChartID); err != nil {
-		if err := entity.Save(); err != nil {
+	var existing models.SurgicalProcedure
+
+	if err := r.SurgicalProcedureRepository.GetByPatientChart(&existing, input.PatientChartID); err != nil {
+		if err := r.SurgicalProcedureRepository.Save(&entity); err != nil {
 			return nil, err
 		}
 	} else {
 		entity.ID = existing.ID
-		if err := entity.Update(); err != nil {
+		if err := r.SurgicalProcedureRepository.Update(&entity); err != nil {
 			return nil, err
 		}
 	}
@@ -102,8 +102,8 @@ func (r *mutationResolver) SaveSurgicalProcedure(ctx context.Context, input mode
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input model.SurgicalProcedureUpdateInput) (*repository.SurgicalProcedure, error) {
-	var entity repository.SurgicalProcedure
+func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input graph_models.SurgicalProcedureUpdateInput) (*models.SurgicalProcedure, error) {
+	var entity models.SurgicalProcedure
 	deepCopy.Copy(&input).To(&entity)
 
 	// Preanesthetic documents
@@ -115,7 +115,7 @@ func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input mo
 			return nil, err
 		}
 
-		entity.PreanestheticDocuments = append(entity.PreanestheticDocuments, repository.File{
+		entity.PreanestheticDocuments = append(entity.PreanestheticDocuments, models.File{
 			ContentType: fileUpload.File.ContentType,
 			Size:        fileUpload.File.Size,
 			FileName:    fileName,
@@ -124,7 +124,7 @@ func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input mo
 		})
 	}
 
-	if err := entity.Update(); err != nil {
+	if err := r.SurgicalProcedureRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -132,22 +132,19 @@ func (r *mutationResolver) UpdateSurgicalProcedure(ctx context.Context, input mo
 }
 
 func (r *mutationResolver) DeleteSurgicalProcedure(ctx context.Context, id int) (bool, error) {
-	var entity repository.SurgicalProcedure
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.SurgicalProcedureRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveSurgicalProcedureType(ctx context.Context, input model.SurgicalProcedureTypeInput) (*repository.SurgicalProcedureType, error) {
-	var entity repository.SurgicalProcedureType
+func (r *mutationResolver) SaveSurgicalProcedureType(ctx context.Context, input graph_models.SurgicalProcedureTypeInput) (*models.SurgicalProcedureType, error) {
+	var entity models.SurgicalProcedureType
 	deepCopy.Copy(&input).To(&entity)
 
 	// Save billings
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
@@ -155,28 +152,26 @@ func (r *mutationResolver) SaveSurgicalProcedureType(ctx context.Context, input 
 	entity.Billings = billings
 
 	// Save supplies
-	var supply repository.Supply
-	supplies, err := supply.GetByIds(input.SupplyIds)
+	supplies, err := r.SupplyRepository.GetByIds(input.SupplyIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Supplies = supplies
 
-	if err := entity.Save(); err != nil {
+	if err := r.SurgicalProcedureTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSurgicalProcedureType(ctx context.Context, input model.SurgicalProcedureTypeUpdateInput) (*repository.SurgicalProcedureType, error) {
-	var entity repository.SurgicalProcedureType
+func (r *mutationResolver) UpdateSurgicalProcedureType(ctx context.Context, input graph_models.SurgicalProcedureTypeUpdateInput) (*models.SurgicalProcedureType, error) {
+	var entity models.SurgicalProcedureType
 	deepCopy.Copy(&input).To(&entity)
 
 	// Save billings
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
@@ -184,15 +179,14 @@ func (r *mutationResolver) UpdateSurgicalProcedureType(ctx context.Context, inpu
 	entity.Billings = billings
 
 	// Save supplies
-	var supply repository.Supply
-	supplies, err := supply.GetByIds(input.SupplyIds)
+	supplies, err := r.SupplyRepository.GetByIds(input.SupplyIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Supplies = supplies
 
-	if err := entity.Update(); err != nil {
+	if err := r.SurgicalProcedureTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -200,9 +194,7 @@ func (r *mutationResolver) UpdateSurgicalProcedureType(ctx context.Context, inpu
 }
 
 func (r *mutationResolver) DeleteSurgicalProcedureType(ctx context.Context, id int) (bool, error) {
-	var entity repository.SurgicalProcedureType
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.SurgicalProcedureTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
@@ -210,31 +202,30 @@ func (r *mutationResolver) DeleteSurgicalProcedureType(ctx context.Context, id i
 }
 
 func (r *mutationResolver) DeletePreanestheticDocument(ctx context.Context, surgicalProcedureID int, fileID int) (bool, error) {
-	var entity repository.SurgicalProcedure
-
-	if err := entity.DeleteFile("PreanestheticDocuments", surgicalProcedureID, fileID); err != nil {
+	if err := r.SurgicalProcedureRepository.DeleteFile("PreanestheticDocuments", surgicalProcedureID, fileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) UpdateSurgeryFitness(ctx context.Context, id int, fit bool) (*repository.SurgicalProcedure, error) {
-	var entity repository.SurgicalProcedure
-	if err := entity.Get(id); err != nil {
+func (r *mutationResolver) UpdateSurgeryFitness(ctx context.Context, id int, fit bool) (*models.SurgicalProcedure, error) {
+	var entity models.SurgicalProcedure
+
+	if err := r.SurgicalProcedureRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	entity.FitForSurgery = &fit
 
-	if err := entity.Update(); err != nil {
+	if err := r.SurgicalProcedureRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input model.OrderAndConfirmSurgicalProcedureInput) (*repository.SurgicalOrder, error) {
+func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input graph_models.OrderAndConfirmSurgicalProcedureInput) (*models.SurgicalOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -246,36 +237,35 @@ func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input mod
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var appointment repository.Appointment
+	var appointment models.Appointment
 	appointment.PatientID = input.PatientID
 	appointment.CheckInTime = input.CheckInTime
 	appointment.RoomID = input.RoomID
 	appointment.VisitTypeID = input.VisitTypeID
 
-	var status repository.AppointmentStatus
-	if err := status.GetByTitle("Surgery"); err != nil {
+	var status models.AppointmentStatus
+	if err := r.AppointmentStatusRepository.GetByTitle(&status, "Surgery"); err != nil {
 		return nil, err
 	}
 
 	appointment.AppointmentStatusID = status.ID
 
-	if err := appointment.CreateNewAppointment(&input.BillingID, &input.InvoiceNo); err != nil {
+	if err := r.AppointmentRepository.CreateNewAppointment(&appointment, &input.BillingID, &input.InvoiceNo); err != nil {
 		return nil, err
 	}
 
-	var patientChart repository.PatientChart
-	if err := patientChart.GetByAppointmentID(appointment.ID); err != nil {
+	var patientChart models.PatientChart
+	if err := r.PatientChartRepository.GetByAppointmentID(&patientChart, appointment.ID); err != nil {
 		return nil, err
 	}
 
-	var surgicalOrder repository.SurgicalOrder
-	if err := surgicalOrder.SaveOpthalmologyOrder(input.SurgicalProcedureTypeID, patientChart.ID, appointment.PatientID, input.BillingID, user, input.PerformOnEye, input.OrderNote, ""); err != nil {
+	var surgicalOrder models.SurgicalOrder
+	if err := r.SurgicalOrderRepository.SaveOpthalmologyOrder(&surgicalOrder, input.SurgicalProcedureTypeID, patientChart.ID, appointment.PatientID, input.BillingID, user, input.PerformOnEye, input.OrderNote, ""); err != nil {
 		return nil, err
 	}
 
@@ -288,121 +278,119 @@ func (r *mutationResolver) OrderAndConfirmSurgery(ctx context.Context, input mod
 	return &surgicalOrder, nil
 }
 
-func (r *queryResolver) SurgicalProcedure(ctx context.Context, patientChartID int) (*repository.SurgicalProcedure, error) {
-	var entity repository.SurgicalProcedure
-	if err := entity.GetByPatientChart(patientChartID); err != nil {
+func (r *queryResolver) SurgicalProcedure(ctx context.Context, patientChartID int) (*models.SurgicalProcedure, error) {
+	var entity models.SurgicalProcedure
+
+	if err := r.SurgicalProcedureRepository.GetByPatientChart(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) SurgicalProcedures(ctx context.Context, page repository.PaginationInput, filter *model.SurgicalProcedureFilter) (*model.SurgicalProcedureConnection, error) {
-	var f repository.SurgicalProcedure
+func (r *queryResolver) SurgicalProcedures(ctx context.Context, page models.PaginationInput, filter *graph_models.SurgicalProcedureFilter) (*graph_models.SurgicalProcedureConnection, error) {
+	var f models.SurgicalProcedure
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.SurgicalProcedure
-	procedures, count, err := entity.GetAll(page, &f)
+	procedures, count, err := r.SurgicalProcedureRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SurgicalProcedureEdge, len(procedures))
+	edges := make([]*graph_models.SurgicalProcedureEdge, len(procedures))
 
 	for i, entity := range procedures {
 		e := entity
 
-		edges[i] = &model.SurgicalProcedureEdge{
+		edges[i] = &graph_models.SurgicalProcedureEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(procedures, count, page)
-	return &model.SurgicalProcedureConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SurgicalProcedureConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) GetSurgicalProceduresByPatient(ctx context.Context, page repository.PaginationInput, patientID int) (*model.SurgicalProcedureConnection, error) {
-	var entity repository.SurgicalProcedure
-	procedures, count, err := entity.GetByPatient(page, patientID)
+func (r *queryResolver) GetSurgicalProceduresByPatient(ctx context.Context, page models.PaginationInput, patientID int) (*graph_models.SurgicalProcedureConnection, error) {
+	procedures, count, err := r.SurgicalProcedureRepository.GetByPatient(page, patientID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SurgicalProcedureEdge, len(procedures))
+	edges := make([]*graph_models.SurgicalProcedureEdge, len(procedures))
 
 	for i, entity := range procedures {
 		e := entity
 
-		edges[i] = &model.SurgicalProcedureEdge{
+		edges[i] = &graph_models.SurgicalProcedureEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(procedures, count, page)
-	return &model.SurgicalProcedureConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SurgicalProcedureConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SurgicalProcedureTypes(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SurgicalProcedureTypeConnection, error) {
-	var entity repository.SurgicalProcedureType
-	result, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) SurgicalProcedureTypes(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SurgicalProcedureTypeConnection, error) {
+	result, count, err := r.SurgicalProcedureTypeRepository.GetAll(page, searchTerm)
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SurgicalProcedureTypeEdge, len(result))
+	edges := make([]*graph_models.SurgicalProcedureTypeEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.SurgicalProcedureTypeEdge{
+		edges[i] = &graph_models.SurgicalProcedureTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.SurgicalProcedureTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SurgicalProcedureTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SurgicalOrder(ctx context.Context, patientChartID int) (*repository.SurgicalOrder, error) {
-	var entity repository.SurgicalOrder
-	if err := entity.GetByPatientChartID(patientChartID); err != nil {
+func (r *queryResolver) SurgicalOrder(ctx context.Context, patientChartID int) (*models.SurgicalOrder, error) {
+	var entity models.SurgicalOrder
+
+	if err := r.SurgicalOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchSurgicalOrders(ctx context.Context, page repository.PaginationInput, filter *model.SurgicalOrderFilter, date *time.Time, searchTerm *string) (*model.SurgicalOrderConnection, error) {
-	var f repository.SurgicalOrder
+func (r *queryResolver) SearchSurgicalOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.SurgicalOrderFilter, date *time.Time, searchTerm *string) (*graph_models.SurgicalOrderConnection, error) {
+	var f models.SurgicalOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
 	if filter.Status != nil {
-		f.Status = repository.SurgicalOrderStatus(*filter.Status)
+		f.Status = models.SurgicalOrderStatus(*filter.Status)
 	}
 
-	var entity repository.SurgicalOrder
-	result, count, err := entity.Search(page, &f, date, searchTerm, false)
+	result, count, err := r.SurgicalOrderRepository.Search(page, &f, date, searchTerm, false)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SurgicalOrderEdge, len(result))
+	edges := make([]*graph_models.SurgicalOrderEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.SurgicalOrderEdge{
+		edges[i] = &graph_models.SurgicalOrderEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.SurgicalOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SurgicalOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

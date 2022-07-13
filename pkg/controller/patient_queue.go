@@ -22,15 +22,19 @@ import (
 	"encoding/json"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-// GetPatientQueues ...
-func GetPatientQueues(c *gin.Context) {
-	var repo repository.PatientQueue
+type PatientQueueApi struct {
+	PatientQueueRepository repository.PatientQueueRepository
+	AppointmentRepository repository.AppointmentRepository
+}
 
-	patientQueues, err := repo.GetAll()
+// GetPatientQueues ...
+func (s *PatientQueueApi) GetPatientQueues(c *gin.Context) {
+	patientQueues, err := s.PatientQueueRepository.GetAll()
 
 	if err != nil {
 		c.JSON(400, gin.H{
@@ -41,8 +45,7 @@ func GetPatientQueues(c *gin.Context) {
 		return
 	}
 
-	var result []*model.PatientQueueWithAppointment
-	var appointmentRepo repository.Appointment
+	var result []*graph_models.PatientQueueWithAppointment
 
 	for _, patientQueue := range patientQueues {
 		var ids []int
@@ -60,11 +63,11 @@ func GetPatientQueues(c *gin.Context) {
 			continue
 		}
 
-		page := repository.PaginationInput{Page: 0, Size: 1000}
+		page := models.PaginationInput{Page: 0, Size: 1000}
 
-		appointments, _, _ := appointmentRepo.GetByIds(ids, page)
+		appointments, _, _ := s.AppointmentRepository.GetByIds(ids, page)
 
-		var orderedAppointments []*repository.Appointment
+		var orderedAppointments []*models.Appointment
 
 		for _, id := range ids {
 			for _, appointment := range appointments {
@@ -75,7 +78,7 @@ func GetPatientQueues(c *gin.Context) {
 			}
 		}
 
-		result = append(result, &model.PatientQueueWithAppointment{
+		result = append(result, &graph_models.PatientQueueWithAppointment{
 			ID:        int(patientQueue.ID),
 			QueueName: patientQueue.QueueName,
 			QueueType: patientQueue.QueueType,

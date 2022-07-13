@@ -18,33 +18,35 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// ChatDelete ...
-type ChatDelete struct {
-	gorm.Model
-	ID     int   `gorm:"primaryKey"`
-	UserID int   `json:"userId"`
-	ChatID int   `json:"chatId"`
-	Count  int64 `json:"count"`
+type ChatDeleteRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChatDeleteRepository(DB *gorm.DB) ChatDeleteRepository {
+	return ChatDeleteRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChatDelete) Save() error {
-	return DB.Create(&r).Error
+func (r *ChatDeleteRepository) Save(m *models.ChatDelete) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *ChatDelete) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ChatDeleteRepository) Get(m *models.ChatDelete, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *ChatDelete) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChatDeleteRepository) Update(m *models.ChatDelete) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ChatDelete) Delete(userID int, chatID int) error {
-	return DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&r).Error
+func (r *ChatDeleteRepository) Delete(userID int, chatID int) error {
+	return r.DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&models.ChatDelete{}).Error
 }

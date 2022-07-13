@@ -18,41 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Pupils ...
-type Pupils struct {
-	gorm.Model
-	ID             int     `gorm:"primaryKey"`
-	RightPupils    *string `json:"rightPupils"`
-	LeftPupils     *string `json:"leftPupils"`
-	Note           *string `json:"note"`
-	PatientChartID int     `json:"patientChartId"`
+type PupilsRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePupilsRepository(DB *gorm.DB) PupilsRepository {
+	return PupilsRepository{DB: DB}
 }
 
 // Save ...
-func (r *Pupils) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PupilsRepository) Save(m *models.Pupils) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *Pupils) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing Pupils
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *PupilsRepository) SaveForPatientChart(m *models.Pupils) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.Pupils
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -62,16 +58,16 @@ func (r *Pupils) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *Pupils) Get(filter Pupils) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *PupilsRepository) Get(m *models.Pupils, filter models.Pupils) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *Pupils) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *PupilsRepository) GetByPatientChart(m *models.Pupils, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *Pupils) Update() error {
-	return DB.Updates(&r).Error
+func (r *PupilsRepository) Update(m *models.Pupils) error {
+	return r.DB.Updates(&m).Error
 }

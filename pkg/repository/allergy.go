@@ -18,41 +18,39 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Allergy ...
-type Allergy struct {
-	gorm.Model
-	ID               int    `gorm:"primaryKey" json:"id"`
-	Title            string `json:"title"`
-	IssueSeverity    string `json:"issueSeverity"`
-	IssueReaction    string `json:"issueReaction"`
-	IssueOutcome     string `json:"issueOutcome"`
-	IssueOccurrence  string `json:"issueOccurrence"`
-	PatientHistoryID int    `json:"patientHistoryId"`
-	Count            int64  `json:"count"`
+type AllergyRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideAllergyRepository(DB *gorm.DB) AllergyRepository {
+	return AllergyRepository{DB: DB}
 }
 
 // Save ...
-func (r *Allergy) Save() error {
-	return DB.Create(&r).Error
+func (r *AllergyRepository) Save(m *models.Allergy) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Allergy) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *AllergyRepository) Get(m *models.Allergy, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *Allergy) Update() error {
-	return DB.Updates(&r).Error
+func (r *AllergyRepository) Update(m *models.Allergy) error {
+	return r.DB.Updates(&m).Error
 }
 
 // GetAll ...
-func (r *Allergy) GetAll(p PaginationInput, filter *Allergy) ([]Allergy, int64, error) {
-	var result []Allergy
+func (r *AllergyRepository) GetAll(p models.PaginationInput, filter *models.Allergy) ([]models.Allergy, int64, error) {
+	var result []models.Allergy
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -67,7 +65,6 @@ func (r *Allergy) GetAll(p PaginationInput, filter *Allergy) ([]Allergy, int64, 
 }
 
 // Delete ...
-func (r *Allergy) Delete(ID int) error {
-	err := DB.Where("id = ?", ID).Delete(&r).Error
-	return err
+func (r *AllergyRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Allergy{}).Error
 }

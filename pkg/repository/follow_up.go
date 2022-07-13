@@ -19,49 +19,38 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// FollowUpStatus ...
-type FollowUpStatus string
+type FollowUpRepository struct {
+	DB *gorm.DB
+}
 
-// SurgicalProcedureOrder statuses ...
-const (
-	FollowUpStatusOrdered   FollowUpStatus = "ORDERED"
-	FollowUpStatusCompleted FollowUpStatus = "COMPLETED"
-)
-
-// FollowUp ...
-type FollowUp struct {
-	gorm.Model
-	ID              int            `gorm:"primaryKey"`
-	FollowUpOrderID int            `json:"followUpOrderId"`
-	PatientChartID  int            `json:"patientChartId"`
-	Status          FollowUpStatus `json:"status"`
-	ReceptionNote   string         `json:"receptionNote"`
-	Count           int64          `json:"count"`
+func ProvideFollowUpRepository(DB *gorm.DB) FollowUpRepository {
+	return FollowUpRepository{DB: DB}
 }
 
 // Save ...
-func (r *FollowUp) Save() error {
-	return DB.Create(&r).Error
+func (r *FollowUpRepository) Save(m *models.FollowUp) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *FollowUp) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *FollowUpRepository) Get(m *models.FollowUp, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *FollowUp) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *FollowUpRepository) GetByPatientChart(m *models.FollowUp, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *FollowUp) GetAll(p PaginationInput, filter *FollowUp) ([]FollowUp, int64, error) {
-	var result []FollowUp
+func (r *FollowUpRepository) GetAll(p models.PaginationInput, filter *models.FollowUp) ([]models.FollowUp, int64, error) {
+	var result []models.FollowUp
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -76,28 +65,29 @@ func (r *FollowUp) GetAll(p PaginationInput, filter *FollowUp) ([]FollowUp, int6
 }
 
 // Update ...
-func (r *FollowUp) Update() error {
-	return DB.Updates(&r).Error
+func (r *FollowUpRepository) Update(m *models.FollowUp) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *FollowUp) Delete(ID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", ID).Take(&r).Error; err != nil {
+func (r *FollowUpRepository) Delete(ID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var followUp models.FollowUp
+		if err := tx.Where("id = ?", ID).Take(&followUp).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", ID).Delete(&r).Error; err != nil {
+		if err := tx.Where("id = ?", ID).Delete(&followUp).Error; err != nil {
 			return err
 		}
 
 		var followUpsCount int64
-		if err := tx.Model(&r).Where("follow_up_order_id = ?", r.FollowUpOrderID).Count(&followUpsCount).Error; err != nil {
+		if err := tx.Model(&followUp).Where("follow_up_order_id = ?", followUp.FollowUpOrderID).Count(&followUpsCount).Error; err != nil {
 			return err
 		}
 
 		if followUpsCount == 0 {
-			if err := tx.Where("id = ?", r.FollowUpOrderID).Delete(&FollowUpOrder{}).Error; err != nil {
+			if err := tx.Where("id = ?", followUp.FollowUpOrderID).Delete(&models.FollowUpOrder{}).Error; err != nil {
 				return err
 			}
 		}

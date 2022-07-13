@@ -6,27 +6,27 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) CreatePharmacy(ctx context.Context, input model.PharmacyInput) (*repository.Pharmacy, error) {
-	var entity repository.Pharmacy
+func (r *mutationResolver) CreatePharmacy(ctx context.Context, input graph_models.PharmacyInput) (*models.Pharmacy, error) {
+	var entity models.Pharmacy
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.PharmacyRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePharmacy(ctx context.Context, input model.PharmacyUpdateInput) (*repository.Pharmacy, error) {
-	var entity repository.Pharmacy
+func (r *mutationResolver) UpdatePharmacy(ctx context.Context, input graph_models.PharmacyUpdateInput) (*models.Pharmacy, error) {
+	var entity models.Pharmacy
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.PharmacyRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -34,39 +34,38 @@ func (r *mutationResolver) UpdatePharmacy(ctx context.Context, input model.Pharm
 }
 
 func (r *mutationResolver) DeletePharmacy(ctx context.Context, id int) (bool, error) {
-	var entity repository.Pharmacy
-	if err := entity.Delete(id); err != nil {
+	if err := r.PharmacyRepository.Delete(id); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (r *queryResolver) Pharmacy(ctx context.Context, id int) (*repository.Pharmacy, error) {
-	var entity repository.Pharmacy
-	if err := entity.Get(id); err != nil {
+func (r *queryResolver) Pharmacy(ctx context.Context, id int) (*models.Pharmacy, error) {
+	var entity models.Pharmacy
+
+	if err := r.PharmacyRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 	return &entity, nil
 }
 
-func (r *queryResolver) Pharmacies(ctx context.Context, page repository.PaginationInput) (*model.PharmacyConnection, error) {
-	var entity repository.Pharmacy
-	result, count, err := entity.GetAll(page, nil)
+func (r *queryResolver) Pharmacies(ctx context.Context, page models.PaginationInput) (*graph_models.PharmacyConnection, error) {
+	result, count, err := r.PharmacyRepository.GetAll(page, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.PharmacyEdge, len(result))
+	edges := make([]*graph_models.PharmacyEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.PharmacyEdge{
+		edges[i] = &graph_models.PharmacyEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.PharmacyConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.PharmacyConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

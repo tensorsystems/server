@@ -31,7 +31,7 @@ exec:
 # Where should any generated models go?
 model:
   filename: graph/model/models_gen.go
-  package: model
+  package: graph_models
 
 # Where should the resolver implementations go?
 resolver:
@@ -51,7 +51,7 @@ resolver:
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-  - "github.com/tensoremr/server/pkg/repository"
+  - "github.com/tensoremr/server/pkg/models"
 
 # This section declares type mapping between the GraphQL and go type systems
 #

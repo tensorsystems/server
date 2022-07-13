@@ -18,40 +18,42 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Amendment ...
-type Amendment struct {
-	gorm.Model
-	ID             int    `gorm:"primaryKey"`
-	PatientChartID int    `json:"patientChartId"`
-	Note           string `json:"note"`
-	Count          int64  `json:"count"`
+type AmendmentRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideAmendmentRepository(DB *gorm.DB) AmendmentRepository {
+	return AmendmentRepository{DB: DB}
 }
 
 // Create ...
-func (r *Amendment) Create() error {
-	return DB.Create(&r).Error
+func (r *AmendmentRepository) Create(m *models.Amendment) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Amendment) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *AmendmentRepository) Get(m *models.Amendment, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *Amendment) GetAll(filter *Amendment) ([]*Amendment, error) {
-	var result []*Amendment
-	err := DB.Where(filter).Order("id ASC").Find(&result).Error
+func (r *AmendmentRepository) GetAll(filter *models.Amendment) ([]*models.Amendment, error) {
+	var result []*models.Amendment
+	err := r.DB.Where(filter).Order("id ASC").Find(&result).Error
 	return result, err
 }
 
 // Update ...
-func (r *Amendment) Update() error {
-	return DB.Updates(&r).Error
+func (r *AmendmentRepository) Update(m *models.Amendment) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Amendment) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *AmendmentRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Amendment{}).Error
 }

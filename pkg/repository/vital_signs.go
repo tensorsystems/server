@@ -18,87 +18,35 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// VitalSigns ...
-type VitalSigns struct {
-	gorm.Model
-	ID             int `gorm:"primaryKey"`
-	PatientChartID int `json:"patientChartId" gorm:"uniqueIndex"`
+type VitalSignsRepository struct {
+	DB *gorm.DB
+}
 
-	Temperature            *float64 `json:"temperature"`
-	Pulse                  *float64 `json:"pulse"`
-	BloodPressureSystolic  *float64 `json:"bloodPressureSystolic"`
-	BloodPressureDiastolic *float64 `json:"bloodPressureDiastolic"`
-	RespiratoryRate        *float64 `json:"respiratoryRate"`
-	OxygenSaturation       *float64 `json:"oxygenSaturation"`
-	Height                 *float64 `json:"height"`
-	Weight                 *float64 `json:"weight"`
-	Bmi                    *float64 `json:"bmi"`
-
-	// Visual Acuity
-	RightDistanceUncorrected *string `json:"rightDistanceUncorrected"`
-	LeftDistanceUncorrected  *string `json:"leftDistanceUncorrected"`
-	RightDistancePinhole     *string `json:"rightDistancePinhole"`
-	LeftDistancePinhole      *string `json:"leftDistancePinhole"`
-	RightDistanceCorrected   *string `json:"rightDistanceCorrected"`
-	LeftDistanceCorrected    *string `json:"leftDistanceCorrected"`
-	RightNearUncorrected     *string `json:"rightNearUncorrected"`
-	LeftNearUncorrected      *string `json:"leftNearUncorrected"`
-	RightNearPinhole         *string `json:"rightNearPinhole"`
-	LeftNearPinhole          *string `json:"leftNearPinhole"`
-	RightNearCorrected       *string `json:"rightNearCorrected"`
-	LeftNearCorrected        *string `json:"leftNearCorrected"`
-
-	// IOP
-	RightIop         *string `json:"rightIop"`
-	LeftIop          *string `json:"leftIop"`
-	RightApplanation *string `json:"rightApplanation"`
-	LeftApplanation  *string `json:"leftApplanation"`
-	RightTonopen     *string `json:"rightTonopen"`
-	LeftTonopen      *string `json:"leftTonopen"`
-	RightDigital     *string `json:"rightDigital"`
-	LeftDigital      *string `json:"leftDigital"`
-	RightNoncontact  *string `json:"rightNoncontact"`
-	LeftNoncontact   *string `json:"leftNoncontact"`
-
-	// Auto Refraction
-	RightDistanceSph   *string `json:"rightDistanceSph"`
-	LeftDistanceSph    *string `json:"leftDistanceSph"`
-	RightDistanceAxis  *string `json:"rightDistanceAxis"`
-	LeftDistanceAxis   *string `json:"leftDistanceAxis"`
-	RightDistanceCyl   *string `json:"rightDistanceCyl"`
-	LeftDistanceCyl    *string `json:"leftDistanceCyl"`
-	RightNearSph       *string `json:"rightNearSph"`
-	LeftNearSph        *string `json:"leftNearSph"`
-	RightNearCyl       *string `json:"rightNearCyl"`
-	LeftNearCyl        *string `json:"leftNearCyl"`
-	RightNearAxis      *string `json:"rightNearAxis"`
-	LeftNearAxis       *string `json:"leftNearAxis"`
-	RightLensMeterSph  *string `json:"rightLensMeterSph"`
-	LeftLensMeterSph   *string `json:"leftLensMeterSph"`
-	RightLensMeterAxis *string `json:"rightLensMeterAxis"`
-	LeftLensMeterAxis  *string `json:"leftLensMeterAxis"`
-	RightLensMeterCyl  *string `json:"rightLensMeterCyl"`
-	LeftLensMeterCyl   *string `json:"leftLensMeterCyl"`
+func ProvideVitalSignsRepository(DB *gorm.DB) VitalSignsRepository {
+	return VitalSignsRepository{DB: DB}
 }
 
 // Save ...
-func (r *VitalSigns) Save() error {
-	return DB.Create(&r).Error
+func (r *VitalSignsRepository) Save(m *models.VitalSigns) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *VitalSigns) Get(filter VitalSigns) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *VitalSignsRepository) Get(m *models.VitalSigns, filter models.VitalSigns) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *VitalSigns) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *VitalSignsRepository) GetByPatientChart(m *models.VitalSigns, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *VitalSigns) Update() error {
-	return DB.Updates(&r).Error
+func (r *VitalSignsRepository) Update(m *models.VitalSigns) error {
+	return r.DB.Updates(&m).Error
 }

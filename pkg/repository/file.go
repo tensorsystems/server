@@ -18,35 +18,30 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// File ...
-type File struct {
-	gorm.Model
-	ID          int    `gorm:"primaryKey"`
-	ContentType string `json:"contentType"`
-	FileName    string `json:"fileName"`
-	Extension   string `json:"extension"`
-	Hash        string `json:"hash"`
-	Size        int64  `json:"size"`
+type FileRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideFileRepository(DB *gorm.DB) FileRepository {
+	return FileRepository{DB: DB}
 }
 
 // Save ...
-func (r *File) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *FileRepository) Save(m *models.File) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *File) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *FileRepository) Get(m *models.File, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *File) Update() error {
-	return DB.Updates(&r).Error
+func (r *FileRepository) Update(m *models.File) error {
+	return r.DB.Updates(&m).Error
 }

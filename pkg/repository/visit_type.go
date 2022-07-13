@@ -22,38 +22,40 @@ import (
 	"errors"
 
 	"github.com/lib/pq"
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// VisitType ...
-type VisitType struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey"`
-	Title string `json:"title" gorm:"unique"`
+type VisitTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideVisitTypeRepository(DB *gorm.DB) VisitTypeRepository {
+	return VisitTypeRepository{DB: DB}
 }
 
 // Seed ...
-func (r *VisitType) Seed() {
-	DB.Create(&VisitType{Title: "Sick visit"})
-	DB.Create(&VisitType{Title: "Follow up"})
-	DB.Create(&VisitType{Title: "Check up"})
-	DB.Create(&VisitType{Title: "Surgery"})
-	DB.Create(&VisitType{Title: "Treatment"})
-	DB.Create(&VisitType{Title: "Post-Op"})
-	DB.Create(&VisitType{Title: "Referral"})
+func (r *VisitTypeRepository) Seed() {
+	r.DB.Create(&models.VisitType{Title: "Sick visit"})
+	r.DB.Create(&models.VisitType{Title: "Follow up"})
+	r.DB.Create(&models.VisitType{Title: "Check up"})
+	r.DB.Create(&models.VisitType{Title: "Surgery"})
+	r.DB.Create(&models.VisitType{Title: "Treatment"})
+	r.DB.Create(&models.VisitType{Title: "Post-Op"})
+	r.DB.Create(&models.VisitType{Title: "Referral"})
 }
 
 // Save ...
-func (r *VisitType) Save() error {
-	err := DB.Create(&r).Error
+func (r *VisitTypeRepository) Save(m *models.VisitType) error {
+	err := r.DB.Create(&m).Error
 
 	if err, ok := err.(*pq.Error); ok && err.Code.Name() == "unique_violation" {
-		var existing VisitType
-		existingErr := DB.Unscoped().Where("title = ?", r.Title).Take(&existing).Error
+		var existing models.VisitType
+		existingErr := r.DB.Unscoped().Where("title = ?", m.Title).Take(&existing).Error
 
 		if existingErr == nil {
-			DB.Model(&VisitType{}).Unscoped().Where("id = ?", existing.ID).Update("deleted_at", nil)
-			r = &existing
+			r.DB.Model(&models.VisitType{}).Unscoped().Where("id = ?", existing.ID).Update("deleted_at", nil)
+			m = &existing
 			return nil
 		}
 
@@ -68,43 +70,33 @@ func (r *VisitType) Save() error {
 }
 
 // Get ...
-func (r *VisitType) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *VisitTypeRepository) Get(m *models.VisitType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *VisitType) GetByTitle(title string) error {
-	err := DB.Where("title = ?", title).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *VisitTypeRepository) GetByTitle(m *models.VisitType, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // GetByTitles ...
-func (r *VisitType) GetByTitles(titles []string) ([]VisitType, error) {
-	var visitTypes []VisitType
-	err := DB.Where("title IN ?", titles).Find(&visitTypes).Error
+func (r *VisitTypeRepository) GetByTitles(titles []string) ([]models.VisitType, error) {
+	var visitTypes []models.VisitType
+	err := r.DB.Where("title IN ?", titles).Find(&visitTypes).Error
 	return visitTypes, err
 }
 
 // Count ...
-func (r *VisitType) Count(dbString string) (int64, error) {
+func (r *VisitTypeRepository) Count(dbString string) (int64, error) {
 	var count int64
 
-	err := DB.Model(&VisitType{}).Count(&count).Error
+	err := r.DB.Model(&models.VisitType{}).Count(&count).Error
 	return count, err
 }
 
 // GetAll ...
-func (r *VisitType) GetAll(p PaginationInput) ([]VisitType, int64, error) {
-	var result []VisitType
+func (r *VisitTypeRepository) GetAll(p models.PaginationInput) ([]models.VisitType, int64, error) {
+	var result []models.VisitType
 
 	var count int64
 	count, countErr := r.Count("")
@@ -112,7 +104,7 @@ func (r *VisitType) GetAll(p PaginationInput) ([]VisitType, int64, error) {
 		return result, 0, countErr
 	}
 
-	err := DB.Scopes(Paginate(&p)).Order("id ASC").Find(&result).Error
+	err := r.DB.Scopes(models.Paginate(&p)).Order("id ASC").Find(&result).Error
 	if err != nil {
 		return result, 0, err
 	}
@@ -121,13 +113,11 @@ func (r *VisitType) GetAll(p PaginationInput) ([]VisitType, int64, error) {
 }
 
 // Update ...
-func (r *VisitType) Update() error {
-	return DB.Updates(&r).Error
+func (r *VisitTypeRepository) Update(m *models.VisitType) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *VisitType) Delete(ID int) error {
-	var e VisitType
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *VisitTypeRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.VisitType{}).Error
 }

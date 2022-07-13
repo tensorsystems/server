@@ -19,51 +19,33 @@
 package repository
 
 import (
-	"time"
-
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// EyewearPrescription ...
-type EyewearPrescription struct {
-	gorm.Model
-	ID                         int        `gorm:"primaryKey"`
-	EyewearPrescriptionOrderID int        `json:"eyewearPrescriptionOrderId"`
-	PatientID                  int        `json:"patientId"`
-	Patient                    Patient    `json:"patient"`
-	Glass                      *bool      `json:"glass"`
-	Plastic                    *bool      `json:"plastic"`
-	SingleVision               *bool      `json:"singleVision"`
-	PhotoChromatic             *bool      `json:"photoChromatic"`
-	GlareFree                  *bool      `json:"glareFree"`
-	ScratchResistant           *bool      `json:"scratchResistant"`
-	Bifocal                    *bool      `json:"bifocal"`
-	Progressive                *bool      `json:"progressive"`
-	TwoSeparateGlasses         *bool      `json:"twoSeparateGlasses"`
-	HighIndex                  *bool      `json:"highIndex"`
-	Tint                       *bool      `json:"tint"`
-	BlueCut                    *bool      `json:"blueCut"`
-	PrescribedDate             *time.Time `json:"prescribedDate"`
-	History                    bool       `json:"history"`
-	Status                     string     `json:"status"`
-	Count                      int64      `json:"count"`
+type EyewearPrescriptionRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideEyewearPrescriptionRepository(DB *gorm.DB) EyewearPrescriptionRepository {
+	return EyewearPrescriptionRepository{DB: DB}
 }
 
 // Save ...
-func (r *EyewearPrescription) Save() error {
-	return DB.Create(&r).Error
+func (r *EyewearPrescriptionRepository) Save(m *models.EyewearPrescription) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *EyewearPrescription) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *EyewearPrescriptionRepository) Get(m *models.EyewearPrescription, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *EyewearPrescription) GetAll(p PaginationInput, filter *EyewearPrescription) ([]EyewearPrescription, int64, error) {
-	var result []EyewearPrescription
+func (r *EyewearPrescriptionRepository) GetAll(p PaginationInput, filter *models.EyewearPrescription) ([]models.EyewearPrescription, int64, error) {
+	var result []models.EyewearPrescription
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -78,11 +60,11 @@ func (r *EyewearPrescription) GetAll(p PaginationInput, filter *EyewearPrescript
 }
 
 // Update ...
-func (r *EyewearPrescription) Update() error {
-	return DB.Updates(&r).Error
+func (r *EyewearPrescriptionRepository) Update(m *models.EyewearPrescription) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *EyewearPrescription) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *EyewearPrescriptionRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.EyewearPrescription{}).Error
 }

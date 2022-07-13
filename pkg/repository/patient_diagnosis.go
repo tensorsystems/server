@@ -19,40 +19,33 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// PatientDiagnosis ...
-type PatientDiagnosis struct {
-	gorm.Model
-	ID                     int     `gorm:"primaryKey"`
-	PatientChartID         int     `json:"patientChartId"`
-	CategoryCode           *string `json:"categoryCode"`
-	DiagnosisCode          *string `json:"diagnosisCode"`
-	FullCode               *string `json:"fullCode"`
-	AbbreviatedDescription *string `json:"abbreviatedDescription"`
-	FullDescription        string  `json:"fullDescription"`
-	CategoryTitle          *string `json:"categoryTitle"`
-	Location               string  `json:"location"`
-	Differential           bool    `json:"differential"`
-	Count                  int64   `json:"count"`
+type PatientDiagnosisRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePatientDiagnosisRepository(DB *gorm.DB) PatientDiagnosisRepository {
+	return PatientDiagnosisRepository{DB: DB}
 }
 
 // Save ...
-func (r *PatientDiagnosis) Save(diagnosisID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var diagnosis Diagnosis
+func (r *PatientDiagnosisRepository) Save(m *models.PatientDiagnosis, diagnosisID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var diagnosis models.Diagnosis
 		if err := tx.Where("id = ?", diagnosisID).Take(&diagnosis).Error; err != nil {
 			return err
 		}
 
-		r.CategoryCode = diagnosis.CategoryCode
-		r.DiagnosisCode = diagnosis.DiagnosisCode
-		r.FullCode = diagnosis.FullCode
-		r.AbbreviatedDescription = diagnosis.AbbreviatedDescription
-		r.FullDescription = diagnosis.FullDescription
+		m.CategoryCode = diagnosis.CategoryCode
+		m.DiagnosisCode = diagnosis.DiagnosisCode
+		m.FullCode = diagnosis.FullCode
+		m.AbbreviatedDescription = diagnosis.AbbreviatedDescription
+		m.FullDescription = diagnosis.FullDescription
 
-		if err := tx.Create(&r).Error; err != nil {
+		if err := tx.Create(&m).Error; err != nil {
 			return err
 		}
 
@@ -61,13 +54,13 @@ func (r *PatientDiagnosis) Save(diagnosisID int) error {
 }
 
 // GetByPatientChartID ...
-func (r *PatientDiagnosis) GetByPatientChartID(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *PatientDiagnosisRepository) GetByPatientChartID(m *models.PatientDiagnosis, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Get ...
-func (r *PatientDiagnosis) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
+func (r *PatientDiagnosisRepository) Get(m *models.PatientDiagnosis, ID int) error {
+	err := r.DB.Where("id = ?", ID).Take(&m).Error
 	if err != nil {
 		return err
 	}
@@ -76,10 +69,10 @@ func (r *PatientDiagnosis) Get(ID int) error {
 }
 
 // GetAll ...
-func (r *PatientDiagnosis) GetAll(p PaginationInput, filter *PatientDiagnosis) ([]PatientDiagnosis, int64, error) {
-	var result []PatientDiagnosis
+func (r *PatientDiagnosisRepository) GetAll(p models.PaginationInput, filter *models.PatientDiagnosis) ([]models.PatientDiagnosis, int64, error) {
+	var result []models.PatientDiagnosis
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -94,13 +87,11 @@ func (r *PatientDiagnosis) GetAll(p PaginationInput, filter *PatientDiagnosis) (
 }
 
 // Update ...
-func (r *PatientDiagnosis) Update() error {
-	return DB.Updates(&r).Error
+func (r *PatientDiagnosisRepository) Update(m *models.PatientDiagnosis) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PatientDiagnosis) Delete(ID int) error {
-	var e PatientDiagnosis
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PatientDiagnosisRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PatientDiagnosis{}).Error
 }

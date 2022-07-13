@@ -24,8 +24,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tensoremr/server/pkg/jwt"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
+
+type AuthApi struct {
+	UserRepository repository.UserRepository
+}
 
 // LoginPayload login body
 type LoginPayload struct {
@@ -46,10 +51,10 @@ type LoginResponse struct {
 }
 
 // Login logs users in
-func Login() gin.HandlerFunc {
+func (s *AuthApi) Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var payload LoginPayload
-		var user repository.User
+		var user models.User
 
 		err := c.ShouldBindJSON(&payload)
 		if err != nil {
@@ -61,7 +66,7 @@ func Login() gin.HandlerFunc {
 		}
 
 		// Check if user exists
-		eErr := user.GetByEmail(payload.Email)
+		eErr := s.UserRepository.GetByEmail(&user, payload.Email)
 		if eErr != nil {
 			c.JSON(401, gin.H{
 				"message": "Invalid user credentials",
@@ -71,7 +76,7 @@ func Login() gin.HandlerFunc {
 		}
 
 		// Check password validity
-		pErr := user.CheckPassword(payload.Password)
+		pErr := user.CheckPassword(user.Password, payload.Password)
 		if pErr != nil {
 			log.Println(err)
 			c.JSON(401, gin.H{
@@ -121,10 +126,10 @@ func Login() gin.HandlerFunc {
 }
 
 // Legacy Login logs users in
-func LegacyLogin() gin.HandlerFunc {
+func (s *AuthApi) LegacyLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var payload LegacyLoginPayload
-		var user repository.User
+		var user models.User
 
 		err := c.ShouldBindJSON(&payload)
 		if err != nil {
@@ -136,7 +141,7 @@ func LegacyLogin() gin.HandlerFunc {
 		}
 
 		// Check if user is legacy
-		cErr := user.CheckIfUserLegacy(payload.Username)
+		cErr := s.UserRepository.CheckIfUserLegacy(&user, payload.Username)
 		if cErr == nil {
 			c.JSON(401, gin.H{
 				"message": "User account is not legacy",
@@ -146,7 +151,7 @@ func LegacyLogin() gin.HandlerFunc {
 		}
 
 		// Check if user exists
-		eErr := user.GetByOldUserName(payload.Username)
+		eErr := s.UserRepository.GetByOldUserName(&user, payload.Username)
 		if eErr != nil {
 			c.JSON(401, gin.H{
 				"message": "Invalid user credentials",
@@ -156,7 +161,7 @@ func LegacyLogin() gin.HandlerFunc {
 		}
 
 		// Check password validity
-		pErr := user.CheckPassword(payload.Password)
+		pErr := user.CheckPassword(user.Password, payload.Password)
 		if pErr != nil {
 			c.JSON(401, gin.H{
 				"message": "Invalid user credentials",
@@ -166,7 +171,7 @@ func LegacyLogin() gin.HandlerFunc {
 		}
 
 		user.Email = payload.Email
-		if err := user.Update(nil); err != nil {
+		if err := s.UserRepository.Update(&user, nil); err != nil {
 			c.JSON(500, gin.H{
 				"message": "Sever error",
 			})
@@ -214,8 +219,8 @@ func LegacyLogin() gin.HandlerFunc {
 }
 
 // Signup creates a user in db
-func Signup(c *gin.Context) {
-	var user repository.User
+func (s *AuthApi) Signup(c *gin.Context) {
+	var user models.User
 
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
@@ -241,8 +246,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	err = user.Save(nil)
-	if err != nil {
+	if err := s.UserRepository.Save(&user, nil); err != nil {
 		log.Println(err)
 
 		c.JSON(500, gin.H{

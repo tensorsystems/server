@@ -8,29 +8,29 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveLab(ctx context.Context, input model.LabInput) (*repository.Lab, error) {
-	var entity repository.Lab
+func (r *mutationResolver) SaveLab(ctx context.Context, input graph_models.LabInput) (*models.Lab, error) {
+	var entity models.Lab
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.LabRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateLab(ctx context.Context, input model.LabUpdateInput) (*repository.Lab, error) {
-	var entity repository.Lab
+func (r *mutationResolver) UpdateLab(ctx context.Context, input graph_models.LabUpdateInput) (*models.Lab, error) {
+	var entity models.Lab
 	deepCopy.Copy(&input).To(&entity)
 
 	if input.Status != nil {
-		entity.Status = repository.LabStatus(*input.Status)
+		entity.Status = models.LabStatus(*input.Status)
 	}
 	// Images ...
 	for _, fileUpload := range input.Images {
@@ -40,7 +40,7 @@ func (r *mutationResolver) UpdateLab(ctx context.Context, input model.LabUpdateI
 			return nil, err
 		}
 
-		entity.Images = append(entity.RightEyeImages, repository.File{
+		entity.Images = append(entity.RightEyeImages, models.File{
 			ContentType: fileUpload.File.ContentType,
 			Size:        fileUpload.File.Size,
 			FileName:    fileName,
@@ -57,7 +57,7 @@ func (r *mutationResolver) UpdateLab(ctx context.Context, input model.LabUpdateI
 			return nil, err
 		}
 
-		entity.Documents = append(entity.Documents, repository.File{
+		entity.Documents = append(entity.Documents, models.File{
 			ContentType: fileUpload.File.ContentType,
 			Size:        fileUpload.File.Size,
 			FileName:    fileName,
@@ -66,7 +66,7 @@ func (r *mutationResolver) UpdateLab(ctx context.Context, input model.LabUpdateI
 		})
 	}
 
-	if err := entity.Update(); err != nil {
+	if err := r.LabRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -74,47 +74,43 @@ func (r *mutationResolver) UpdateLab(ctx context.Context, input model.LabUpdateI
 }
 
 func (r *mutationResolver) DeleteLab(ctx context.Context, id int) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.LabRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveLabType(ctx context.Context, input model.LabTypeInput) (*repository.LabType, error) {
-	var entity repository.LabType
+func (r *mutationResolver) SaveLabType(ctx context.Context, input graph_models.LabTypeInput) (*models.LabType, error) {
+	var entity models.LabType
 	deepCopy.Copy(&input).To(&entity)
 
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Billings = billings
 
-	if err := entity.Save(); err != nil {
+	if err := r.LabTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateLabType(ctx context.Context, input model.LabTypeUpdateInput) (*repository.LabType, error) {
-	var entity repository.LabType
+func (r *mutationResolver) UpdateLabType(ctx context.Context, input graph_models.LabTypeUpdateInput) (*models.LabType, error) {
+	var entity models.LabType
 	deepCopy.Copy(&input).To(&entity)
 
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Billings = billings
 
-	if err := entity.Update(); err != nil {
+	if err := r.LabTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -122,76 +118,62 @@ func (r *mutationResolver) UpdateLabType(ctx context.Context, input model.LabTyp
 }
 
 func (r *mutationResolver) DeleteLabType(ctx context.Context, id int) (bool, error) {
-	var entity repository.LabType
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.LabTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeleteLabRightEyeImage(ctx context.Context, input model.LabDeleteFileInput) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.DeleteFile("RightEyeImages", input.LabID, input.FileID); err != nil {
+func (r *mutationResolver) DeleteLabRightEyeImage(ctx context.Context, input graph_models.LabDeleteFileInput) (bool, error) {
+	if err := r.LabRepository.DeleteFile("RightEyeImages", input.LabID, input.FileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeleteLabLeftEyeImage(ctx context.Context, input model.LabDeleteFileInput) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.DeleteFile("LeftEyeImages", input.LabID, input.FileID); err != nil {
+func (r *mutationResolver) DeleteLabLeftEyeImage(ctx context.Context, input graph_models.LabDeleteFileInput) (bool, error) {
+	if err := r.LabRepository.DeleteFile("LeftEyeImages", input.LabID, input.FileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeleteLabRightEyeSketch(ctx context.Context, input model.LabDeleteFileInput) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.DeleteFile("RightEyeSketches", input.LabID, input.FileID); err != nil {
+func (r *mutationResolver) DeleteLabRightEyeSketch(ctx context.Context, input graph_models.LabDeleteFileInput) (bool, error) {
+	if err := r.LabRepository.DeleteFile("RightEyeSketches", input.LabID, input.FileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeleteLabLeftEyeSketch(ctx context.Context, input model.LabDeleteFileInput) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.DeleteFile("LeftEyeSketches", input.LabID, input.FileID); err != nil {
+func (r *mutationResolver) DeleteLabLeftEyeSketch(ctx context.Context, input graph_models.LabDeleteFileInput) (bool, error) {
+	if err := r.LabRepository.DeleteFile("LeftEyeSketches", input.LabID, input.FileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeleteLabImage(ctx context.Context, input model.LabDeleteFileInput) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.DeleteFile("Images", input.LabID, input.FileID); err != nil {
+func (r *mutationResolver) DeleteLabImage(ctx context.Context, input graph_models.LabDeleteFileInput) (bool, error) {
+	if err := r.LabRepository.DeleteFile("Images", input.LabID, input.FileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) DeleteLabDocument(ctx context.Context, input model.LabDeleteFileInput) (bool, error) {
-	var entity repository.Lab
-
-	if err := entity.DeleteFile("Documents", input.LabID, input.FileID); err != nil {
+func (r *mutationResolver) DeleteLabDocument(ctx context.Context, input graph_models.LabDeleteFileInput) (bool, error) {
+	if err := r.LabRepository.DeleteFile("Documents", input.LabID, input.FileID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) OrderLab(ctx context.Context, input model.OrderLabInput) (*repository.LabOrder, error) {
+func (r *mutationResolver) OrderLab(ctx context.Context, input graph_models.OrderLabInput) (*models.LabOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -203,47 +185,46 @@ func (r *mutationResolver) OrderLab(ctx context.Context, input model.OrderLabInp
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
 	// Save lab order
-	var labOrder repository.LabOrder
-	if err := labOrder.Save(input.LabTypeID, input.PatientChartID, input.PatientID, input.BillingIds, user, input.OrderNote, input.ReceptionNote); err != nil {
+	var labOrder models.LabOrder
+	if err := r.LabOrderRepository.Save(&labOrder, input.LabTypeID, input.PatientChartID, input.PatientID, input.BillingIds, user, input.OrderNote, input.ReceptionNote); err != nil {
 		return nil, err
 	}
 
 	return &labOrder, nil
 }
 
-func (r *mutationResolver) ConfirmLabOrder(ctx context.Context, id int, invoiceNo string) (*repository.LabOrder, error) {
-	var entity repository.LabOrder
+func (r *mutationResolver) ConfirmLabOrder(ctx context.Context, id int, invoiceNo string) (*models.LabOrder, error) {
+	var entity models.LabOrder
 
-	if err := entity.Confirm(id, invoiceNo); err != nil {
+	if err := r.LabOrderRepository.Confirm(&entity, id, invoiceNo); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateLabOrder(ctx context.Context, input model.LabOrderUpdateInput) (*repository.LabOrder, error) {
-	var entity repository.LabOrder
+func (r *mutationResolver) UpdateLabOrder(ctx context.Context, input graph_models.LabOrderUpdateInput) (*models.LabOrder, error) {
+	var entity models.LabOrder
 	deepCopy.Copy(&input).To(&entity)
 
 	if input.Status != nil {
-		entity.Status = repository.LabOrderStatus(*input.Status)
+		entity.Status = models.LabOrderStatus(*input.Status)
 	}
 
-	if err := entity.Update(); err != nil {
+	if err := r.LabOrderRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) OrderAndConfirmLab(ctx context.Context, input model.OrderAndConfirmLabInput) (*repository.LabOrder, error) {
+func (r *mutationResolver) OrderAndConfirmLab(ctx context.Context, input graph_models.OrderAndConfirmLabInput) (*models.LabOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -255,118 +236,115 @@ func (r *mutationResolver) OrderAndConfirmLab(ctx context.Context, input model.O
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var appointment repository.Appointment
-	if err := appointment.Get(input.AppointmentID); err != nil {
+	var appointment models.Appointment
+	if err := r.AppointmentRepository.Get(&appointment, input.AppointmentID); err != nil {
 		return nil, err
 	}
 
-	var patientChart repository.PatientChart
-	if err := patientChart.GetByAppointmentID(appointment.ID); err != nil {
+	var patientChart models.PatientChart
+	if err := r.PatientChartRepository.GetByAppointmentID(&patientChart, appointment.ID); err != nil {
 		return nil, err
 	}
 
-	var labOrder repository.LabOrder
-	if err := labOrder.Save(input.LabTypeID, patientChart.ID, input.PatientID, input.BillingIds, user, input.OrderNote, ""); err != nil {
+	var labOrder models.LabOrder
+	if err := r.LabOrderRepository.Save(&labOrder, input.LabTypeID, patientChart.ID, input.PatientID, input.BillingIds, user, input.OrderNote, ""); err != nil {
 		return nil, err
 	}
 
-	if err := labOrder.Confirm(labOrder.ID, input.InvoiceNo); err != nil {
+	if err := r.LabOrderRepository.Confirm(&labOrder, labOrder.ID, input.InvoiceNo); err != nil {
 		return nil, err
 	}
 
 	return &labOrder, nil
 }
 
-func (r *queryResolver) Labs(ctx context.Context, page repository.PaginationInput, filter *model.LabFilter) (*model.LabConnection, error) {
-	var f repository.Lab
+func (r *queryResolver) Labs(ctx context.Context, page models.PaginationInput, filter *graph_models.LabFilter) (*graph_models.LabConnection, error) {
+	var f models.Lab
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.Lab
-	entities, count, err := entity.GetAll(page, &f)
+	entities, count, err := r.LabRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.LabEdge, len(entities))
+	edges := make([]*graph_models.LabEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.LabEdge{
+		edges[i] = &graph_models.LabEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.LabConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.LabConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) LabTypes(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.LabTypeConnection, error) {
-	var entity repository.LabType
-	result, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) LabTypes(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.LabTypeConnection, error) {
+	result, count, err := r.LabTypeRepository.GetAll(page, searchTerm)
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.LabTypeEdge, len(result))
+	edges := make([]*graph_models.LabTypeEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.LabTypeEdge{
+		edges[i] = &graph_models.LabTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.LabTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.LabTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) LabOrder(ctx context.Context, patientChartID int) (*repository.LabOrder, error) {
-	var entity repository.LabOrder
-	if err := entity.GetByPatientChartID(patientChartID); err != nil {
+func (r *queryResolver) LabOrder(ctx context.Context, patientChartID int) (*models.LabOrder, error) {
+	var entity models.LabOrder
+
+	if err := r.LabOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchLabOrders(ctx context.Context, page repository.PaginationInput, filter *model.LabOrderFilter, date *time.Time, searchTerm *string) (*model.LabOrderConnection, error) {
-	var f repository.LabOrder
+func (r *queryResolver) SearchLabOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.LabOrderFilter, date *time.Time, searchTerm *string) (*graph_models.LabOrderConnection, error) {
+	var f models.LabOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
 	if filter.Status != nil {
-		f.Status = repository.LabOrderStatus(*filter.Status)
+		f.Status = models.LabOrderStatus(*filter.Status)
 	}
 
-	var entity repository.LabOrder
-	result, count, err := entity.Search(page, &f, date, searchTerm, false)
+	result, count, err := r.LabOrderRepository.Search(page, &f, date, searchTerm, false)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.LabOrderEdge, len(result))
+	edges := make([]*graph_models.LabOrderEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.LabOrderEdge{
+		edges[i] = &graph_models.LabOrderEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.LabOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.LabOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

@@ -20,12 +20,22 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-// GetOrganizationDetails ...
-func GetOrganizationDetails(c *gin.Context) {
-	var entity repository.OrganizationDetails
+type OrganizationDetailsApi struct {
+	OrganizationDetailsRepository repository.OrganizationDetailsRepository
+}
 
-	c.JSON(200, entity)
+// GetOrganizationDetails ...
+func (s *OrganizationDetailsApi) GetOrganizationDetails(c *gin.Context) {
+	var organizationDetails models.OrganizationDetails
+
+	if err := s.OrganizationDetailsRepository.Get(&organizationDetails); err != nil {
+		c.JSON(500, "Something went wrong")
+		return
+	}
+
+	c.JSON(200, organizationDetails)
 }

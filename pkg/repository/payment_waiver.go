@@ -18,49 +18,46 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// PaymentWaiver ...
-type PaymentWaiver struct {
-	gorm.Model
-	ID        int     `gorm:"primaryKey"`
-	PaymentID int     `json:"paymentId" gorm:"unique"`
-	Payment   Payment `json:"payment"`
-	UserID    int     `json:"userID"`
-	User      User    `json:"user"`
-	PatientID int     `json:"patientId"`
-	Patient   Patient `json:"patient"`
-	Approved  *bool   `json:"approved"`
-	Count     int64   `json:"count"`
+type PaymentWaiverRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePaymentWaiverRepository(DB *gorm.DB) PaymentWaiverRepository {
+	return PaymentWaiverRepository{DB: DB}
 }
 
 // Save ...
-func (r *PaymentWaiver) Save() error {
-	return DB.Save(&r).Error
+func (r *PaymentWaiverRepository) Save(m *models.PaymentWaiver) error {
+	return r.DB.Save(&m).Error
 }
 
 // BatchSave ...
-func (r *PaymentWaiver) BatchSave(waivers []PaymentWaiver) error {
-	return DB.Save(&waivers).Error
+func (r *PaymentWaiverRepository) BatchSave(waivers []models.PaymentWaiver) error {
+	return r.DB.Save(&waivers).Error
 }
 
 // Get ...
-func (r *PaymentWaiver) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PaymentWaiverRepository) Get(m *models.PaymentWaiver, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetCount ...
-func (r *PaymentWaiver) GetApprovedCount() (int, error) {
+func (r *PaymentWaiverRepository) GetApprovedCount() (int, error) {
 	var count int64
-	err := DB.Model(&r).Where("approved IS NULL").Count(&count).Error
+	err := r.DB.Model(&models.PaymentWaiver{}).Where("approved IS NULL").Count(&count).Error
 	return int(count), err
 }
 
 // GetAll ...
-func (r *PaymentWaiver) GetAll(p PaginationInput) ([]PaymentWaiver, int64, error) {
-	var result []PaymentWaiver
+func (r *PaymentWaiverRepository) GetAll(p models.PaginationInput) ([]models.PaymentWaiver, int64, error) {
+	var result []models.PaymentWaiver
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("Patient").Preload("User").Preload("Payment.Billing").Order("id DESC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("Patient").Preload("User").Preload("Payment.Billing").Order("id DESC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -75,26 +72,26 @@ func (r *PaymentWaiver) GetAll(p PaginationInput) ([]PaymentWaiver, int64, error
 }
 
 // Update ...
-func (r *PaymentWaiver) Update() error {
-	return DB.Updates(&r).Error
+func (r *PaymentWaiverRepository) Update(m *models.PaymentWaiver) error {
+	return r.DB.Updates(&m).Error
 }
 
 // ApproveWaiver ...
-func (r *PaymentWaiver) ApproveWaiver(id int, approve bool) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PaymentWaiverRepository) ApproveWaiver(m *models.PaymentWaiver, id int, approve bool) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Update payment waiver
-		if err := tx.Where("id = ?", id).Preload("Payment").Take(&r).Error; err != nil {
+		if err := tx.Where("id = ?", id).Preload("Payment").Take(&m).Error; err != nil {
 			return err
 		}
 
-		r.Approved = &approve
-		if err := tx.Updates(&r).Error; err != nil {
+		m.Approved = &approve
+		if err := tx.Updates(&m).Error; err != nil {
 			return err
 		}
 
 		// Update payment status
-		payment := r.Payment
-		payment.Status = PaidPaymentStatus
+		payment := m.Payment
+		payment.Status = models.PaidPaymentStatus
 		if err := tx.Updates(&payment).Error; err != nil {
 			return err
 		}
@@ -104,6 +101,6 @@ func (r *PaymentWaiver) ApproveWaiver(id int, approve bool) error {
 }
 
 // Delete ...
-func (r *PaymentWaiver) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *PaymentWaiverRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PaymentWaiver{}).Error
 }

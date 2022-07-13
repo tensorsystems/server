@@ -6,27 +6,27 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) CreateEyewearShop(ctx context.Context, input model.EyewearShopInput) (*repository.EyewearShop, error) {
-	var entity repository.EyewearShop
+func (r *mutationResolver) CreateEyewearShop(ctx context.Context, input graph_models.EyewearShopInput) (*models.EyewearShop, error) {
+	var entity models.EyewearShop
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.EyewearShopRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateEyewearShop(ctx context.Context, input model.EyewearShopUpdateInput) (*repository.EyewearShop, error) {
-	var entity repository.EyewearShop
+func (r *mutationResolver) UpdateEyewearShop(ctx context.Context, input graph_models.EyewearShopUpdateInput) (*models.EyewearShop, error) {
+	var entity models.EyewearShop
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.EyewearShopRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -34,39 +34,38 @@ func (r *mutationResolver) UpdateEyewearShop(ctx context.Context, input model.Ey
 }
 
 func (r *mutationResolver) DeleteEyewearShop(ctx context.Context, id int) (bool, error) {
-	var entity repository.EyewearShop
-	if err := entity.Delete(id); err != nil {
+	if err := r.EyewearShopRepository.Delete(id); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (r *queryResolver) EyewearShop(ctx context.Context, id int) (*repository.EyewearShop, error) {
-	var entity repository.EyewearShop
-	if err := entity.Get(id); err != nil {
+func (r *queryResolver) EyewearShop(ctx context.Context, id int) (*models.EyewearShop, error) {
+	var entity models.EyewearShop
+
+	if err := r.EyewearShopRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 	return &entity, nil
 }
 
-func (r *queryResolver) EyewearShops(ctx context.Context, page repository.PaginationInput) (*model.EyewearShopConnection, error) {
-	var entity repository.EyewearShop
-	result, count, err := entity.GetAll(page, nil)
+func (r *queryResolver) EyewearShops(ctx context.Context, page models.PaginationInput) (*graph_models.EyewearShopConnection, error) {
+	result, count, err := r.EyewearShopRepository.GetAll(page, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.EyewearShopEdge, len(result))
+	edges := make([]*graph_models.EyewearShopEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.EyewearShopEdge{
+		edges[i] = &graph_models.EyewearShopEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.EyewearShopConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.EyewearShopConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

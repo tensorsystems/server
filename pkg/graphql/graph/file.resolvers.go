@@ -7,27 +7,25 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveFile(ctx context.Context, input model.FileInput) (*repository.File, error) {
-	var entity repository.File
-
+func (r *mutationResolver) SaveFile(ctx context.Context, input graph_models.FileInput) (*models.File, error) {
+	var entity models.File
 	deepCopy.Copy(&input).To(&entity)
 
-	err := entity.Save()
-	if err != nil {
+	if err := r.FileRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateFile(ctx context.Context, input model.FileUpdateInput) (*repository.File, error) {
-	var entity repository.File
-	if err := entity.Get(input.ID); err != nil {
+func (r *mutationResolver) UpdateFile(ctx context.Context, input graph_models.FileUpdateInput) (*models.File, error) {
+	var entity models.File
+	if err := r.FileRepository.Get(&entity, input.ID); err != nil {
 		return nil, err
 	}
 
@@ -43,7 +41,7 @@ func (r *mutationResolver) UpdateFile(ctx context.Context, input model.FileUpdat
 	// Update file entity
 	entity.FileName = fileName
 	entity.Hash = hash
-	if err := entity.Update(); err != nil {
+	if err := r.FileRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -54,16 +52,16 @@ func (r *mutationResolver) DeleteFile(ctx context.Context, id int) (bool, error)
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) File(ctx context.Context, id int) (*repository.File, error) {
-	var entity repository.File
+func (r *queryResolver) File(ctx context.Context, id int) (*models.File, error) {
+	var entity models.File
 
-	if err := entity.Get(id); err != nil {
+	if err := r.FileRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) Files(ctx context.Context, page repository.PaginationInput) (*model.FileConnection, error) {
+func (r *queryResolver) Files(ctx context.Context, page models.PaginationInput) (*graph_models.FileConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }

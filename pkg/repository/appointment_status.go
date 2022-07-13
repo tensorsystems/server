@@ -19,82 +19,65 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// AppointmentStatus ...
-type AppointmentStatus struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey"`
-	Title string `json:"title" gorm:"uniqueIndex"`
+type AppointmentStatusRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideAppointmentStatusRepository(DB *gorm.DB) AppointmentStatusRepository {
+	return AppointmentStatusRepository{DB: DB}
 }
 
 //Seed ...
-func (r *AppointmentStatus) Seed() {
-	DB.Create(&AppointmentStatus{Title: "Scheduled"})
-	DB.Create(&AppointmentStatus{Title: "Checked-In"})
-	DB.Create(&AppointmentStatus{Title: "Checked-Out"})
-	DB.Create(&AppointmentStatus{Title: "Cancelled"})
+func (r *AppointmentStatusRepository) Seed() {
+	r.DB.Create(&models.AppointmentStatus{Title: "Scheduled"})
+	r.DB.Create(&models.AppointmentStatus{Title: "Checked-In"})
+	r.DB.Create(&models.AppointmentStatus{Title: "Checked-Out"})
+	r.DB.Create(&models.AppointmentStatus{Title: "Cancelled"})
 }
 
 // Save ...
-func (r *AppointmentStatus) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Count ...
-func (r *AppointmentStatus) Count(dbString string) (int64, error) {
-	var count int64
-
-	err := DB.Model(&AppointmentStatus{}).Count(&count).Error
-	return count, err
+func (r *AppointmentStatusRepository) Save(m *models.AppointmentStatus) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *AppointmentStatus) GetAll(p PaginationInput) ([]AppointmentStatus, int64, error) {
-	var result []AppointmentStatus
+func (r *AppointmentStatusRepository) GetAll(p models.PaginationInput) ([]models.AppointmentStatus, int64, error) {
+	var result []models.AppointmentStatus
+
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
-	count, countErr := r.Count("")
-	if countErr != nil {
-		return result, 0, countErr
+	if len(result) > 0 {
+		count = result[0].Count
 	}
 
-	err := DB.Scopes(Paginate(&p)).Order("id ASC").Find(&result).Error
-	if err != nil {
-		return result, 0, err
+	if dbOp.Error != nil {
+		return result, 0, dbOp.Error
 	}
 
-	return result, count, err
+	return result, count, dbOp.Error
 }
 
 // Get ...
-func (r *AppointmentStatus) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *AppointmentStatusRepository) Get(m *models.AppointmentStatus, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *AppointmentStatus) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *AppointmentStatusRepository) GetByTitle(m *models.AppointmentStatus, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *AppointmentStatus) Update() (*AppointmentStatus, error) {
-	err := DB.Save(&r).Error
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+func (r *AppointmentStatusRepository) Update(m *models.AppointmentStatus) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *AppointmentStatus) Delete(ID int) error {
-	var e AppointmentStatus
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *AppointmentStatusRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.AppointmentStatus{}).Error
 }

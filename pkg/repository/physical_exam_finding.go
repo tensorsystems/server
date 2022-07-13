@@ -18,30 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// PhysicalExamFinding ...
-type PhysicalExamFinding struct {
-	gorm.Model
-	ID             int          `gorm:"primaryKey" json:"id"`
-	PatientChartID int          `json:"patientChartId" gorm:"uniqueIndex"`
-	ExamCategoryID int          `json:"examCategoryId"`
-	ExamCategory   ExamCategory `json:"examCategory"`
-	Abnormal       bool         `string:"abnormal"`
-	Note           *string      `json:"note"`
-	Count          int64        `json:"count"`
+type PhysicalExamFindingRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePhysicalExamFindingRepository(DB *gorm.DB) PhysicalExamFindingRepository {
+	return PhysicalExamFindingRepository{DB: DB}
 }
 
 // Save ...
-func (r *PhysicalExamFinding) Save() error {
-	return DB.Create(&r).Error
+func (r *PhysicalExamFindingRepository) Save(m *models.PhysicalExamFinding) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *PhysicalExamFinding) GetAll(p PaginationInput, filter *PhysicalExamFinding) ([]PhysicalExamFinding, int64, error) {
-	var result []PhysicalExamFinding
+func (r *PhysicalExamFindingRepository) GetAll(p models.PaginationInput, filter *models.PhysicalExamFinding) ([]models.PhysicalExamFinding, int64, error) {
+	var result []models.PhysicalExamFinding
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("ExamCategory").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("ExamCategory").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -56,38 +55,38 @@ func (r *PhysicalExamFinding) GetAll(p PaginationInput, filter *PhysicalExamFind
 }
 
 // Get ...
-func (r *PhysicalExamFinding) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PhysicalExamFindingRepository) Get(m *models.PhysicalExamFinding, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *PhysicalExamFinding) GetByPatientChartID(id string) error {
-	return DB.Where("patient_chart_id = ?", id).Take(&r).Error
+func (r *PhysicalExamFindingRepository) GetByPatientChartID(m *models.PhysicalExamFinding, id string) error {
+	return r.DB.Where("patient_chart_id = ?", id).Take(&m).Error
 }
 
 // Update ...
-func (r *PhysicalExamFinding) Update() error {
-	return DB.Save(&r).Error
+func (r *PhysicalExamFindingRepository) Update(m *models.PhysicalExamFinding) error {
+	return r.DB.Save(&m).Error
 }
 
 // Delete ...
-func (r *PhysicalExamFinding) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *PhysicalExamFindingRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PhysicalExamFinding{}).Error
 }
 
 // DeleteExamCategory
-func (r *PhysicalExamFinding) DeleteExamCategory(physicalExamFindingID int, examCategoryID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", physicalExamFindingID).Take(&r).Error; err != nil {
+func (r *PhysicalExamFindingRepository) DeleteExamCategory(m *models.PhysicalExamFinding, physicalExamFindingID int, examCategoryID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", physicalExamFindingID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		var examCategory ExamCategory
+		var examCategory models.ExamCategory
 		if err := tx.Where("id = ?", examCategoryID).Take(&examCategory).Error; err != nil {
 			return err
 		}
 
-		tx.Model(&r).Where("id = ?", physicalExamFindingID).Association("ExamCategory").Delete(&examCategory)
+		tx.Model(&m).Where("id = ?", physicalExamFindingID).Association("ExamCategory").Delete(&examCategory)
 
 		return nil
 	})

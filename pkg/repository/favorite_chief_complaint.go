@@ -18,34 +18,33 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// FavoriteChiefComplaint ...
-type FavoriteChiefComplaint struct {
-	gorm.Model
-	ID                   int                `gorm:"primaryKey" json:"id"`
-	ChiefComplaintTypeID int                `json:"chiefComplaintTypeId"`
-	ChiefComplaintType   ChiefComplaintType `json:"chiefComplaintType"`
-	UserID               int                `json:"user_id"`
-	User                 User               `json:"user"`
-	Count                int64              `json:"count"`
+type FavoriteChiefComplaintRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideFavoriteChiefComplaintRepository(DB *gorm.DB) FavoriteChiefComplaintRepository {
+	return FavoriteChiefComplaintRepository{DB: DB}
 }
 
 // Save ...
-func (r *FavoriteChiefComplaint) Save() error {
-	err := DB.Create(&r).Error
-	return err
+func (r *FavoriteChiefComplaintRepository) Save(m *models.FavoriteChiefComplaint) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *FavoriteChiefComplaint) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *FavoriteChiefComplaintRepository) Get(m *models.FavoriteChiefComplaint, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByUser ...
-func (r *FavoriteChiefComplaint) GetByUser(ID int) ([]*FavoriteChiefComplaint, error) {
-	var result []*FavoriteChiefComplaint
-	err := DB.Where("user_id = ?", ID).Find(&result).Error
+func (r *FavoriteChiefComplaintRepository) GetByUser(ID int) ([]*models.FavoriteChiefComplaint, error) {
+	var result []*models.FavoriteChiefComplaint
+	err := r.DB.Where("user_id = ?", ID).Find(&result).Error
 	if err != nil {
 		return result, err
 	}
@@ -54,11 +53,11 @@ func (r *FavoriteChiefComplaint) GetByUser(ID int) ([]*FavoriteChiefComplaint, e
 }
 
 // Update ...
-func (r *FavoriteChiefComplaint) Update() error {
-	return DB.Updates(&r).Error
+func (r *FavoriteChiefComplaintRepository) Update(m *models.FavoriteChiefComplaint) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *FavoriteChiefComplaint) Delete(id int) error {
-	return DB.Where("id = ?", id).Delete(&r).Error
+func (r *FavoriteChiefComplaintRepository) Delete(id int) error {
+	return r.DB.Where("id = ?", id).Delete(&models.FavoriteChiefComplaint{}).Error
 }

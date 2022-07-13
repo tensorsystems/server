@@ -22,27 +22,29 @@ import (
 	"errors"
 
 	"github.com/lib/pq"
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// Room ...
-type Room struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey"`
-	Title string `json:"title" gorm:"unique"`
+type RoomRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideRoomRepository(DB *gorm.DB) RoomRepository {
+	return RoomRepository{DB: DB}
 }
 
 // Save ...
-func (r *Room) Save() error {
-	err := DB.Create(&r).Error
+func (r *RoomRepository) Save(m *models.Room) error {
+	err := r.DB.Create(&m).Error
 
 	if err, ok := err.(*pq.Error); ok && err.Code.Name() == "unique_violation" {
-		var existing Room
-		existingErr := DB.Unscoped().Where("title = ?", r.Title).Take(&existing).Error
+		var existing models.Room
+		existingErr := r.DB.Unscoped().Where("title = ?", m.Title).Take(&existing).Error
 
 		if existingErr == nil {
-			DB.Model(&Room{}).Unscoped().Where("id = ?", existing.ID).Update("deleted_at", nil)
-			r = &existing
+			r.DB.Model(&models.Room{}).Unscoped().Where("id = ?", existing.ID).Update("deleted_at", nil)
+			m = &existing
 			return nil
 		}
 
@@ -57,31 +59,18 @@ func (r *Room) Save() error {
 }
 
 // Get ...
-func (r *Room) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *RoomRepository) Get(m *models.Room, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *Room) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
-}
-
-// Count ...
-func (r *Room) Count(dbString string) (int64, error) {
-	var count int64
-
-	err := DB.Model(&Room{}).Count(&count).Error
-	return count, err
+func (r *RoomRepository) GetByTitle(m *models.Room, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *Room) Update() error {
-	err := DB.Save(&r).Error
+func (r *RoomRepository) Update(m *models.Room) error {
+	err := r.DB.Save(&m).Error
 
 	if err, ok := err.(*pq.Error); ok && err.Code.Name() == "unique_violation" {
 		return errors.New("Duplicate, " + err.Detail)
@@ -91,26 +80,24 @@ func (r *Room) Update() error {
 }
 
 // Delete ...
-func (r *Room) Delete(ID int) error {
-	var e Room
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *RoomRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Room{}).Error
 }
 
 // GetAll ...
-func (r *Room) GetAll(p PaginationInput) ([]Room, int64, error) {
-	var result []Room
+func (r *RoomRepository) GetAll(p models.PaginationInput) ([]models.Room, int64, error) {
+	var result []models.Room
+
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
-	count, countErr := r.Count("")
-	if countErr != nil {
-		return result, 0, countErr
+	if len(result) > 0 {
+		count = result[0].Count
 	}
 
-	err := DB.Scopes(Paginate(&p)).Order("id ASC").Find(&result).Error
-	if err != nil {
-		return result, 0, err
+	if dbOp.Error != nil {
+		return result, 0, dbOp.Error
 	}
 
-	return result, count, err
+	return result, count, dbOp.Error
 }

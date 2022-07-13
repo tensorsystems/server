@@ -7,28 +7,28 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveChiefComplaintType(ctx context.Context, input model.ChiefComplaintTypeInput) (*repository.ChiefComplaintType, error) {
-	var entity repository.ChiefComplaintType
+func (r *mutationResolver) SaveChiefComplaintType(ctx context.Context, input graph_models.ChiefComplaintTypeInput) (*models.ChiefComplaintType, error) {
+	var entity models.ChiefComplaintType
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateChiefComplaintType(ctx context.Context, input model.ChiefComplaintTypeUpdateInput) (*repository.ChiefComplaintType, error) {
-	var entity repository.ChiefComplaintType
+func (r *mutationResolver) UpdateChiefComplaintType(ctx context.Context, input graph_models.ChiefComplaintTypeUpdateInput) (*models.ChiefComplaintType, error) {
+	var entity models.ChiefComplaintType
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -36,26 +36,24 @@ func (r *mutationResolver) UpdateChiefComplaintType(ctx context.Context, input m
 }
 
 func (r *mutationResolver) DeleteChiefComplaintType(ctx context.Context, id int) (bool, error) {
-	var entity repository.ChiefComplaintType
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) ChiefComplaintType(ctx context.Context, id int) (*repository.ChiefComplaintType, error) {
-	var entity repository.ChiefComplaintType
+func (r *queryResolver) ChiefComplaintType(ctx context.Context, id int) (*models.ChiefComplaintType, error) {
+	var entity models.ChiefComplaintType
 
-	if err := entity.Get(id); err != nil {
+	if err := r.ChiefComplaintTypeRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) ChiefComplaintTypes(ctx context.Context, page repository.PaginationInput, searchTerm *string, favorites *bool) (*model.ChiefComplaintTypeConnection, error) {
+func (r *queryResolver) ChiefComplaintTypes(ctx context.Context, page models.PaginationInput, searchTerm *string, favorites *bool) (*graph_models.ChiefComplaintTypeConnection, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -66,39 +64,37 @@ func (r *queryResolver) ChiefComplaintTypes(ctx context.Context, page repository
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
+	var user models.User
+	err = r.UserRepository.GetByEmail(&user, email)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []repository.ChiefComplaintType
+	var result []models.ChiefComplaintType
 	var count int64
 
-	var entity repository.ChiefComplaintType
-
 	if favorites != nil && *favorites == true {
-		result, count, err = entity.GetFavorites(page, searchTerm, user.ID)
+		result, count, err = r.ChiefComplaintTypeRepository.GetFavorites(page, searchTerm, user.ID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		result, count, err = entity.GetAll(page, searchTerm)
+		result, count, err = r.ChiefComplaintTypeRepository.GetAll(page, searchTerm)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	edges := make([]*model.ChiefComplaintTypeEdge, len(result))
+	edges := make([]*graph_models.ChiefComplaintTypeEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.ChiefComplaintTypeEdge{
+		edges[i] = &graph_models.ChiefComplaintTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.ChiefComplaintTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.ChiefComplaintTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

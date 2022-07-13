@@ -19,57 +19,36 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// ReferralStatus ...
-type ReferralStatus string
+type ReferralRepository struct {
+	DB *gorm.DB
+}
 
-// ReferralType ...
-type ReferralType string
-
-// SurgicalProcedureOrder statuses ...
-const (
-	ReferralStatusOrdered   ReferralStatus = "ORDERED"
-	ReferralStatusCompleted ReferralStatus = "COMPLETED"
-
-	ReferralTypeInHouse   ReferralType = "PATIENT_IN_HOUSE_REFERRAL"
-	ReferralTypeOutsource ReferralType = "PATIENT_OUTSOURCE_REFERRAL"
-)
-
-// Referral ...
-type Referral struct {
-	gorm.Model
-	ID              int            `gorm:"primaryKey"`
-	ReferralOrderID int            `json:"referralOrderId"`
-	PatientChartID  int            `json:"patientChartId"`
-	Reason          string         `json:"reason"`
-	ReferredToID    *int           `json:"referredToId"`
-	ReferredToName  string         `json:"referredToName"`
-	Status          ReferralStatus `json:"status"`
-	Type            ReferralType   `json:"type"`
-	ReceptionNote   string         `json:"receptionNote"`
-	Count           int64          `json:"count"`
+func ProvideReferralRepository(DB *gorm.DB) ReferralRepository {
+	return ReferralRepository{DB: DB}
 }
 
 // Save ...
-func (r *Referral) Save() error {
-	return DB.Create(&r).Error
+func (r *ReferralRepository) Save(m *models.Referral) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Referral) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ReferralRepository) Get(m *models.Referral, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Get ...
-func (r *Referral) GetByOrderID(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *ReferralRepository) GetByOrderID(m *models.Referral, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // // ConfirmReferral ...
 // func (r *Referral) ConfirmReferral(orderID int, checkInTime time.Time, roomId int) error {
-// 	return DB.Transaction(func(tx *gorm.DB) error {
+// 	return r.DB.Transaction(func(tx *gorm.DB) error {
 // 		var order Order
 // 		if err := order.Get(orderID); err != nil {
 // 			return err
@@ -120,10 +99,10 @@ func (r *Referral) GetByOrderID(ID int) error {
 // }
 
 // GetAll ...
-func (r *Referral) GetAll(p PaginationInput, filter *Referral) ([]Referral, int64, error) {
-	var result []Referral
+func (r *ReferralRepository) GetAll(p models.PaginationInput, filter *models.Referral) ([]models.Referral, int64, error) {
+	var result []models.Referral
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -138,28 +117,28 @@ func (r *Referral) GetAll(p PaginationInput, filter *Referral) ([]Referral, int6
 }
 
 // Update ...
-func (r *Referral) Update() error {
-	return DB.Updates(&r).Error
+func (r *ReferralRepository) Update(m *models.Referral) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Referral) Delete(ID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", ID).Take(&r).Error; err != nil {
+func (r *ReferralRepository) Delete(m *models.Referral, ID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", ID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", ID).Delete(&r).Error; err != nil {
+		if err := tx.Where("id = ?", ID).Delete(&m).Error; err != nil {
 			return err
 		}
 
 		var referralsCount int64
-		if err := tx.Model(&r).Where("referral_order_id = ?", r.ReferralOrderID).Count(&referralsCount).Error; err != nil {
+		if err := tx.Model(&m).Where("referral_order_id = ?", m.ReferralOrderID).Count(&referralsCount).Error; err != nil {
 			return err
 		}
 
 		if referralsCount == 0 {
-			if err := tx.Where("id = ?", r.ReferralOrderID).Delete(&ReferralOrder{}).Error; err != nil {
+			if err := tx.Where("id = ?", m.ReferralOrderID).Delete(&models.ReferralOrder{}).Error; err != nil {
 				return err
 			}
 		}
@@ -170,7 +149,7 @@ func (r *Referral) Delete(ID int) error {
 
 // NewOrder ...
 // func (r *Referral) NewOrder(appointmentID int, orderedByID int, orderedToID int, patientID int, reason *string) error {
-// 	return DB.Transaction(func(tx *gorm.DB) error {
+// 	return r.DB.Transaction(func(tx *gorm.DB) error {
 // 		// Get Patient
 // 		var patient Patient
 // 		if err := tx.Model(&Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {

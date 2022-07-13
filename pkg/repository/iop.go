@@ -18,43 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Iop ...
-type Iop struct {
-	gorm.Model
-	ID               int     `gorm:"primaryKey"`
-	RightIop         *string `json:"rightIop"`
-	LeftIop          *string `json:"leftIop"`
-	RightApplanation *string `json:"rightApplanation"`
-	LeftApplanation  *string `json:"leftApplanation"`
-	RightTonopen     *string `json:"rightTonopen"`
-	LeftTonopen      *string `json:"leftTonopen"`
-	RightDigital     *string `json:"rightDigital"`
-	LeftDigital      *string `json:"leftDigital"`
-	RightNoncontact  *string `json:"rightNoncontact"`
-	LeftNoncontact   *string `json:"leftNoncontact"`
-	PatientChartID   int     `json:"patientChartId" gorm:"unique"`
+type IopRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideIopRepository(DB *gorm.DB) IopRepository {
+	return IopRepository{DB: DB}
 }
 
 // Save ...
-func (r *Iop) Save() error {
-	return DB.Create(&r).Error
+func (r *IopRepository) Save(m *models.Iop) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *Iop) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing Iop
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *IopRepository) SaveForPatientChart(m *models.Iop) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.Iop
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -64,16 +58,16 @@ func (r *Iop) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *Iop) Get(filter Iop) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *IopRepository) Get(m *models.Iop, filter models.Iop) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *Iop) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *IopRepository) GetByPatientChart(m *models.Iop, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *Iop) Update() error {
-	return DB.Updates(&r).Error
+func (r *IopRepository) Update(m *models.Iop) error {
+	return r.DB.Updates(&m).Error
 }

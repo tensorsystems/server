@@ -18,42 +18,39 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// AppointmentQueue ...
-type AppointmentQueue struct {
-	gorm.Model
-	ID                 int              `gorm:"primaryKey" json:"id"`
-	AppointmentID      int              `json:"appointmentId"`
-	Appointment        Appointment      `json:"appointment"`
-	QueueDestinationID int              `json:"queueDestinationId"`
-	QueueDestination   QueueDestination `json:"queueDestination"`
-	Count              int64            `json:"count"`
+type AppointmentQueueRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideAppointmentQueueRepository(DB *gorm.DB) AppointmentQueueRepository {
+	return AppointmentQueueRepository{DB: DB}
 }
 
 // Save ...
-func (r *AppointmentQueue) Save() error {
-	return DB.Create(&r).Error
+func (r *AppointmentQueueRepository) Save(m *models.AppointmentQueue) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *AppointmentQueue) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *AppointmentQueueRepository) Get(ID int, m *models.AppointmentQueue) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *AppointmentQueue) Update() (*AppointmentQueue, error) {
-	err := DB.Save(&r).Error
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+func (r *AppointmentQueueRepository) Update(m *models.AppointmentQueue) error {
+	err := r.DB.Save(&m).Error
+	return err
 }
 
 // FindByAppointment ...
-func (r *AppointmentQueue) FindByAppointment(p PaginationInput, userID int) ([]AppointmentQueue, int64, error) {
-	var result []AppointmentQueue
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("appointment_id = ?", userID).Preload("Appointment").Preload("QueueDestination").Find(&result)
+func (r *AppointmentQueueRepository) FindByAppointment(p PaginationInput, userID int) ([]models.AppointmentQueue, int64, error) {
+	var result []models.AppointmentQueue
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where("appointment_id = ?", userID).Preload("Appointment").Preload("QueueDestination").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -68,10 +65,10 @@ func (r *AppointmentQueue) FindByAppointment(p PaginationInput, userID int) ([]A
 }
 
 // FindTodaysAppointments ...
-func (r *AppointmentQueue) FindTodaysAppointments(appointmentID int) ([]AppointmentQueue, error) {
-	var result []AppointmentQueue
+func (r *AppointmentQueueRepository) FindTodaysAppointments(appointmentID int) ([]models.AppointmentQueue, error) {
+	var result []models.AppointmentQueue
 
-	err := DB.Joins("left join user_queues on user_queues.queue_id = queues.id").Where("user_queues.appointment_id = ?", appointmentID).Find(&result).Error
+	err := r.DB.Joins("left join user_queues on user_queues.queue_id = queues.id").Where("user_queues.appointment_id = ?", appointmentID).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -80,8 +77,7 @@ func (r *AppointmentQueue) FindTodaysAppointments(appointmentID int) ([]Appointm
 	return result, nil
 }
 
-
 // Delete ...
-func (r *AppointmentQueue) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *AppointmentQueueRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.AppointmentQueue{}).Error
 }

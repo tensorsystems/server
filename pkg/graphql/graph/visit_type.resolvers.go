@@ -6,29 +6,29 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveVisitType(ctx context.Context, input model.VisitTypeInput) (*repository.VisitType, error) {
-	var visitType repository.VisitType
+func (r *mutationResolver) SaveVisitType(ctx context.Context, input graph_models.VisitTypeInput) (*models.VisitType, error) {
+	var visitType models.VisitType
 	deepCopy.Copy(&input).To(&visitType)
 
-	err := visitType.Save()
-	if err != nil {
+	if err := r.VisitTypeRepository.Save(&visitType); err != nil {
 		return nil, err
 	}
 
 	return &visitType, nil
 }
 
-func (r *mutationResolver) UpdateVisitType(ctx context.Context, input model.VisitTypeInput, id int) (*repository.VisitType, error) {
-	var visitType repository.VisitType
+func (r *mutationResolver) UpdateVisitType(ctx context.Context, input graph_models.VisitTypeInput, id int) (*models.VisitType, error) {
+	var visitType models.VisitType
 	deepCopy.Copy(&input).To(&visitType)
+
 	visitType.ID = id
 
-	if err := visitType.Update(); err != nil {
+	if err := r.VisitTypeRepository.Update(&visitType); err != nil {
 		return nil, err
 	}
 
@@ -36,33 +36,30 @@ func (r *mutationResolver) UpdateVisitType(ctx context.Context, input model.Visi
 }
 
 func (r *mutationResolver) DeleteVisitType(ctx context.Context, id int) (bool, error) {
-	var visitType repository.VisitType
-	err := visitType.Delete(id)
-	if err != nil {
+	if err := r.VisitTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) VisitTypes(ctx context.Context, page repository.PaginationInput) (*model.VisitTypeConnection, error) {
-	var visitType repository.VisitType
-	visitTypes, count, err := visitType.GetAll(page)
+func (r *queryResolver) VisitTypes(ctx context.Context, page models.PaginationInput) (*graph_models.VisitTypeConnection, error) {
+	visitTypes, count, err := r.VisitTypeRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.VisitTypeEdge, len(visitTypes))
+	edges := make([]*graph_models.VisitTypeEdge, len(visitTypes))
 
 	for i, entity := range visitTypes {
 		e := entity
 
-		edges[i] = &model.VisitTypeEdge{
+		edges[i] = &graph_models.VisitTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(visitTypes, count, page)
-	return &model.VisitTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.VisitTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

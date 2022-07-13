@@ -7,13 +7,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SavePaymentWaiver(ctx context.Context, input model.PaymentWaiverInput) (*repository.PaymentWaiver, error) {
+func (r *mutationResolver) SavePaymentWaiver(ctx context.Context, input graph_models.PaymentWaiverInput) (*models.PaymentWaiver, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -24,25 +24,24 @@ func (r *mutationResolver) SavePaymentWaiver(ctx context.Context, input model.Pa
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.PaymentWaiver
+	var entity models.PaymentWaiver
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.UserID = user.ID
 
-	if err := entity.Save(); err != nil {
+	if err := r.PaymentWaiverRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePaymentWaiver(ctx context.Context, input model.PaymentWaiverUpdateInput) (*repository.PaymentWaiver, error) {
+func (r *mutationResolver) UpdatePaymentWaiver(ctx context.Context, input graph_models.PaymentWaiverUpdateInput) (*models.PaymentWaiver, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -53,18 +52,17 @@ func (r *mutationResolver) UpdatePaymentWaiver(ctx context.Context, input model.
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.PaymentWaiver
+	var entity models.PaymentWaiver
 	deepCopy.Copy(&input).To(&entity)
 
 	entity.UserID = user.ID
 
-	if err := entity.Update(); err != nil {
+	if err := r.PaymentWaiverRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -72,51 +70,48 @@ func (r *mutationResolver) UpdatePaymentWaiver(ctx context.Context, input model.
 }
 
 func (r *mutationResolver) DeletePaymentWaiver(ctx context.Context, id int) (bool, error) {
-	var entity repository.PaymentWaiver
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.PaymentWaiverRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) ApprovePaymentWaiver(ctx context.Context, id int, approve bool) (*repository.PaymentWaiver, error) {
-	var entity repository.PaymentWaiver
+func (r *mutationResolver) ApprovePaymentWaiver(ctx context.Context, id int, approve bool) (*models.PaymentWaiver, error) {
+	var entity models.PaymentWaiver
 
-	if err := entity.ApproveWaiver(id, approve); err != nil {
+	if err := r.PaymentWaiverRepository.ApproveWaiver(&entity, id, approve); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) PaymentWaivers(ctx context.Context, page repository.PaginationInput) (*model.PaymentWaiverConnection, error) {
-	var entity repository.PaymentWaiver
-	result, count, err := entity.GetAll(page)
+func (r *queryResolver) PaymentWaivers(ctx context.Context, page models.PaginationInput) (*graph_models.PaymentWaiverConnection, error) {
+	result, count, err := r.PaymentWaiverRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.PaymentWaiverEdge, len(result))
+	edges := make([]*graph_models.PaymentWaiverEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.PaymentWaiverEdge{
+		edges[i] = &graph_models.PaymentWaiverEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.PaymentWaiverConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.PaymentWaiverConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) PaymentWaiver(ctx context.Context, id int) (*repository.PaymentWaiver, error) {
-	var entity repository.PaymentWaiver
+func (r *queryResolver) PaymentWaiver(ctx context.Context, id int) (*models.PaymentWaiver, error) {
+	var entity models.PaymentWaiver
 
-	if err := entity.Get(id); err != nil {
+	if err := r.PaymentWaiverRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 

@@ -19,47 +19,33 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// Billing ...
-type Billing struct {
-	gorm.Model
-	ID       int     `gorm:"primaryKey"`
-	Item     string  `json:"item"`
-	Code     string  `json:"code"`
-	Price    float64 `json:"price"`
-	Credit   bool    `json:"credit"`
-	Remark   string  `json:"remark"`
-	Document string  `gorm:"type:tsvector"`
-	Count    int64   `json:"count"`
+type BillingRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideBillingRepository(DB *gorm.DB) BillingRepository {
+	return BillingRepository{DB: DB}
 }
 
 // Save ...
-func (r *Billing) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *BillingRepository) Save(m *models.Billing) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Billing) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *BillingRepository) Get(m *models.Billing, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByIds ...
-func (r *Billing) GetByIds(ids []*int) ([]Billing, error) {
-	var result []Billing
+func (r *BillingRepository) GetByIds(ids []*int) ([]models.Billing, error) {
+	var result []models.Billing
 
-	err := DB.Where("id IN ?", ids).Find(&result).Error
+	err := r.DB.Where("id IN ?", ids).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -69,10 +55,10 @@ func (r *Billing) GetByIds(ids []*int) ([]Billing, error) {
 }
 
 // GetAll ...
-func (r *Billing) GetAll(p PaginationInput) ([]Billing, int64, error) {
-	var result []Billing
+func (r *BillingRepository) GetAll(p PaginationInput) ([]models.Billing, int64, error) {
+	var result []models.Billing
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -87,10 +73,10 @@ func (r *Billing) GetAll(p PaginationInput) ([]Billing, int64, error) {
 }
 
 // GetConsultationBillings ...
-func (r *Billing) GetConsultationBillings() ([]*Billing, error) {
-	var result []*Billing
+func (r *BillingRepository) GetConsultationBillings() ([]*models.Billing, error) {
+	var result []*models.Billing
 
-	err := DB.Where("item ILIKE ?", "%Consultation%").Find(&result).Error
+	err := r.DB.Where("item ILIKE ?", "%Consultation%").Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -100,10 +86,10 @@ func (r *Billing) GetConsultationBillings() ([]*Billing, error) {
 }
 
 // Search ...
-func (r *Billing) Search(p PaginationInput, filter *Billing, searchTerm *string) ([]Billing, int64, error) {
-	var result []Billing
+func (r *BillingRepository) Search(p models.PaginationInput, filter *models.Billing, searchTerm *string) ([]models.Billing, int64, error) {
+	var result []models.Billing
 
-	tx := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC")
+	tx := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC")
 
 	if searchTerm != nil {
 		tx.Where("document @@ plainto_tsquery(?)", *searchTerm)
@@ -124,17 +110,11 @@ func (r *Billing) Search(p PaginationInput, filter *Billing, searchTerm *string)
 }
 
 // Update ...
-func (r *Billing) Update() (*Billing, error) {
-	err := DB.Save(&r).Error
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+func (r *BillingRepository) Update(m *models.Billing) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Billing) Delete(ID int) error {
-	var e Billing
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *BillingRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Billing{}).Error
 }

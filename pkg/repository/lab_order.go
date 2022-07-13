@@ -24,91 +24,73 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
-// LabOrderStatus
-type LabOrderStatus string
+type LabOrderRepository struct {
+	DB *gorm.DB
+}
 
-// LabOrder statuses
-const (
-	LabOrderOrderedStatus   LabOrderStatus = "ORDERED"
-	LabOrderCompletedStatus LabOrderStatus = "COMPLETED"
-)
-
-// LabOrder ...
-type LabOrder struct {
-	gorm.Model
-	ID             int            `gorm:"primaryKey"`
-	PatientChartID int            `json:"patientChartId"`
-	PatientID      int            `json:"patientId"`
-	FirstName      string         `json:"firstName"`
-	LastName       string         `json:"lastName"`
-	PhoneNo        string         `json:"phoneNo"`
-	UserName       string         `json:"userName"`
-	OrderedByID    *int           `json:"orderedById"`
-	OrderedBy      *User          `json:"orderedBy"`
-	Status         LabOrderStatus `json:"status"`
-	Labs           []Lab          `json:"labs"`
-	Document       string         `gorm:"type:tsvector"`
-	Count          int64          `json:"count"`
+func ProvideLabOrderRepository(DB *gorm.DB) LabOrderRepository {
+	return LabOrderRepository{DB: DB}
 }
 
 // NewOrder ...
-func (r *LabOrder) Save(labTypeID int, patientChartID int, patientID int, billingIds []int, user User, orderNote string, receptionNote string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *LabOrderRepository) Save(m *models.LabOrder, labTypeID int, patientChartID int, patientID int, billingIds []int, user models.User, orderNote string, receptionNote string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get Patient
-		var patient Patient
-		if err := tx.Model(&Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
+		var patient models.Patient
+		if err := tx.Model(&models.Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
 		// Lab Type
-		var labType LabType
-		if err := tx.Model(&LabType{}).Where("id = ?", labTypeID).Take(&labType).Error; err != nil {
+		var labType models.LabType
+		if err := tx.Model(&models.LabType{}).Where("id = ?", labTypeID).Take(&labType).Error; err != nil {
 			return err
 		}
 
 		// Create payments
-		var payments []Payment
+		var payments []models.Payment
 		for _, billingId := range billingIds {
-			var payment Payment
-			payment.Status = NotPaidPaymentStatus
+			var payment models.Payment
+			payment.Status = models.NotPaidPaymentStatus
 			payment.BillingID = billingId
 			payments = append(payments, payment)
 		}
 
-		r.PatientChartID = patientChartID
-		r.PatientID = patientID
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = user.FirstName + " " + user.LastName
-		r.OrderedByID = &user.ID
-		r.Status = LabOrderOrderedStatus
+		m.PatientChartID = patientChartID
+		m.PatientID = patientID
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = user.FirstName + " " + user.LastName
+		m.OrderedByID = &user.ID
+		m.Status = models.LabOrderOrderedStatus
 
-		var existing LabOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.LabOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
 		// Create Lab
-		var lab Lab
+		var lab models.Lab
 		lab.LabTypeID = labType.ID
-		lab.LabOrderID = r.ID
+		lab.LabOrderID = m.ID
 		lab.PatientChartID = patientChartID
 		lab.Payments = payments
-		lab.Status = LabOrderedStatus
+		lab.Status = models.LabOrderedStatus
 		lab.LabTypeTitle = labType.Title
 		lab.OrderNote = orderNote
 		lab.ReceptionNote = receptionNote
@@ -122,13 +104,13 @@ func (r *LabOrder) Save(labTypeID int, patientChartID int, patientID int, billin
 }
 
 // GetTodaysOrderedCount ...
-func (r *LabOrder) GetTodaysOrderedCount() (count int) {
+func (r *LabOrderRepository) GetTodaysOrderedCount() (count int) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
 	var countTmp int64
-	err := DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", LabOrderOrderedStatus).Count(&countTmp).Error
+	err := r.DB.Model(&models.LabOrder{}).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.LabOrderOrderedStatus).Count(&countTmp).Error
 	if err != nil {
 		countTmp = 0
 	}
@@ -139,14 +121,14 @@ func (r *LabOrder) GetTodaysOrderedCount() (count int) {
 }
 
 // Confirm ...
-func (r *LabOrder) Confirm(id int, invoiceNo string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Preload("Labs.Payments").Take(&r).Error; err != nil {
+func (r *LabOrderRepository) Confirm(m *models.LabOrder, id int, invoiceNo string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", id).Preload("Labs.Payments").Take(&m).Error; err != nil {
 			return err
 		}
 
-		var payments []Payment
-		for _, lab := range r.Labs {
+		var payments []models.Payment
+		for _, lab := range m.Labs {
 			payments = append(payments, lab.Payments...)
 		}
 
@@ -155,29 +137,29 @@ func (r *LabOrder) Confirm(id int, invoiceNo string) error {
 			paymentIds = append(paymentIds, payment.ID)
 		}
 
-		if err := tx.Model(&Payment{}).Where("id IN ?", paymentIds).Updates(map[string]interface{}{"invoice_no": invoiceNo, "status": "PAID"}).Error; err != nil {
+		if err := tx.Model(&models.Payment{}).Where("id IN ?", paymentIds).Updates(map[string]interface{}{"invoice_no": invoiceNo, "status": "PAID"}).Error; err != nil {
 			return err
 		}
 
-		r.Status = LabOrderCompletedStatus
+		m.Status = models.LabOrderCompletedStatus
 
-		if err := tx.Updates(&r).Error; err != nil {
+		if err := tx.Updates(&m).Error; err != nil {
 			return err
 		}
 
 		// Add to Lab Queue
-		var patientChart PatientChart
-		if err := tx.Where("id = ?", r.PatientChartID).Take(&patientChart).Error; err != nil {
+		var patientChart models.PatientChart
+		if err := tx.Where("id = ?", m.PatientChartID).Take(&patientChart).Error; err != nil {
 			return err
 		}
 
-		for _, lab := range r.Labs {
-			var patientQueue PatientQueue
+		for _, lab := range m.Labs {
+			var patientQueue models.PatientQueue
 
 			// Create new patient queue if it doesn't exists
 			if err := tx.Where("queue_name = ?", lab.LabTypeTitle).Take(&patientQueue).Error; err != nil {
 				patientQueue.QueueName = lab.LabTypeTitle
-				patientQueue.QueueType = LabQueue
+				patientQueue.QueueType = models.LabQueue
 				patientQueue.Queue = datatypes.JSON([]byte("[" + fmt.Sprint(patientChart.AppointmentID) + "]"))
 
 				if err := tx.Create(&patientQueue).Error; err != nil {
@@ -209,7 +191,7 @@ func (r *LabOrder) Confirm(id int, invoiceNo string) error {
 
 				queue := datatypes.JSON([]byte("[" + strings.Join(appointmentIds, ", ") + "]"))
 
-				if err := tx.Where("queue_name = ?", lab.LabTypeTitle).Updates(&PatientQueue{Queue: queue}).Error; err != nil {
+				if err := tx.Where("queue_name = ?", lab.LabTypeTitle).Updates(&models.PatientQueue{Queue: queue}).Error; err != nil {
 					return err
 				}
 			}
@@ -220,8 +202,8 @@ func (r *LabOrder) Confirm(id int, invoiceNo string) error {
 }
 
 // GetCount ...
-func (r *LabOrder) GetCount(filter *LabOrder, date *time.Time, searchTerm *string) (int64, error) {
-	dbOp := DB.Model(&r).Where(filter)
+func (r *LabOrderRepository) GetCount(filter *models.LabOrder, date *time.Time, searchTerm *string) (int64, error) {
+	dbOp := r.DB.Model(&models.LabOrder{}).Where(filter)
 
 	if date != nil {
 		createdAt := *date
@@ -241,10 +223,10 @@ func (r *LabOrder) GetCount(filter *LabOrder, date *time.Time, searchTerm *strin
 }
 
 // Search ...
-func (r *LabOrder) Search(p PaginationInput, filter *LabOrder, date *time.Time, searchTerm *string, ascending bool) ([]LabOrder, int64, error) {
-	var result []LabOrder
+func (r *LabOrderRepository) Search(p models.PaginationInput, filter *models.LabOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.LabOrder, int64, error) {
+	var result []models.LabOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Labs.Payments.Billing").Preload("Labs.LabType").Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Labs.Payments.Billing").Preload("Labs.LabType").Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date
@@ -278,20 +260,20 @@ func (r *LabOrder) Search(p PaginationInput, filter *LabOrder, date *time.Time, 
 }
 
 // Get ...
-func (r *LabOrder) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *LabOrderRepository) Get(m *models.LabOrder, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientChartID ...
-func (r *LabOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("Labs.Payments").Preload("Labs.LabType").Preload("Labs.RightEyeImages").Preload("Labs.LeftEyeImages").Preload("Labs.RightEyeSketches").Preload("Labs.LeftEyeSketches").Preload("Labs.Images").Preload("Labs.Documents").Take(&r).Error
+func (r *LabOrderRepository) GetByPatientChartID(m *models.LabOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("Labs.Payments").Preload("Labs.LabType").Preload("Labs.RightEyeImages").Preload("Labs.LeftEyeImages").Preload("Labs.RightEyeSketches").Preload("Labs.LeftEyeSketches").Preload("Labs.Images").Preload("Labs.Documents").Take(&m).Error
 }
 
 // GetAll ...
-func (r *LabOrder) GetAll(p PaginationInput, filter *LabOrder) ([]LabOrder, int64, error) {
-	var result []LabOrder
+func (r *LabOrderRepository) GetAll(p PaginationInput, filter *models.LabOrder) ([]models.LabOrder, int64, error) {
+	var result []models.LabOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Labs").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Labs").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -306,11 +288,11 @@ func (r *LabOrder) GetAll(p PaginationInput, filter *LabOrder) ([]LabOrder, int6
 }
 
 // Update ...
-func (r *LabOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *LabOrderRepository) Update(m *models.LabOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *LabOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *LabOrderRepository) Delete(m *models.LabOrder, ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&m).Error
 }
