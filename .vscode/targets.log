@@ -8,11 +8,15 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This program built for i386-apple-darwin11.3.0
  
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 # Make data base, printed on Thu Jun 30 18:15:57 2022
 =======
 # Make data base, printed on Wed Jul 13 15:50:26 2022
 >>>>>>> Stashed changes
+=======
+# Make data base, printed on Fri Jul  8 09:21:03 2022
+>>>>>>> 554ab2b79adffa85b73726e0084f28bd7bb9e175
 
 # Variables
 
@@ -22,8 +26,6 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 ?F = $(notdir $?)
 # makefile (from `Makefile', line 20)
 MAIN_FILE := "main.go"
-# environment
-VSCODE_LOG_NATIVE = false
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # automatic
@@ -33,6 +35,7 @@ VSCODE_LOG_NATIVE = false
 # makefile
 CURDIR := /Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server
 # makefile
+ 
 SHELL = /bin/sh
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
@@ -46,11 +49,7 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
  
 VERSION := 0.1.0
 # environment
-VSCODE_VERBOSE_LOGGING = true
-# environment
 __CFBundleIdentifier = com.microsoft.VSCode
-# environment
-VSCODE_IPC_HOOK_EXTHOST = /var/folders/bc/bldhvp756414fq3sjrp6941w0000gn/T/vscode-ipc-9e0f7fb8-4d5d-4bc4-ba73-2425c3b3b726.sock
 # environment
 VSCODE_CWD = /
 # environment
@@ -60,19 +59,15 @@ PATH = /opt/homebrew/bin:/opt/homebrew/bin:/Users/kidustiliksew/google-cloud-sdk
 # environment
 GOPATH = /Users/kidustiliksew/go
 # makefile (from `Makefile', line 21)
-PKG_LIST := github.com/tensoremr/server github.com/tensoremr/server/pkg/auth github.com/tensoremr/server/pkg/conf github.com/tensoremr/server/pkg/controller github.com/tensoremr/server/pkg/graphql/graph github.com/tensoremr/server/pkg/graphql/graph/generated github.com/tensoremr/server/pkg/graphql/graph/model github.com/tensoremr/server/pkg/jwt github.com/tensoremr/server/pkg/middleware github.com/tensoremr/server/pkg/repository github.com/tensoremr/server/pkg/server github.com/tensoremr/server/pkg/util
-# environment
-VSCODE_LOG_STACK = false
+PKG_LIST := github.com/tensoremr/server github.com/tensoremr/server/pkg/auth github.com/tensoremr/server/pkg/conf github.com/tensoremr/server/pkg/controller github.com/tensoremr/server/pkg/graphql/graph github.com/tensoremr/server/pkg/graphql/graph/generated github.com/tensoremr/server/pkg/graphql/graph/model github.com/tensoremr/server/pkg/jwt github.com/tensoremr/server/pkg/middleware github.com/tensoremr/server/pkg/models github.com/tensoremr/server/pkg/repository github.com/tensoremr/server/pkg/server github.com/tensoremr/server/pkg/util
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
 .FEATURES := target-specific order-only second-expansion else-if archives jobserver check-symlink
 # environment
-SSH_AUTH_SOCK = /private/tmp/com.apple.launchd.TBfxwDeo09/Listeners
+SSH_AUTH_SOCK = /private/tmp/com.apple.launchd.h8FuW4TWPe/Listeners
 # automatic
 %F = $(notdir $%)
-# environment
-VSCODE_PIPE_LOGGING = true
 # environment
 PWD = /Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server
 # makefile (from `Makefile', line 19)
@@ -86,7 +81,7 @@ HOME = /Users/kidustiliksew
 # default
 MAKEFILEPATH := /Applications/Xcode.app/Contents/Developer/Makefiles
 # environment
-VSCODE_CODE_CACHE_PATH = /Users/kidustiliksew/Library/Application Support/Code/CachedData/30d9c6cd9483b2cc586687151bcbcd635f373630
+VSCODE_CODE_CACHE_PATH = /Users/kidustiliksew/Library/Application Support/Code/CachedData/92d25e35d9bf1a6b16f7d0758f25d48ace11e5b9
 # environment
 LOGNAME = kidustiliksew
 # environment
@@ -120,7 +115,9 @@ TMPDIR = /var/folders/bc/bldhvp756414fq3sjrp6941w0000gn/T/
 # automatic
 *F = $(notdir $*)
 # environment
-VSCODE_IPC_HOOK = /Users/kidustiliksew/Library/Application Support/Code/1.68.1-main.sock
+VSCODE_IPC_HOOK = /Users/kidustiliksew/Library/Application Support/Code/1.69.0-main.sock
+# environment
+MallocNanoZone = 0
 # makefile
 MAKEFLAGS = Rrqp
 # environment
@@ -128,7 +125,7 @@ MFLAGS = -Rrqp
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
-XPC_SERVICE_NAME = application.com.microsoft.VSCode.73089102.73089108
+XPC_SERVICE_NAME = application.com.microsoft.VSCode.74768022.74768028
 # automatic
 +D = $(patsubst %/,%,$(dir $+))
 # automatic
@@ -154,6 +151,7 @@ SUFFIXES :=
 # default
 .INCLUDE_DIRS = /usr/local/include
 # makefile (from `Makefile', line 22)
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 GO_FILES := ./main.go ./pkg/jwt/jwt.go ./pkg/middleware/middleware.go ./pkg/repository/ophthalmology_exam.go ./pkg/repository/models.go ./pkg/repository/physical_exam_finding.go ./pkg/repository/surgical_procedure_type.go ./pkg/repository/allergy.go ./pkg/repository/chat_delete.go ./pkg/repository/system_symptom.go ./pkg/repository/favorite_diagnosis.go ./pkg/repository/exam_finding.go ./pkg/repository/billing.go ./pkg/repository/referral_order.go ./pkg/repository/treatment.go ./pkg/repository/payment_waiver.go ./pkg/repository/surgical_order.go ./pkg/repository/system.go ./pkg/repository/treatment_order.go ./pkg/repository/past_hospitalization.go ./pkg/repository/user.go ./pkg/repository/user_type.go ./pkg/repository/family_illness.go ./pkg/repository/patient_encounter_limit.go ./pkg/repository/past_opt_surgery.go ./pkg/repository/lifestyle_type.go ./pkg/repository/favorite_medication.go ./pkg/repository/ocular_motility.go ./pkg/repository/chief_complaint.go ./pkg/repository/follow_up.go ./pkg/repository/vital_signs.go ./pkg/repository/queue_destination.go ./pkg/repository/diagnosis.go ./pkg/repository/past_illness.go ./pkg/repository/surgical_procedure.go ./pkg/repository/page.go ./pkg/repository/visit_type.go ./pkg/repository/past_injury.go ./pkg/repository/chat_message.go ./pkg/repository/order.go ./pkg/repository/hpi_component_type.go ./pkg/repository/eyewear_prescription.go ./pkg/repository/chief_complaint_type.go ./pkg/repository/patient_diagnosis.go ./pkg/repository/chat_member.go ./pkg/repository/patient.go ./pkg/repository/medical_prescription_order.go ./pkg/repository/lab_type.go ./pkg/repository/amendment.go ./pkg/repository/exam_category.go ./pkg/repository/patient_queue.go ./pkg/repository/favorite_chief_complaint.go ./pkg/repository/cover_test_entity.go ./pkg/repository/organization_details.go ./pkg/repository/auto_refraction.go ./pkg/repository/slit_lamp_exam.go ./pkg/repository/diagnostic_procedure.go ./pkg/repository/chat_mute.go ./pkg/repository/funduscopy.go ./pkg/repository/optic_disc.go ./pkg/repository/diagnostic_procedure_order.go ./pkg/repository/file.go ./pkg/repository/diagnostic_procedure_type.go ./pkg/repository/eyewear_shop.go ./pkg/repository/appointment_queue.go ./pkg/repository/chat.go ./pkg/repository/review_of_system.go ./pkg/repository/past_illness_type.go ./pkg/repository/medical_prescription.go ./pkg/repository/lab_order.go ./pkg/repository/pupils.go ./pkg/repository/supply.go ./pkg/repository/lifestyle.go ./pkg/repository/treatment_type.go ./pkg/repository/past_surgery.go ./pkg/repository/lab.go ./pkg/repository/pharmacy.go ./pkg/repository/room.go ./pkg/repository/referral.go ./pkg/repository/iop.go ./pkg/repository/payment.go ./pkg/repository/eyewear_prescription_order.go ./pkg/repository/chat_unread_message.go ./pkg/repository/visual_acuity.go ./pkg/repository/appointment.go ./pkg/repository/external_exam.go ./pkg/repository/patient_history.go ./pkg/repository/patient_chart.go ./pkg/repository/hpi_component.go ./pkg/repository/queue_subscription.go ./pkg/repository/appointmen 
 t_status.go ./pkg/repository/follow_up_order.go ./pkg/util/util.go ./pkg/auth/auth.go ./pkg/server/server.go ./pkg/controller/user_type.go ./pkg/controller/test.go ./pkg/controller/rxnorm.go ./pkg/controller/patient_queue.go ./pkg/controller/organization_details.go ./pkg/graphql/graph/generated/generated.go ./pkg/graphql/graph/prescription.resolvers.go ./pkg/graphql/graph/treatment.resolvers.go ./pkg/graphql/graph/lifestyle_type.resolvers.go ./pkg/graphql/graph/room.resolvers.go ./pkg/graphql/graph/physical_exam.resolvers.go ./pkg/graphql/graph/eyewear_shop.resolvers.go ./pkg/graphql/graph/review_of_systems.resolvers.go ./pkg/graphql/graph/page.go ./pkg/graphql/graph/surgical_procedure.resolvers.go ./pkg/graphql/graph/favorite_diagnosis.resolvers.go ./pkg/graphql/graph/favorite_chief_complaints.resolvers.go ./pkg/graphql/graph/organization_details.resolvers.go ./pkg/graphql/graph/past_illness_type.resolvers.go ./pkg/graphql/graph/appointment.resolvers.go ./pkg/graphql/graph/search.resolvers.go ./pkg/graphql/graph/billing.resolvers.go ./pkg/graphql/graph/pharmacy.resolvers.go ./pkg/graphql/graph/allergy.resolvers.go ./pkg/graphql/graph/visit_type.resolvers.go ./pkg/graphql/graph/user.resolvers.go ./pkg/graphql/graph/supply.resolvers.go ./pkg/graphql/graph/resolver.go ./pkg/graphql/graph/patient_encounter_limit.resolvers.go ./pkg/graphql/graph/referral.resolvers.go ./pkg/graphql/graph/patient_diagnosis.resolvers.go ./pkg/graphql/graph/model/models_gen.go ./pkg/graphql/graph/patient_chart.resolvers.go ./pkg/graphql/graph/amendment.resolvers.go ./pkg/graphql/graph/chief_complaint_type.resolvers.go ./pkg/graphql/graph/chief_complaint.resolvers.go ./pkg/graphql/graph/lab.resolvers.go ./pkg/graphql/graph/follow_up.resolvers.go ./pkg/graphql/graph/hpi.resolvers.go ./pkg/graphql/graph/order.resolvers.go ./pkg/graphql/graph/file.resolvers.go ./pkg/graphql/graph/payment.resolvers.go ./pkg/graphql/graph/schema.resolvers.go ./pkg/graphql/graph/payment_waiver.resolvers.go ./pkg/graphql/graph/diagnosis.resolvers.go ./pkg/graphql/graph/notif.resolvers.go ./pkg/graphql/graph/diagnostic_procedure.resolvers.go ./pkg/graphql/graph/patient_history.resolvers.go ./pkg/graphql/graph/chat.resolvers.go ./pkg/graphql/graph/favorite_medication.resolvers.go ./pkg/graphql/graph/patient_queue.resolvers.go ./pkg/graphql/graph/patient.resolvers.go ./pkg/conf/config.go
@@ -161,14 +159,20 @@ t_status.go ./pkg/repository/follow_up_order.go ./pkg/util/util.go ./pkg/auth/au
 GO_FILES := ./main.go ./pkg/jwt/jwt.go ./pkg/middleware/middleware.go ./pkg/repository/ophthalmology_exam.go ./pkg/repository/physical_exam_finding.go ./pkg/repository/surgical_procedure_type.go ./pkg/repository/allergy.go ./pkg/repository/chat_delete.go ./pkg/repository/system_symptom.go ./pkg/repository/favorite_diagnosis.go ./pkg/repository/exam_finding.go ./pkg/repository/billing.go ./pkg/repository/referral_order.go ./pkg/repository/treatment.go ./pkg/repository/payment_waiver.go ./pkg/repository/surgical_order.go ./pkg/repository/system.go ./pkg/repository/treatment_order.go ./pkg/repository/past_hospitalization.go ./pkg/repository/user.go ./pkg/repository/user_type.go ./pkg/repository/family_illness.go ./pkg/repository/patient_encounter_limit.go ./pkg/repository/past_opt_surgery.go ./pkg/repository/lifestyle_type.go ./pkg/repository/favorite_medication.go ./pkg/repository/ocular_motility.go ./pkg/repository/chief_complaint.go ./pkg/repository/follow_up.go ./pkg/repository/vital_signs.go ./pkg/repository/queue_destination.go ./pkg/repository/diagnosis.go ./pkg/repository/past_illness.go ./pkg/repository/surgical_procedure.go ./pkg/repository/page.go ./pkg/repository/visit_type.go ./pkg/repository/past_injury.go ./pkg/repository/chat_message.go ./pkg/repository/hpi_component_type.go ./pkg/repository/eyewear_prescription.go ./pkg/repository/chief_complaint_type.go ./pkg/repository/patient_diagnosis.go ./pkg/repository/chat_member.go ./pkg/repository/patient.go ./pkg/repository/medical_prescription_order.go ./pkg/repository/lab_type.go ./pkg/repository/amendment.go ./pkg/repository/exam_category.go ./pkg/repository/patient_queue.go ./pkg/repository/favorite_chief_complaint.go ./pkg/repository/cover_test_entity.go ./pkg/repository/organization_details.go ./pkg/repository/auto_refraction.go ./pkg/repository/slit_lamp_exam.go ./pkg/repository/diagnostic_procedure.go ./pkg/repository/chat_mute.go ./pkg/repository/funduscopy.go ./pkg/repository/optic_disc.go ./pkg/repository/diagnostic_procedure_order.go ./pkg/repository/file.go ./pkg/repository/diagnostic_procedure_type.go ./pkg/repository/eyewear_shop.go ./pkg/repository/appointment_queue.go ./pkg/repository/chat.go ./pkg/repository/review_of_system.go ./pkg/repository/past_illness_type.go ./pkg/repository/medical_prescription.go ./pkg/repository/lab_order.go ./pkg/repository/pupils.go ./pkg/repository/supply.go ./pkg/repository/lifestyle.go ./pkg/repository/treatment_type.go ./pkg/repository/past_surgery.go ./pkg/repository/lab.go ./pkg/repository/pharmacy.go ./pkg/repository/room.go ./pkg/repository/referral.go ./pkg/repository/iop.go ./pkg/repository/payment.go ./pkg/repository/eyewear_prescription_order.go ./pkg/repository/chat_unread_message.go ./pkg/repository/visual_acuity.go ./pkg/repository/appointment.go ./pkg/repository/external_exam.go ./pkg/repository/patient_history.go ./pkg/repository/patient_chart.go ./pkg/repository/hpi_component.go ./pkg/repository/queue_subscription.go ./pkg/repository/appointment_status.go ./pkg/repository/follow_up_order.go ./pkg/util/util.go ./pkg/auth/auth.go ./pkg/server/server.go ./pkg/models/ophthalmology_exam.go ./pkg/models/models.go ./pkg/models/physical_exam_finding.go ./pkg/models/surgical_procedure_type.go ./pkg/models/allergy.go ./pkg/models/chat_delete.go ./pkg/models/system_symptom.go ./pkg/models/favorite_diagnosis.go ./pkg/models/exam_finding.go ./pkg/models/billing.go ./pkg/models/referral_order.go ./pkg/models/treatment.go ./pkg/models/payment_waiver.go ./pkg/models/surgical_order.go ./pkg/models/system.go ./pkg/models/treatment_order.go ./pkg/models/past_hospitalization.go ./pkg/models/user.go ./pkg/models/user_type.go ./pkg/models/family_illness.go ./pkg/models/patient_encounter_limit.go ./pkg/models/past_opt_surgery.go ./pkg/models/lifestyle_type.go ./pkg/models/favorite_medication.go ./pkg/models/ocular_motility.go ./pkg/models/chief_complaint.go ./pkg/models/follow_up.go ./pkg/models/vital_signs.go ./pkg/models/queue_destination.go ./pkg/models/diagnosis.go ./pkg/models/past_illness.go ./pkg/models/surgical_pro 
 cedure.go ./pkg/models/page.go ./pkg/models/visit_type.go ./pkg/models/past_injury.go ./pkg/models/chat_message.go ./pkg/models/hpi_component_type.go ./pkg/models/eyewear_prescription.go ./pkg/models/chief_complaint_type.go ./pkg/models/patient_diagnosis.go ./pkg/models/chat_member.go ./pkg/models/patient.go ./pkg/models/medical_prescription_order.go ./pkg/models/lab_type.go ./pkg/models/amendment.go ./pkg/models/exam_category.go ./pkg/models/patient_queue.go ./pkg/models/favorite_chief_complaint.go ./pkg/models/cover_test_entity.go ./pkg/models/organization_details.go ./pkg/models/auto_refraction.go ./pkg/models/slit_lamp_exam.go ./pkg/models/diagnostic_procedure.go ./pkg/models/chat_mute.go ./pkg/models/funduscopy.go ./pkg/models/optic_disc.go ./pkg/models/diagnostic_procedure_order.go ./pkg/models/file.go ./pkg/models/diagnostic_procedure_type.go ./pkg/models/eyewear_shop.go ./pkg/models/appointment_queue.go ./pkg/models/chat.go ./pkg/models/review_of_system.go ./pkg/models/past_illness_type.go ./pkg/models/medical_prescription.go ./pkg/models/lab_order.go ./pkg/models/pupils.go ./pkg/models/supply.go ./pkg/models/lifestyle.go ./pkg/models/treatment_type.go ./pkg/models/past_surgery.go ./pkg/models/lab.go ./pkg/models/pharmacy.go ./pkg/models/room.go ./pkg/models/referral.go ./pkg/models/iop.go ./pkg/models/payment.go ./pkg/models/eyewear_prescription_order.go ./pkg/models/chat_unread_message.go ./pkg/models/visual_acuity.go ./pkg/models/appointment.go ./pkg/models/external_exam.go ./pkg/models/patient_history.go ./pkg/models/patient_chart.go ./pkg/models/hpi_component.go ./pkg/models/queue_subscription.go ./pkg/models/appointment_status.go ./pkg/models/follow_up_order.go ./pkg/controller/user_type.go ./pkg/controller/test.go ./pkg/controller/rxnorm.go ./pkg/controller/patient_queue.go ./pkg/controller/organization_details.go ./pkg/graphql/graph/generated/generated.go ./pkg/graphql/graph/prescription.resolvers.go ./pkg/graphql/graph/treatment.resolvers.go ./pkg/graphql/graph/lifestyle_type.resolvers.go ./pkg/graphql/graph/room.resolvers.go ./pkg/graphql/graph/physical_exam.resolvers.go ./pkg/graphql/graph/eyewear_shop.resolvers.go ./pkg/graphql/graph/review_of_systems.resolvers.go ./pkg/graphql/graph/page.go ./pkg/graphql/graph/surgical_procedure.resolvers.go ./pkg/graphql/graph/favorite_diagnosis.resolvers.go ./pkg/graphql/graph/favorite_chief_complaints.resolvers.go ./pkg/graphql/graph/organization_details.resolvers.go ./pkg/graphql/graph/past_illness_type.resolvers.go ./pkg/graphql/graph/appointment.resolvers.go ./pkg/graphql/graph/search.resolvers.go ./pkg/graphql/graph/billing.resolvers.go ./pkg/graphql/graph/pharmacy.resolvers.go ./pkg/graphql/graph/allergy.resolvers.go ./pkg/graphql/graph/visit_type.resolvers.go ./pkg/graphql/graph/user.resolvers.go ./pkg/graphql/graph/supply.resolvers.go ./pkg/graphql/graph/resolver.go ./pkg/graphql/graph/patient_encounter_limit.resolvers.go ./pkg/graphql/graph/referral.resolvers.go ./pkg/graphql/graph/patient_diagnosis.resolvers.go ./pkg/graphql/graph/model/models_gen.go ./pkg/graphql/graph/patient_chart.resolvers.go ./pkg/graphql/graph/amendment.resolvers.go ./pkg/graphql/graph/chief_complaint_type.resolvers.go ./pkg/graphql/graph/chief_complaint.resolvers.go ./pkg/graphql/graph/lab.resolvers.go ./pkg/graphql/graph/follow_up.resolvers.go ./pkg/graphql/graph/hpi.resolvers.go ./pkg/graphql/graph/file.resolvers.go ./pkg/graphql/graph/payment.resolvers.go ./pkg/graphql/graph/schema.resolvers.go ./pkg/graphql/graph/payment_waiver.resolvers.go ./pkg/graphql/graph/diagnosis.resolvers.go ./pkg/graphql/graph/notif.resolvers.go ./pkg/graphql/graph/diagnostic_procedure.resolvers.go ./pkg/graphql/graph/patient_history.resolvers.go ./pkg/graphql/graph/chat.resolvers.go ./pkg/graphql/graph/favorite_medication.resolvers.go ./pkg/graphql/graph/patient_queue.resolvers.go ./pkg/graphql/graph/patient.resolvers.go ./pkg/conf/config.go
 >>>>>>> Stashed changes
+=======
+GO_FILES := ./main.go ./pkg/jwt/jwt.go ./pkg/middleware/middleware.go ./pkg/repository/ophthalmology_exam.go ./pkg/repository/physical_exam_finding.go ./pkg/repository/surgical_procedure_type.go ./pkg/repository/allergy.go ./pkg/repository/chat_delete.go ./pkg/repository/system_symptom.go ./pkg/repository/favorite_diagnosis.go ./pkg/repository/exam_finding.go ./pkg/repository/billing.go ./pkg/repository/referral_order.go ./pkg/repository/treatment.go ./pkg/repository/payment_waiver.go ./pkg/repository/surgical_order.go ./pkg/repository/system.go ./pkg/repository/treatment_order.go ./pkg/repository/past_hospitalization.go ./pkg/repository/user.go ./pkg/repository/user_type.go ./pkg/repository/family_illness.go ./pkg/repository/patient_encounter_limit.go ./pkg/repository/past_opt_surgery.go ./pkg/repository/lifestyle_type.go ./pkg/repository/favorite_medication.go ./pkg/repository/ocular_motility.go ./pkg/repository/chief_complaint.go ./pkg/repository/follow_up.go ./pkg/repository/vital_signs.go ./pkg/repository/queue_destination.go ./pkg/repository/diagnosis.go ./pkg/repository/past_illness.go ./pkg/repository/surgical_procedure.go ./pkg/repository/page.go ./pkg/repository/visit_type.go ./pkg/repository/past_injury.go ./pkg/repository/chat_message.go ./pkg/repository/hpi_component_type.go ./pkg/repository/eyewear_prescription.go ./pkg/repository/chief_complaint_type.go ./pkg/repository/patient_diagnosis.go ./pkg/repository/chat_member.go ./pkg/repository/patient.go ./pkg/repository/medical_prescription_order.go ./pkg/repository/lab_type.go ./pkg/repository/amendment.go ./pkg/repository/exam_category.go ./pkg/repository/patient_queue.go ./pkg/repository/favorite_chief_complaint.go ./pkg/repository/cover_test_entity.go ./pkg/repository/organization_details.go ./pkg/repository/auto_refraction.go ./pkg/repository/slit_lamp_exam.go ./pkg/repository/diagnostic_procedure.go ./pkg/repository/chat_mute.go ./pkg/repository/funduscopy.go ./pkg/repository/optic_disc.go ./pkg/repository/diagnostic_procedure_order.go ./pkg/repository/file.go ./pkg/repository/diagnostic_procedure_type.go ./pkg/repository/eyewear_shop.go ./pkg/repository/appointment_queue.go ./pkg/repository/chat.go ./pkg/repository/review_of_system.go ./pkg/repository/past_illness_type.go ./pkg/repository/medical_prescription.go ./pkg/repository/lab_order.go ./pkg/repository/pupils.go ./pkg/repository/supply.go ./pkg/repository/lifestyle.go ./pkg/repository/treatment_type.go ./pkg/repository/past_surgery.go ./pkg/repository/lab.go ./pkg/repository/pharmacy.go ./pkg/repository/room.go ./pkg/repository/referral.go ./pkg/repository/iop.go ./pkg/repository/payment.go ./pkg/repository/eyewear_prescription_order.go ./pkg/repository/chat_unread_message.go ./pkg/repository/visual_acuity.go ./pkg/repository/appointment.go ./pkg/repository/external_exam.go ./pkg/repository/patient_history.go ./pkg/repository/patient_chart.go ./pkg/repository/hpi_component.go ./pkg/repository/queue_subscription.go ./pkg/repository/appointment_status.go ./pkg/repository/follow_up_order.go ./pkg/util/util.go ./pkg/auth/auth.go ./pkg/server/server.go ./pkg/server/wire.go ./pkg/models/ophthalmology_exam.go ./pkg/models/models.go ./pkg/models/physical_exam_finding.go ./pkg/models/surgical_procedure_type.go ./pkg/models/allergy.go ./pkg/models/chat_delete.go ./pkg/models/system_symptom.go ./pkg/models/favorite_diagnosis.go ./pkg/models/exam_finding.go ./pkg/models/billing.go ./pkg/models/referral_order.go ./pkg/models/treatment.go ./pkg/models/payment_waiver.go ./pkg/models/surgical_order.go ./pkg/models/system.go ./pkg/models/treatment_order.go ./pkg/models/past_hospitalization.go ./pkg/models/user.go ./pkg/models/user_type.go ./pkg/models/family_illness.go ./pkg/models/patient_encounter_limit.go ./pkg/models/past_opt_surgery.go ./pkg/models/lifestyle_type.go ./pkg/models/favorite_medication.go ./pkg/models/ocular_motility.go ./pkg/models/chief_complaint.go ./pkg/models/follow_up.go ./pkg/models/vital_signs.go ./pkg/models/queue_destination.go ./pkg/models/diagnosis.go ./pkg/models/past_illness.go ./pk 
+g/models/surgical_procedure.go ./pkg/models/page.go ./pkg/models/visit_type.go ./pkg/models/past_injury.go ./pkg/models/chat_message.go ./pkg/models/hpi_component_type.go ./pkg/models/eyewear_prescription.go ./pkg/models/chief_complaint_type.go ./pkg/models/patient_diagnosis.go ./pkg/models/chat_member.go ./pkg/models/patient.go ./pkg/models/medical_prescription_order.go ./pkg/models/lab_type.go ./pkg/models/amendment.go ./pkg/models/exam_category.go ./pkg/models/patient_queue.go ./pkg/models/favorite_chief_complaint.go ./pkg/models/cover_test_entity.go ./pkg/models/organization_details.go ./pkg/models/auto_refraction.go ./pkg/models/slit_lamp_exam.go ./pkg/models/diagnostic_procedure.go ./pkg/models/chat_mute.go ./pkg/models/funduscopy.go ./pkg/models/optic_disc.go ./pkg/models/diagnostic_procedure_order.go ./pkg/models/file.go ./pkg/models/diagnostic_procedure_type.go ./pkg/models/eyewear_shop.go ./pkg/models/appointment_queue.go ./pkg/models/chat.go ./pkg/models/review_of_system.go ./pkg/models/past_illnes 
+s_type.go ./pkg/models/medical_prescription.go ./pkg/models/lab_order.go ./pkg/models/pupils.go ./pkg/models/supply.go ./pkg/models/lifestyle.go ./pkg/models/treatment_type.go ./pkg/models/past_surgery.go ./pkg/models/lab.go ./pkg/models/pharmacy.go ./pkg/models/room.go ./pkg/models/referral.go ./pkg/models/iop.go ./pkg/models/payment.go ./pkg/models/eyewear_prescription_order.go ./pkg/models/chat_unread_message.go ./pkg/models/visual_acuity.go ./pkg/models/appointment.go ./pkg/models/external_exam.go ./pkg/models/patient_history.go ./pkg/models/patient_chart.go ./pkg/models/hpi_component.go ./pkg/models/queue_subscription.go ./pkg/models/appointment_status.go ./pkg/models/follow_up_order.go ./pkg/controller/user_type.go ./pkg/controller/test.go ./pkg/controller/rxnorm.go ./pkg/controller/patient_queue.go ./pkg/controller/organization_details.go ./pkg/graphql/graph/generated/generated.go ./pkg/graphql/graph/prescription.resolvers.go ./pkg/graphql/graph/treatment.resolvers.go ./pkg/graphql/graph/lifestyle_type 
+.resolvers.go ./pkg/graphql/graph/room.resolvers.go ./pkg/graphql/graph/physical_exam.resolvers.go ./pkg/graphql/graph/eyewear_shop.resolvers.go ./pkg/graphql/graph/review_of_systems.resolvers.go ./pkg/graphql/graph/page.go ./pkg/graphql/graph/surgical_procedure.resolvers.go ./pkg/graphql/graph/favorite_diagnosis.resolvers.go ./pkg/graphql/graph/favorite_chief_complaints.resolvers.go ./pkg/graphql/graph/organization_details.resolvers.go ./pkg/graphql/graph/past_illness_type.resolvers.go ./pkg/graphql/graph/appointment.resolvers.go ./pkg/graphql/graph/search.resolvers.go ./pkg/graphql/graph/billing.resolvers.go ./pkg/graphql/graph/pharmacy.resolvers.go ./pkg/graphql/graph/allergy.resolvers.go ./pkg/graphql/graph/visit_type.resolvers.go ./pkg/graphql/graph/user.resolvers.go ./pkg/graphql/graph/supply.resolvers.go ./pkg/graphql/graph/resolver.go ./pkg/graphql/graph/patient_encounter_limit.resolvers.go ./pkg/graphql/graph/referral.resolvers.go ./pkg/graphql/graph/patient_diagnosis.resolvers.go ./pkg/graphql/graph/model/models_gen.go ./pkg/graphql/graph/patient_chart.resolvers.go ./pkg/graphql/graph/amendment.resolvers.go ./pkg/graphql/graph/chief_complaint_type.resolvers.go ./pkg/graphql/graph/chief_complaint.resolvers.go ./pkg/graphql/graph/lab.resolvers.go ./pkg/graphql/graph/follow_up.resolvers.go ./pkg/graphql/graph/hpi.resolvers.go ./pkg/graphql/graph/file.resolvers.go ./pkg/graphql/graph/payment.resolvers.go ./pkg/graphql/graph/schema.resolvers.go ./pkg/graphql/graph/payment_waiver.resolvers.go ./pkg/graphql/graph/diagnosis.resolvers.go ./pkg/graphql/graph/notif.resolvers.go ./pkg/graphql/graph/diagnostic_procedure.resolvers.go ./pkg/graphql/graph/patient_history.resolvers.go ./pkg/graphql/graph/chat.resolvers.go ./pkg/graphql/graph/favorite_medication.resolvers.go ./pkg/graphql/graph/patient_queue.resolvers.go ./pkg/graphql/graph/patient.resolvers.go ./pkg/conf/config.go
+>>>>>>> 554ab2b79adffa85b73726e0084f28bd7bb9e175
 # environment
 MAKELEVEL := 0
 # environment
 LANG = C
 # environment
-VSCODE_PID = 898
+VSCODE_PID = 818
 # variable set hash-table stats:
-# Load=72/1024=7%, Rehash=0, Collisions=2/102=2%
+# Load=68/1024=7%, Rehash=0, Collisions=2/98=2%
 
 # Pattern-specific Variable Values
 
@@ -176,9 +180,9 @@ VSCODE_PID = 898
 
 # Directories
 
-# . (device 16777234, inode 42251660): 26 files, no impossibilities.
+# . (device 16777232, inode 42251660): 27 files, no impossibilities.
 
-# 26 files, no impossibilities in 1 directories.
+# 27 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -387,7 +391,6 @@ lint: testdep
 #  Phony target (prerequisite of .PHONY).
 #  Implicit rule search has not been done.
 #  File does not exist.
- 
 #  File has not been updated.
 #  commands to execute (from `Makefile', line 36):
 	@golint -set_exit_status ${PKG_LIST}
@@ -404,6 +407,7 @@ deploy:
 	
 
 register-connectors:
+ 
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -422,14 +426,19 @@ register-connectors:
 # No general (`VPATH' variable) search path.
 
 # # of strings in strcache: 1
+ 
 # # of strcache buffers: 1
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 # Finished Make data base on Thu Jun 30 18:15:57 2022
 =======
 # Finished Make data base on Wed Jul 13 15:50:26 2022
 >>>>>>> Stashed changes
+=======
+# Finished Make data base on Fri Jul  8 09:21:03 2022
+>>>>>>> 554ab2b79adffa85b73726e0084f28bd7bb9e175
 
  

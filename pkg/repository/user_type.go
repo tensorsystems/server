@@ -18,43 +18,40 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// UserType ...
-type UserType struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey"`
-	Title string `json:"title" gorm:"uniqueIndex"`
-	Users []User `gorm:"many2many:user_type_roles;"`
-	Count int64  `json:"count"`
+type UserTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideUserTypeRepository(DB *gorm.DB) UserTypeRepository {
+	return UserTypeRepository{DB: DB}
 }
 
 // Seed ...
-func (r *UserType) Seed() {
-	DB.Create(&UserType{Title: "Admin"})
-	DB.Create(&UserType{Title: "Nurse"})
-	DB.Create(&UserType{Title: "Pharmacist"})
-	DB.Create(&UserType{Title: "Optical Assistant"})
-	DB.Create(&UserType{Title: "Physician"})
-	DB.Create(&UserType{Title: "Optometrist"})
-	DB.Create(&UserType{Title: "Receptionist"})
+func (r *UserTypeRepository) Seed() {
+	r.DB.Create(&models.UserType{Title: "Admin"})
+	r.DB.Create(&models.UserType{Title: "Nurse"})
+	r.DB.Create(&models.UserType{Title: "Pharmacist"})
+	r.DB.Create(&models.UserType{Title: "Optical Assistant"})
+	r.DB.Create(&models.UserType{Title: "Physician"})
+	r.DB.Create(&models.UserType{Title: "Optometrist"})
+	r.DB.Create(&models.UserType{Title: "Receptionist"})
 }
 
 // Save ...
-func (r *UserType) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *UserTypeRepository) Save(m *models.UserType) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *UserType) GetAll(p PaginationInput) ([]UserType, int64, error) {
-	var result []UserType
+func (r *UserTypeRepository) GetAll(p models.PaginationInput) ([]models.UserType, int64, error) {
+	var result []models.UserType
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -69,39 +66,28 @@ func (r *UserType) GetAll(p PaginationInput) ([]UserType, int64, error) {
 }
 
 // Get ...
-func (r *UserType) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *UserTypeRepository) Get(m *models.UserType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *UserType) Update() (*UserType, error) {
-	err := DB.Save(&r).Error
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+func (r *UserTypeRepository) Update(m *models.UserType) error {
+	return r.DB.Save(&m).Error
 }
 
 // Delete ...
-func (r *UserType) Delete(ID int) error {
-	var e UserType
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *UserTypeRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.UserType{}).Error
 }
 
 // GetByTitle ...
-func (r *UserType) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *UserTypeRepository) GetByTitle(m *models.UserType, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // GetByIds
-func (r *UserType) GetByIds(ids []*int) ([]UserType, error) {
-	var result []UserType
-	err := DB.Where("id IN ?", ids).Find(&result).Error
+func (r *UserTypeRepository) GetByIds(ids []*int) ([]models.UserType, error) {
+	var result []models.UserType
+	err := r.DB.Where("id IN ?", ids).Find(&result).Error
 	return result, err
 }

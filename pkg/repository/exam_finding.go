@@ -18,35 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// ExamFinding ...
-type ExamFinding struct {
-	gorm.Model
-	ID             int          `gorm:"primaryKey" json:"id"`
-	Title          string       `json:"title"`
-	Pertinence     bool         `json:"pertinence"`
-	ExamCategoryID int          `json:"examCategoryId"`
-	ExamCategory   ExamCategory `json:"examCategory"`
-	Active         bool         `json:"active"`
-	Count          int64        `json:"count"`
+type ExamFindingRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideExamFindingRepository(DB *gorm.DB) ExamFindingRepository {
+	return ExamFindingRepository{DB: DB}
 }
 
 // Save ...
-func (r *ExamFinding) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *ExamFindingRepository) Save(m *models.ExamFinding) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *ExamFinding) GetAll(p PaginationInput, searchTerm *string) ([]ExamFinding, int64, error) {
-	var result []ExamFinding
+func (r *ExamFindingRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.ExamFinding, int64, error) {
+	var result []models.ExamFinding
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("ExamCategory")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("ExamCategory")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -67,21 +61,21 @@ func (r *ExamFinding) GetAll(p PaginationInput, searchTerm *string) ([]ExamFindi
 }
 
 // Get ...
-func (r *ExamFinding) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ExamFindingRepository) Get(m *models.ExamFinding, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *ExamFinding) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *ExamFindingRepository) GetByTitle(m *models.ExamFinding, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *ExamFinding) Update() error {
-	return DB.Updates(&r).Error
+func (r *ExamFindingRepository) Update(m *models.ExamFinding) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ExamFinding) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ExamFindingRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.ExamFinding{}).Error
 }

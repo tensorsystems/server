@@ -7,13 +7,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveRoom(ctx context.Context, input model.RoomInput) (*repository.Room, error) {
+func (r *mutationResolver) SaveRoom(ctx context.Context, input graph_models.RoomInput) (*models.Room, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -29,17 +29,17 @@ func (r *mutationResolver) SaveRoom(ctx context.Context, input model.RoomInput) 
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var room repository.Room
+	var room models.Room
 	deepCopy.Copy(&input).To(&room)
 
-	if err := room.Save(); err != nil {
+	if err := r.RoomRepository.Save(&room); err != nil {
 		return nil, err
 	}
 
 	return &room, nil
 }
 
-func (r *mutationResolver) UpdateRoom(ctx context.Context, input model.RoomInput, id int) (*repository.Room, error) {
+func (r *mutationResolver) UpdateRoom(ctx context.Context, input graph_models.RoomInput, id int) (*models.Room, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -55,10 +55,10 @@ func (r *mutationResolver) UpdateRoom(ctx context.Context, input model.RoomInput
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var room repository.Room
+	var room models.Room
 	deepCopy.Copy(&input).To(&room)
 
-	if err := room.Update(); err != nil {
+	if err := r.RoomRepository.Update(&room); err != nil {
 		return nil, err
 	}
 
@@ -81,32 +81,30 @@ func (r *mutationResolver) DeleteRoom(ctx context.Context, id int) (bool, error)
 		return false, errors.New("You are not authorized to perform this action")
 	}
 
-	var room repository.Room
-	if err := room.Delete(id); err != nil {
+	if err := r.RoomRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) Rooms(ctx context.Context, page repository.PaginationInput) (*model.RoomConnection, error) {
-	var room repository.Room
-	rooms, count, err := room.GetAll(page)
+func (r *queryResolver) Rooms(ctx context.Context, page models.PaginationInput) (*graph_models.RoomConnection, error) {
+	rooms, count, err := r.RoomRepository.GetAll(page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.RoomEdge, len(rooms))
+	edges := make([]*graph_models.RoomEdge, len(rooms))
 
 	for i, entity := range rooms {
 		e := entity
 
-		edges[i] = &model.RoomEdge{
+		edges[i] = &graph_models.RoomEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(rooms, count, page)
-	return &model.RoomConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.RoomConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

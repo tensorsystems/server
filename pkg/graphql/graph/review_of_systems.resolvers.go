@@ -6,71 +6,71 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SaveSystem(ctx context.Context, input model.SystemInput) (*repository.System, error) {
-	var entity repository.System
+func (r *mutationResolver) SaveSystem(ctx context.Context, input graph_models.SystemInput) (*models.System, error) {
+	var entity models.System
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.SystemRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSystem(ctx context.Context, input model.SystemUpdateInput) (*repository.System, error) {
-	var entity repository.System
+func (r *mutationResolver) UpdateSystem(ctx context.Context, input graph_models.SystemUpdateInput) (*models.System, error) {
+	var entity models.System
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.SystemRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveSystemSymptom(ctx context.Context, input model.SystemSymptomInput) (*repository.SystemSymptom, error) {
-	var entity repository.SystemSymptom
+func (r *mutationResolver) SaveSystemSymptom(ctx context.Context, input graph_models.SystemSymptomInput) (*models.SystemSymptom, error) {
+	var entity models.SystemSymptom
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.SystemSymptomRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateSystemSymptom(ctx context.Context, input model.SystemSymptomUpdateInput) (*repository.SystemSymptom, error) {
-	var entity repository.SystemSymptom
+func (r *mutationResolver) UpdateSystemSymptom(ctx context.Context, input graph_models.SystemSymptomUpdateInput) (*models.SystemSymptom, error) {
+	var entity models.SystemSymptom
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.SystemSymptomRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) SaveReviewOfSystem(ctx context.Context, input model.ReviewOfSystemInput) (*repository.ReviewOfSystem, error) {
-	var entity repository.ReviewOfSystem
+func (r *mutationResolver) SaveReviewOfSystem(ctx context.Context, input graph_models.ReviewOfSystemInput) (*models.ReviewOfSystem, error) {
+	var entity models.ReviewOfSystem
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.ReviewOfSystemRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateReviewOfSystem(ctx context.Context, input model.ReviewOfSystemUpdateInput) (*repository.ReviewOfSystem, error) {
-	var entity repository.ReviewOfSystem
+func (r *mutationResolver) UpdateReviewOfSystem(ctx context.Context, input graph_models.ReviewOfSystemUpdateInput) (*models.ReviewOfSystem, error) {
+	var entity models.ReviewOfSystem
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.ReviewOfSystemRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -78,112 +78,107 @@ func (r *mutationResolver) UpdateReviewOfSystem(ctx context.Context, input model
 }
 
 func (r *mutationResolver) DeleteReviewOfSystem(ctx context.Context, id int) (bool, error) {
-	var entity repository.ReviewOfSystem
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.ReviewOfSystemRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) System(ctx context.Context, id int) (*repository.System, error) {
-	var entity repository.System
+func (r *queryResolver) System(ctx context.Context, id int) (*models.System, error) {
+	var entity models.System
 
-	if err := entity.Get(id); err != nil {
+	if err := r.SystemRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) Systems(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SystemConnection, error) {
-	var entity repository.System
-	entities, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) Systems(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SystemConnection, error) {
+	entities, count, err := r.SystemRepository.GetAll(page, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SystemEdge, len(entities))
+	edges := make([]*graph_models.SystemEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.SystemEdge{
+		edges[i] = &graph_models.SystemEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.SystemConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SystemConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) SystemSymptom(ctx context.Context, id int) (*repository.SystemSymptom, error) {
-	var entity repository.SystemSymptom
+func (r *queryResolver) SystemSymptom(ctx context.Context, id int) (*models.SystemSymptom, error) {
+	var entity models.SystemSymptom
 
-	if err := entity.Get(id); err != nil {
+	if err := r.SystemSymptomRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) SystemSymptoms(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.SystemSymptomConnection, error) {
-	var entity repository.SystemSymptom
-	entities, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) SystemSymptoms(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.SystemSymptomConnection, error) {
+	entities, count, err := r.SystemSymptomRepository.GetAll(page, searchTerm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.SystemSymptomEdge, len(entities))
+	edges := make([]*graph_models.SystemSymptomEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.SystemSymptomEdge{
+		edges[i] = &graph_models.SystemSymptomEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.SystemSymptomConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.SystemSymptomConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) ReviewOfSystem(ctx context.Context, id int) (*repository.ReviewOfSystem, error) {
-	var entity repository.ReviewOfSystem
+func (r *queryResolver) ReviewOfSystem(ctx context.Context, id int) (*models.ReviewOfSystem, error) {
+	var entity models.ReviewOfSystem
 
-	if err := entity.Get(id); err != nil {
+	if err := r.ReviewOfSystemRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) ReviewOfSystems(ctx context.Context, page repository.PaginationInput, filter *model.ReviewOfSystemFilter) (*model.ReviewOfSystemConnection, error) {
-	var f repository.ReviewOfSystem
+func (r *queryResolver) ReviewOfSystems(ctx context.Context, page models.PaginationInput, filter *graph_models.ReviewOfSystemFilter) (*graph_models.ReviewOfSystemConnection, error) {
+	var f models.ReviewOfSystem
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.ReviewOfSystem
-	entities, count, err := entity.GetAll(page, &f)
+	entities, count, err := r.ReviewOfSystemRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.ReviewOfSystemEdge, len(entities))
+	edges := make([]*graph_models.ReviewOfSystemEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.ReviewOfSystemEdge{
+		edges[i] = &graph_models.ReviewOfSystemEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.ReviewOfSystemConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.ReviewOfSystemConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

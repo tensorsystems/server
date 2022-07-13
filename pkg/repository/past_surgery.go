@@ -19,45 +19,33 @@
 package repository
 
 import (
-	"time"
-
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// PastSurgery ...
-type PastSurgery struct {
-	gorm.Model
-	ID               int        `gorm:"primaryKey"`
-	Description      string     `json:"description"`
-	SurgeryDate      *time.Time `json:"injuryDate"`
-	PatientHistoryID int        `json:"patientHistoryID"`
+type PastSurgeryRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePastSurgeryRepository(DB *gorm.DB) PastSurgeryRepository {
+	return PastSurgeryRepository{DB: DB}
 }
 
 // Save ...
-func (r *PastSurgery) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastSurgeryRepository) Save(m *models.PastSurgery) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *PastSurgery) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PastSurgeryRepository) Get(m *models.PastSurgery, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientHistoryID ...
-func (r *PastSurgery) GetByPatientHistoryID(ID int) ([]*PastSurgery, error) {
-	var result []*PastSurgery
+func (r *PastSurgeryRepository) GetByPatientHistoryID(ID int) ([]*models.PastSurgery, error) {
+	var result []*models.PastSurgery
 
-	err := DB.Where("patient_history_id = ?", ID).Find(&result).Error
+	err := r.DB.Where("patient_history_id = ?", ID).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -67,13 +55,11 @@ func (r *PastSurgery) GetByPatientHistoryID(ID int) ([]*PastSurgery, error) {
 }
 
 // Update ...
-func (r *PastSurgery) Update() error {
-	return DB.Updates(&r).Error
+func (r *PastSurgeryRepository) Update(m *models.PastSurgery) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PastSurgery) Delete(ID int) error {
-	var e PastSurgery
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *PastSurgeryRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PastSurgery{}).Error
 }

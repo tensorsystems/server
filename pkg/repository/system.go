@@ -18,32 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// System ...
-type System struct {
-	gorm.Model
-	ID     int    `json:"id" gorm:"primaryKey"`
-	Title  string `json:"title"`
-	Count  int64  `json:"count"`
-	Active bool   `json:"active"`
+type SystemRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideSystemRepository(DB *gorm.DB) SystemRepository {
+	return SystemRepository{DB: DB}
 }
 
 // Save ...
-func (r *System) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *SystemRepository) Save(m *models.System) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *System) GetAll(p PaginationInput, searchTerm *string) ([]System, int64, error) {
-	var result []System
+func (r *SystemRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.System, int64, error) {
+	var result []models.System
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -64,21 +61,21 @@ func (r *System) GetAll(p PaginationInput, searchTerm *string) ([]System, int64,
 }
 
 // Get ...
-func (r *System) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *SystemRepository) Get(m *models.System, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *System) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *SystemRepository) GetByTitle(m *models.System, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *System) Update() error {
-	return DB.Updates(&r).Error
+func (r *SystemRepository) Update(m *models.System) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *System) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *SystemRepository) Delete(m *models.System, ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&m).Error
 }

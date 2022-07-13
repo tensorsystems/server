@@ -19,73 +19,73 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// QueueSubscription ....
-type QueueSubscription struct {
-	gorm.Model
-	ID            int            `gorm:"primaryKey" json:"id"`
-	UserID        int            `json:"userId" gorm:"uniqueIndex"`
-	User          User           `json:"user"`
-	Subscriptions []PatientQueue `json:"subscriptions" gorm:"many2many:user_queue_subscriptions;"`
+type QueueSubscriptionRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideQueueSubscriptionRepository(DB *gorm.DB) QueueSubscriptionRepository {
+	return QueueSubscriptionRepository{DB: DB}
 }
 
 // Save
-func (r *QueueSubscription) Save() error {
-	return DB.Create(&r).Error
+func (r *QueueSubscriptionRepository) Save(m *models.QueueSubscription) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetByUserId ...
-func (r *QueueSubscription) GetByUserId(userID int) error {
-	return DB.Where("user_id = ?", userID).Preload("Subscriptions").Find(&r).Error
+func (r *QueueSubscriptionRepository) GetByUserId(m *models.QueueSubscription, userID int) error {
+	return r.DB.Where("user_id = ?", userID).Preload("Subscriptions").Find(&m).Error
 }
 
 // Subscribe ...
-func (r *QueueSubscription) Subscribe(userId int, patientQueueId int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var user User
-		if err := DB.Where("id = ?", userId).Take(&user).Error; err != nil {
+func (r *QueueSubscriptionRepository) Subscribe(m *models.QueueSubscription, userId int, patientQueueId int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var user models.User
+		if err := r.DB.Where("id = ?", userId).Take(&user).Error; err != nil {
 			return err
 		}
 
-		if err := DB.Where("user_id = ?", user.ID).Take(&r).Error; err != nil {
-			r.UserID = user.ID
+		if err := r.DB.Where("user_id = ?", user.ID).Take(&m).Error; err != nil {
+			m.UserID = user.ID
 
-			if err := DB.Create(&r).Error; err != nil {
+			if err := r.DB.Create(&m).Error; err != nil {
 				return err
 			}
 		}
 
-		var patientQueue PatientQueue
-		if err := DB.Where("id = ?", patientQueueId).Take(&patientQueue).Error; err != nil {
+		var patientQueue models.PatientQueue
+		if err := r.DB.Where("id = ?", patientQueueId).Take(&patientQueue).Error; err != nil {
 			return err
 		}
 
-		DB.Model(&r).Association("Subscriptions").Append(&patientQueue)
+		r.DB.Model(&m).Association("Subscriptions").Append(&patientQueue)
 
 		return nil
 	})
 }
 
 // Unsubscribe ...
-func (r *QueueSubscription) Unsubscribe(userId int, patientQueueId int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var user User
-		if err := DB.Where("id = ?", userId).Take(&user).Error; err != nil {
+func (r *QueueSubscriptionRepository) Unsubscribe(m *models.QueueSubscription, userId int, patientQueueId int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var user models.User
+		if err := r.DB.Where("id = ?", userId).Take(&user).Error; err != nil {
 			return err
 		}
 
-		if err := DB.Where("user_id = ?", user.ID).Take(&r).Error; err != nil {
+		if err := r.DB.Where("user_id = ?", user.ID).Take(&m).Error; err != nil {
 			return err
 		}
 
-		var patientQueue PatientQueue
-		if err := DB.Where("id = ?", patientQueueId).Take(&patientQueue).Error; err != nil {
+		var patientQueue models.PatientQueue
+		if err := r.DB.Where("id = ?", patientQueueId).Take(&patientQueue).Error; err != nil {
 			return err
 		}
 
-		DB.Model(&r).Association("Subscriptions").Delete(&patientQueue)
+		r.DB.Model(&m).Association("Subscriptions").Delete(&patientQueue)
 		return nil
 	})
 }

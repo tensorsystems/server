@@ -20,19 +20,22 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/tensoremr/server/pkg/models"
 	"github.com/tensoremr/server/pkg/repository"
 )
 
-// GetUserTypes ...
-func GetUserTypes(c *gin.Context) {
-	var entity repository.UserType
+type UserTypeApi struct {
+	UserTypeRepository repository.UserTypeRepository
+}
 
-	paginationInput := repository.PaginationInput{
+// GetUserTypes ...
+func (s *UserTypeApi) GetUserTypes(c *gin.Context) {
+	paginationInput := models.PaginationInput{
 		Page: 0,
 		Size: 20,
 	}
 
-	userTypes, _, err := entity.GetAll(paginationInput)
+	userTypes, _, err := s.UserTypeRepository.GetAll(paginationInput)
 
 	if err != nil {
 		c.JSON(400, gin.H{

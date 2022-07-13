@@ -9,31 +9,28 @@ import (
 	"fmt"
 
 	"github.com/tensoremr/server/pkg/graphql/graph/generated"
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SavePayment(ctx context.Context, input model.PaymentInput) (*repository.Payment, error) {
-	var entity repository.Payment
-
+func (r *mutationResolver) SavePayment(ctx context.Context, input graph_models.PaymentInput) (*models.Payment, error) {
+	var entity models.Payment
 	deepCopy.Copy(&input).To(&entity)
 
-	err := entity.Save()
-	if err != nil {
+	if err := r.PaymentRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePayment(ctx context.Context, input model.PaymentInput) (*repository.Payment, error) {
-	var entity repository.Payment
-
+func (r *mutationResolver) UpdatePayment(ctx context.Context, input graph_models.PaymentInput) (*models.Payment, error) {
+	var entity models.Payment
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.PaymentRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -41,23 +38,20 @@ func (r *mutationResolver) UpdatePayment(ctx context.Context, input model.Paymen
 }
 
 func (r *mutationResolver) DeletePayment(ctx context.Context, id int) (bool, error) {
-	var entity repository.Payment
-
-	err := entity.Delete(id)
-	if err != nil {
+	if err := r.PaymentRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) ConfirmPayment(ctx context.Context, id int, invoiceNo string) (*repository.Payment, error) {
-	var entity repository.Payment
+func (r *mutationResolver) ConfirmPayment(ctx context.Context, id int, invoiceNo string) (*models.Payment, error) {
+	var entity models.Payment
 	entity.ID = id
-	entity.Status = repository.PaidPaymentStatus
+	entity.Status = models.PaidPaymentStatus
 	entity.InvoiceNo = invoiceNo
 
-	if err := entity.Update(); err != nil {
+	if err := r.PaymentRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -65,14 +59,13 @@ func (r *mutationResolver) ConfirmPayment(ctx context.Context, id int, invoiceNo
 }
 
 func (r *mutationResolver) ConfirmPayments(ctx context.Context, ids []int, invoiceNo string) (bool, error) {
-	var entity repository.Payment
-	if err := entity.BatchUpdate(ids, repository.Payment{Status: repository.PaidPaymentStatus, InvoiceNo: invoiceNo}); err != nil {
+	if err := r.PaymentRepository.BatchUpdate(ids, models.Payment{Status: models.PaidPaymentStatus, InvoiceNo: invoiceNo}); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (r *mutationResolver) RequestPaymentWaiver(ctx context.Context, paymentID int, patientID int) (*repository.Payment, error) {
+func (r *mutationResolver) RequestPaymentWaiver(ctx context.Context, paymentID int, patientID int) (*models.Payment, error) {
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -83,14 +76,14 @@ func (r *mutationResolver) RequestPaymentWaiver(ctx context.Context, paymentID i
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
-	var entity repository.Payment
-	if err := entity.RequestWaiver(paymentID, patientID, user.ID); err != nil {
+	var entity models.Payment
+
+	if err := r.PaymentRepository.RequestWaiver(&entity, paymentID, patientID, user.ID); err != nil {
 		return nil, err
 	}
 
@@ -108,25 +101,23 @@ func (r *mutationResolver) RequestPaymentWaivers(ctx context.Context, ids []int,
 		return false, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return false, err
 	}
 
-	var entity repository.Payment
-	if err := entity.RequestWaiverBatch(ids, patientID, user.ID); err != nil {
+	if err := r.PaymentRepository.RequestWaiverBatch(ids, patientID, user.ID); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *paymentResolver) Status(ctx context.Context, obj *repository.Payment) (string, error) {
+func (r *paymentResolver) Status(ctx context.Context, obj *models.Payment) (string, error) {
 	return string(obj.Status), nil
 }
 
-func (r *queryResolver) Payments(ctx context.Context, page repository.PaginationInput) (*model.PaymentConnection, error) {
+func (r *queryResolver) Payments(ctx context.Context, page models.PaginationInput) (*graph_models.PaymentConnection, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

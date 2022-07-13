@@ -6,27 +6,27 @@ package graph
 import (
 	"context"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
-	"github.com/tensoremr/server/pkg/repository"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) SavePastIllnessTypes(ctx context.Context, input model.PastIllnessTypeInput) (*repository.PastIllnessType, error) {
-	var entity repository.PastIllnessType
+func (r *mutationResolver) SavePastIllnessTypes(ctx context.Context, input graph_models.PastIllnessTypeInput) (*models.PastIllnessType, error) {
+	var entity models.PastIllnessType
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Save(); err != nil {
+	if err := r.PastIllnessTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdatePastIllnessType(ctx context.Context, input model.PastIllnessTypeUpdateInput) (*repository.PastIllnessType, error) {
-	var entity repository.PastIllnessType
+func (r *mutationResolver) UpdatePastIllnessType(ctx context.Context, input graph_models.PastIllnessTypeUpdateInput) (*models.PastIllnessType, error) {
+	var entity models.PastIllnessType
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.PastIllnessTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -34,42 +34,39 @@ func (r *mutationResolver) UpdatePastIllnessType(ctx context.Context, input mode
 }
 
 func (r *mutationResolver) DeletePastIllnessType(ctx context.Context, id int) (bool, error) {
-	var entity repository.PastIllnessType
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.PastIllnessTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) PastIllnessType(ctx context.Context, id int) (*repository.PastIllnessType, error) {
-	var entity repository.PastIllnessType
+func (r *queryResolver) PastIllnessType(ctx context.Context, id int) (*models.PastIllnessType, error) {
+	var entity models.PastIllnessType
 
-	if err := entity.Get(id); err != nil {
+	if err := r.PastIllnessTypeRepository.Get(&entity, id); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) PastIllnessTypes(ctx context.Context, page repository.PaginationInput) (*model.PastIllnessTypeConnection, error) {
-	var entity repository.PastIllnessType
-	result, count, err := entity.GetAll(page)
+func (r *queryResolver) PastIllnessTypes(ctx context.Context, page models.PaginationInput) (*graph_models.PastIllnessTypeConnection, error) {
+	result, count, err := r.PastIllnessTypeRepository.GetAll(page)
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.PastIllnessTypeEdge, len(result))
+	edges := make([]*graph_models.PastIllnessTypeEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.PastIllnessTypeEdge{
+		edges[i] = &graph_models.PastIllnessTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.PastIllnessTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.PastIllnessTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

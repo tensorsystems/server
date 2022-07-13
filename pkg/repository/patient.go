@@ -20,99 +20,35 @@ package repository
 
 import (
 	"errors"
-	"time"
 
 	"github.com/lib/pq"
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// Patient ...
-type Patient struct {
-	gorm.Model
-	ID                     int            `gorm:"primaryKey"`
-	FirstName              string         `json:"firstName" gorm:"not null;"`
-	LastName               string         `json:"lastName" gorm:"not null;"`
-	FullName               string         `json:"fullName"`
-	Gender                 string         `json:"gender"`
-	PhoneNo                string         `json:"phoneNo" gorm:"size:100;not null;"`
-	PhoneNo2               string         `json:"phoneNo2" gorm:"size:100;not null;"`
-	TelNo                  string         `json:"telNo"`
-	HomePhone              string         `json:"homePhone"`
-	Email                  string         `json:"email" gorm:"size:100;not null;"`
-	DateOfBirth            time.Time      `json:"dateOfBirth"`
-	IDNo                   string         `json:"idNo"`
-	IDType                 string         `json:"idType"`
-	MartialStatus          string         `json:"martialStatus"`
-	Occupation             string         `json:"occupation"`
-	Credit                 *bool          `json:"credit"`
-	CreditCompany          *string        `json:"creditCompany"`
-	EmergencyContactName   string         `json:"emergencyContactName"`
-	EmergencyContactRel    string         `json:"emergencyContactRel"`
-	EmergencyContactPhone  string         `json:"emergencyContactPhone"`
-	EmergencyContactPhone2 string         `json:"emergencyContactPhone2"`
-	EmergencyContactMemo   string         `json:"emergencyContactMemo"`
-	City                   string         `json:"city"`
-	SubCity                string         `json:"subCity"`
-	Region                 string         `json:"region"`
-	Woreda                 string         `json:"woreda"`
-	Zone                   string         `json:"zone"`
-	Kebele                 string         `json:"kebele"`
-	HouseNo                string         `json:"houseNo"`
-	Memo                   string         `json:"memo"`
-	CardNo                 string         `json:"cardNo"`
-	PaperRecord            bool           `json:"paperRecord"`
-	PaperRecordDocumentID  *int           `json:"paperRecordDocumentId"`
-	PaperRecordDocument    *File          `json:"paperRecordDocument"`
-	Documents              []File         `json:"documents" gorm:"many2many:patient_documents"`
-	PatientHistory         PatientHistory `json:"patientHistory"`
-	Appointments           []Appointment  `json:"appointments"`
-	Document               string         `gorm:"type:tsvector"`
-	Count                  int64          `json:"count"`
+type PatientRepository struct {
+	DB *gorm.DB
 }
 
-// AfterCreate ...
-func (r *Patient) AfterCreate(tx *gorm.DB) error {
-	r.FullName = r.FirstName + " " + r.LastName
-
-	if err := tx.Model(r).Save(&r).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// AfterUpdate ...
-func (r *Patient) AfterUpdate(tx *gorm.DB) (err error) {
-	for _, appointment := range r.Appointments {
-		appointment.FirstName = r.FirstName
-		appointment.LastName = r.LastName
-		appointment.PhoneNo = r.PhoneNo
-
-		var provider User
-		tx.Where("id = ?", appointment.UserID).Take(&provider)
-		appointment.ProviderName = provider.FirstName + " " + provider.LastName
-
-		tx.Model(appointment).Updates(&appointment)
-	}
-
-	return
+func ProvidePatientRepository(DB *gorm.DB) PatientRepository {
+	return PatientRepository{DB: DB}
 }
 
 // Save ...
-func (r *Patient) Save() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existingPatient Patient
-		if err := tx.Where("trim(first_name) = ?", r.FirstName).Where("trim(last_name) = ?", r.LastName).Where("trim(phone_no) = ?", r.PhoneNo).Take(&existingPatient).Error; err == nil {
+func (r *PatientRepository) Save(m *models.Patient) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existingPatient models.Patient
+		if err := tx.Where("trim(first_name) = ?", m.FirstName).Where("trim(last_name) = ?", m.LastName).Where("trim(phone_no) = ?", m.PhoneNo).Take(&existingPatient).Error; err == nil {
 			if existingPatient.ID != 0 {
 				return errors.New("Patient already exists")
 			}
 		}
 
-		if err := tx.Create(&r).Error; err != nil {
+		if err := tx.Create(&m).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Create(&PatientHistory{PatientID: r.ID}).Error; err != nil {
+		if err := tx.Create(&models.PatientHistory{PatientID: m.ID}).Error; err != nil {
 			return err
 		}
 
@@ -121,30 +57,25 @@ func (r *Patient) Save() error {
 }
 
 // Get ...
-func (r *Patient) Get(ID int) error {
-	err := DB.Where("id = ?", ID).Preload("PatientHistory").Preload("PaperRecordDocument").Preload("Documents").Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PatientRepository) Get(m *models.Patient, ID int) error {
+	return r.DB.Where("id = ?", ID).Preload("PatientHistory").Preload("PaperRecordDocument").Preload("Documents").Take(&m).Error
 }
 
 // GetPatientFiles ...
-func (r *Patient) GetPatientFiles(patientID int) ([]*File, error) {
-	var files []File
+func (r *PatientRepository) GetPatientFiles(patientID int) ([]*models.File, error) {
+	var files []models.File
 
-	err := DB.Transaction(func(tx *gorm.DB) error {
-		var diagnosticProcedureOrder DiagnosticProcedureOrder
-		tx.Model(&DiagnosticProcedureOrder{}).Where("patient_id = ?", patientID).Preload("DiagnosticProcedures.Images").Preload("DiagnosticProcedures.Documents").Take(&diagnosticProcedureOrder)
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		var diagnosticProcedureOrder models.DiagnosticProcedureOrder
+		tx.Model(&models.DiagnosticProcedureOrder{}).Where("patient_id = ?", patientID).Preload("DiagnosticProcedures.Images").Preload("DiagnosticProcedures.Documents").Take(&diagnosticProcedureOrder)
 
 		for _, diagnosticProcedure := range diagnosticProcedureOrder.DiagnosticProcedures {
 			files = append(files, diagnosticProcedure.Images...)
 			files = append(files, diagnosticProcedure.Documents...)
 		}
 
-		var labOrder LabOrder
-		tx.Model(&LabOrder{}).Where("patient_id = ?", patientID).Preload("Labs.Images").Preload("Labs.Documents").Take(&labOrder)
+		var labOrder models.LabOrder
+		tx.Model(&models.LabOrder{}).Where("patient_id = ?", patientID).Preload("Labs.Images").Preload("Labs.Documents").Take(&labOrder)
 
 		for _, lab := range labOrder.Labs {
 			files = append(files, lab.Images...)
@@ -154,7 +85,7 @@ func (r *Patient) GetPatientFiles(patientID int) ([]*File, error) {
 		return nil
 	})
 
-	var f []*File
+	var f []*models.File
 	for _, file := range files {
 		item := file
 		f = append(f, &item)
@@ -164,10 +95,10 @@ func (r *Patient) GetPatientFiles(patientID int) ([]*File, error) {
 }
 
 // GetAll ...
-func (r *Patient) GetAll(p PaginationInput) ([]Patient, int64, error) {
-	var result []Patient
+func (r *PatientRepository) GetAll(p models.PaginationInput) ([]models.Patient, int64, error) {
+	var result []models.Patient
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -182,18 +113,18 @@ func (r *Patient) GetAll(p PaginationInput) ([]Patient, int64, error) {
 }
 
 // GetAllProgressNotes ...
-func (r *Patient) GetAllProgressNotes(appointmentID int) (*PatientHistory, []*Appointment, error) {
-	var patientHistory *PatientHistory
-	var appointments []*Appointment
+func (r *PatientRepository) GetAllProgressNotes(appointmentID int) (*models.PatientHistory, []*models.Appointment, error) {
+	var patientHistory *models.PatientHistory
+	var appointments []*models.Appointment
 
-	err := DB.Transaction(func(tx *gorm.DB) error {
-		var appointment Appointment
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		var appointment models.Appointment
 
 		if err := tx.Where("id = ?", appointmentID).Take(&appointment).Error; err != nil {
 			return err
 		}
 
-		if err := DB.Model(Appointment{}).Where("patient_id = ?", appointment.PatientID).Where("id != ?", appointmentID).Preload("Patient").Preload("VisitType").Preload("PatientChart.VitalSigns").Preload("PatientChart.Diagnoses").Preload("PatientChart.MedicalPrescriptionOrder.MedicalPrescriptions").Preload("PatientChart.LabOrder.Labs").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures").Preload("PatientChart.SurgicalOrder.SurgicalProcedures").Preload("PatientChart.TreatmentOrder.Treatments").Preload("PatientChart.ReferralOrder.Referrals").Preload("PatientChart.FollowUpOrder.FollowUps").Preload("PatientChart.SurgicalProcedure").Preload("PatientChart.Treatment").Order("id ASC").Find(&appointments).Error; err != nil {
+		if err := r.DB.Model(models.Appointment{}).Where("patient_id = ?", appointment.PatientID).Where("id != ?", appointmentID).Preload("Patient").Preload("VisitType").Preload("PatientChart.VitalSigns").Preload("PatientChart.Diagnoses").Preload("PatientChart.MedicalPrescriptionOrder.MedicalPrescriptions").Preload("PatientChart.LabOrder.Labs").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures").Preload("PatientChart.SurgicalOrder.SurgicalProcedures").Preload("PatientChart.TreatmentOrder.Treatments").Preload("PatientChart.ReferralOrder.Referrals").Preload("PatientChart.FollowUpOrder.FollowUps").Preload("PatientChart.SurgicalProcedure").Preload("PatientChart.Treatment").Order("id ASC").Find(&appointments).Error; err != nil {
 			return err
 		}
 
@@ -208,13 +139,13 @@ func (r *Patient) GetAllProgressNotes(appointmentID int) (*PatientHistory, []*Ap
 }
 
 // GetAllProgress ...
-func (r *Patient) GetAllProgress(patientID int) (*PatientHistory, []*Appointment, error) {
-	var patientHistory *PatientHistory
-	var appointments []*Appointment
+func (r *PatientRepository) GetAllProgress(patientID int) (*models.PatientHistory, []*models.Appointment, error) {
+	var patientHistory *models.PatientHistory
+	var appointments []*models.Appointment
 
-	err := DB.Transaction(func(tx *gorm.DB) error {
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
 
-		if err := DB.Model(Appointment{}).Where("patient_id = ?", patientID).Preload("Patient").Preload("VisitType").Preload("PatientChart.VitalSigns").Preload("PatientChart.Diagnoses").Preload("PatientChart.MedicalPrescriptionOrder.MedicalPrescriptions").Preload("PatientChart.LabOrder.Labs").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures").Preload("PatientChart.SurgicalOrder.SurgicalProcedures").Preload("PatientChart.TreatmentOrder.Treatments").Preload("PatientChart.ReferralOrder.Referrals").Preload("PatientChart.FollowUpOrder.FollowUps").Preload("PatientChart.SurgicalProcedure").Preload("PatientChart.Treatment").Order("id ASC").Find(&appointments).Error; err != nil {
+		if err := r.DB.Model(models.Appointment{}).Where("patient_id = ?", patientID).Preload("Patient").Preload("VisitType").Preload("PatientChart.VitalSigns").Preload("PatientChart.Diagnoses").Preload("PatientChart.MedicalPrescriptionOrder.MedicalPrescriptions").Preload("PatientChart.LabOrder.Labs").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures").Preload("PatientChart.SurgicalOrder.SurgicalProcedures").Preload("PatientChart.TreatmentOrder.Treatments").Preload("PatientChart.ReferralOrder.Referrals").Preload("PatientChart.FollowUpOrder.FollowUps").Preload("PatientChart.SurgicalProcedure").Preload("PatientChart.Treatment").Order("id ASC").Find(&appointments).Error; err != nil {
 			return err
 		}
 
@@ -229,10 +160,10 @@ func (r *Patient) GetAllProgress(patientID int) (*PatientHistory, []*Appointment
 }
 
 // GetVisionProgress ...
-func (r *Patient) GetVitalSignsProgress(patientID int) ([]*Appointment, error) {
-	var appointments []*Appointment
+func (r *PatientRepository) GetVitalSignsProgress(patientID int) ([]*models.Appointment, error) {
+	var appointments []*models.Appointment
 
-	if err := DB.Model(Appointment{}).Where("patient_id = ?", patientID).Order("id ASC").Preload("PatientChart.VitalSigns").Find(&appointments).Error; err != nil {
+	if err := r.DB.Model(models.Appointment{}).Where("patient_id = ?", patientID).Order("id ASC").Preload("PatientChart.VitalSigns").Find(&appointments).Error; err != nil {
 		return nil, err
 	}
 
@@ -240,10 +171,10 @@ func (r *Patient) GetVitalSignsProgress(patientID int) ([]*Appointment, error) {
 }
 
 // GetPatientDiagnosticProcedures ...
-func (r *Patient) GetPatientDiagnosticProcedures(patientID int, diagnosticProcedureTypeTitle string) ([]*Appointment, error) {
-	var appointments []*Appointment
+func (r *PatientRepository) GetPatientDiagnosticProcedures(patientID int, diagnosticProcedureTypeTitle string) ([]*models.Appointment, error) {
+	var appointments []*models.Appointment
 
-	if err := DB.Model(Appointment{}).Where("patient_id = ?", patientID).Order("id ASC").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures", "diagnostic_procedure_type_title ILIKE ?", diagnosticProcedureTypeTitle).Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures.Images").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures.Documents").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures.Payments").Find(&appointments).Error; err != nil {
+	if err := r.DB.Model(models.Appointment{}).Where("patient_id = ?", patientID).Order("id ASC").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures", "diagnostic_procedure_type_title ILIKE ?", diagnosticProcedureTypeTitle).Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures.Images").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures.Documents").Preload("PatientChart.DiagnosticProcedureOrder.DiagnosticProcedures.Payments").Find(&appointments).Error; err != nil {
 		return nil, err
 	}
 
@@ -251,26 +182,21 @@ func (r *Patient) GetPatientDiagnosticProcedures(patientID int, diagnosticProced
 }
 
 // Search ...
-func (r *Patient) Search(term string) ([]*Patient, error) {
-	var patients []*Patient
-	err := DB.Raw("SELECT * FROM patients WHERE document @@ plainto_tsquery(?) AND deleted_at IS NULL LIMIT 20", term).Find(&patients).Error
+func (r *PatientRepository) Search(term string) ([]*models.Patient, error) {
+	var patients []*models.Patient
+	err := r.DB.Raw("SELECT * FROM patients WHERE document @@ plainto_tsquery(?) AND deleted_at IS NULL LIMIT 20", term).Find(&patients).Error
 	return patients, err
 }
 
 // FindByCardNo ...
-func (r *Patient) FindByCardNo(cardNo string) error {
-	err := DB.Where("card_no = ?", cardNo).Take(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *PatientRepository) FindByCardNo(m *models.Patient, cardNo string) error {
+	return r.DB.Where("card_no = ?", cardNo).Take(&m).Error
 }
 
 // FindByName ...
-func (r *Patient) FindByName(firstName string, lastName string) ([]*Patient, error) {
-	var patients []*Patient
-	err := DB.Where("trim(first_name) ILIKE ?", firstName).Where("trim(last_name) ILIKE ?", lastName).Find(&patients).Error
+func (r *PatientRepository) FindByName(firstName string, lastName string) ([]*models.Patient, error) {
+	var patients []*models.Patient
+	err := r.DB.Where("trim(first_name) ILIKE ?", firstName).Where("trim(last_name) ILIKE ?", lastName).Find(&patients).Error
 	if err != nil {
 		return patients, err
 	}
@@ -279,10 +205,10 @@ func (r *Patient) FindByName(firstName string, lastName string) ([]*Patient, err
 }
 
 // FindByPhoneNo ...
-func (r *Patient) FindByPhoneNo(phoneNo string) ([]*Patient, error) {
-	var patients []*Patient
+func (r *PatientRepository) FindByPhoneNo(phoneNo string) ([]*models.Patient, error) {
+	var patients []*models.Patient
 
-	err := DB.Where("trim(phone_no) ILIKE ?", phoneNo).Find(&patients).Error
+	err := r.DB.Where("trim(phone_no) ILIKE ?", phoneNo).Find(&patients).Error
 	if err != nil {
 		return patients, err
 	}
@@ -291,8 +217,8 @@ func (r *Patient) FindByPhoneNo(phoneNo string) ([]*Patient, error) {
 }
 
 // Update ...
-func (r *Patient) Update() error {
-	err := DB.Updates(r).Error
+func (r *PatientRepository) Update(m *models.Patient) error {
+	err := r.DB.Updates(m).Error
 
 	if err, ok := err.(*pq.Error); ok && err.Code.Name() == "unique_violation" {
 		return errors.New("Duplicate, " + err.Detail)
@@ -302,18 +228,13 @@ func (r *Patient) Update() error {
 }
 
 // Delete ...
-func (r *Patient) Delete(ID int) error {
-	var e Patient
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	if err != nil {
-		return err
-	}
-	return nil
+func (r *PatientRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Patient{}).Error
 }
 
 // Clean ...
-func (r *Patient) Clean() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *PatientRepository) Clean() error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		patients := []map[string]interface{}{}
 
 		if err := tx.Raw("SELECT first_name, last_name, phone_no, count(*) FROM patients GROUP BY first_name, last_name, phone_no HAVING count(*) > 1").Find(&patients).Error; err != nil {
@@ -321,7 +242,7 @@ func (r *Patient) Clean() error {
 		}
 
 		for _, e := range patients {
-			var duplicatePatients []Patient
+			var duplicatePatients []models.Patient
 
 			if err := tx.Select("id, first_name, last_name, phone_no").Where("first_name = ?", e["first_name"].(string)).Where("last_name = ?", e["last_name"].(string)).Where("phone_no = ?", e["phone_no"].(string)).Preload("Appointments").Preload("PatientHistory.PastIllnesses").Preload("PatientHistory.PastInjuries").Preload("PatientHistory.PastHospitalizations").Preload("PatientHistory.PastSurgeries").Preload("PatientHistory.FamilyIllnesses").Preload("PatientHistory.Lifestyles").Preload("PatientHistory.Allergies").Preload("PatientHistory.PastHospitalizations").Order("id desc").Find(&duplicatePatients).Error; err != nil {
 				return err
@@ -342,86 +263,86 @@ func (r *Patient) Clean() error {
 			// Update medical prescriptions
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&MedicalPrescription{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.MedicalPrescription{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update eyewear prescriptions
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&EyewearPrescription{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.EyewearPrescription{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update diagnostic orders
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&DiagnosticProcedureOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.DiagnosticProcedureOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update surgical orders
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&SurgicalOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.SurgicalOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update lab
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&LabOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.LabOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update treatments
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&TreatmentOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.TreatmentOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update follow-up
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&FollowUpOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.FollowUpOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Update referral
 			for index, e := range duplicatePatients {
 				if index != 0 {
-					tx.Model(&ReferralOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.ReferralOrder{}).Where("patient_id = ?", e.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 
 			// Attach histories
 			for _, e := range duplicatePatients {
 				for _, p := range e.PatientHistory.PastIllnesses {
-					tx.Model(&PastIllness{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
+					tx.Model(&models.PastIllness{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
 				}
 
 				for _, p := range e.PatientHistory.PastHospitalizations {
-					tx.Model(&PastHospitalization{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
+					tx.Model(&models.PastHospitalization{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
 				}
 
 				for _, p := range e.PatientHistory.FamilyIllnesses {
-					tx.Model(&FamilyIllness{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
+					tx.Model(&models.FamilyIllness{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
 				}
 
 				for _, p := range e.PatientHistory.Lifestyles {
-					tx.Model(&Lifestyle{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
+					tx.Model(&models.Lifestyle{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
 				}
 
 				for _, p := range e.PatientHistory.Allergies {
-					tx.Model(&Allergy{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
+					tx.Model(&models.Patient{}).Where("id = ?", p.ID).Update("patient_history_id", primaryPatient.PatientHistory.ID)
 				}
 			}
 
 			// Attach appointments
 			for _, e := range duplicatePatients {
 				for _, a := range e.Appointments {
-					tx.Model(&Appointment{}).Where("id = ?", a.ID).Update("patient_id", primaryPatient.ID)
+					tx.Model(&models.Appointment{}).Where("id = ?", a.ID).Update("patient_id", primaryPatient.ID)
 				}
 			}
 

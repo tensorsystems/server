@@ -18,38 +18,34 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Lifestyle ...
-type Lifestyle struct {
-	gorm.Model
-	ID               int    `gorm:"primaryKey"`
-	Title            string `json:"title"`
-	Description      string `json:"description"`
-	Note             string `json:"note"`
-	PatientHistoryID int    `json:"patientHistoryID"`
+type LifestyleRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideLifestyleRepository(DB *gorm.DB) LifestyleRepository {
+	return LifestyleRepository{DB: DB}
 }
 
 // Save ...
-func (r *Lifestyle) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *LifestyleRepository) Save(m *models.Lifestyle) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Lifestyle) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *LifestyleRepository) Get(m *models.Lifestyle, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientHistoryID ...
-func (r *Lifestyle) GetByPatientHistoryID(ID int) ([]*Lifestyle, error) {
-	var result []*Lifestyle
+func (r *LifestyleRepository) GetByPatientHistoryID(ID int) ([]*models.Lifestyle, error) {
+	var result []*models.Lifestyle
 
-	err := DB.Where("patient_history_id = ?", ID).Find(&result).Error
+	err := r.DB.Where("patient_history_id = ?", ID).Find(&result).Error
 
 	if err != nil {
 		return result, err
@@ -59,13 +55,11 @@ func (r *Lifestyle) GetByPatientHistoryID(ID int) ([]*Lifestyle, error) {
 }
 
 // Update ...
-func (r *Lifestyle) Update() error {
-	return DB.Updates(&r).Error
+func (r *LifestyleRepository) Update(m *models.Lifestyle) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Lifestyle) Delete(ID int) error {
-	var e Lifestyle
-	err := DB.Where("id = ?", ID).Delete(&e).Error
-	return err
+func (r *LifestyleRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Lifestyle{}).Error
 }

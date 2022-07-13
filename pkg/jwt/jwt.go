@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 )
 
 // Wrapper wraps the signing key and the issuer
@@ -43,7 +43,7 @@ type Claim struct {
 }
 
 // GenerateToken generates a jwt token
-func (j *Wrapper) GenerateToken(user repository.User) (signedToken string, err error) {
+func (j *Wrapper) GenerateToken(user models.User) (signedToken string, err error) {
 	var userTypes []string
 
 	for _, e := range user.UserTypes {

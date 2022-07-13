@@ -18,45 +18,39 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// PatientEncounterLimit ...
-type PatientEncounterLimit struct {
-	gorm.Model
-	ID             int   `gorm:"primaryKey"`
-	UserID         int   `json:"userId" gorm:"uniqueIndex"`
-	User           User  `json:"user"`
-	MondayLimit    int   `json:"mondayLimit"`
-	TuesdayLimit   int   `json:"tuesdayLimit"`
-	WednesdayLimit int   `json:"wednesdayLimit"`
-	ThursdayLimit  int   `json:"thursdayLimit"`
-	FridayLimit    int   `json:"fridayLimit"`
-	SaturdayLimit  int   `json:"saturdayLimit"`
-	SundayLimit    int   `json:"sundayLimit"`
-	Overbook       int   `json:"overbook"`
-	Count          int64 `json:"count"`
+type PatientEncounterLimitRepository struct {
+	DB *gorm.DB
+}
+
+func ProvidePatientEncounterLimitRepository(DB *gorm.DB) PatientEncounterLimitRepository {
+	return PatientEncounterLimitRepository{DB: DB}
 }
 
 // Save ...
-func (r *PatientEncounterLimit) Save() error {
-	return DB.Create(&r).Error
+func (r *PatientEncounterLimitRepository) Save(m *models.PatientEncounterLimit) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *PatientEncounterLimit) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *PatientEncounterLimitRepository) Get(m *models.PatientEncounterLimit, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByUser ...
-func (r *PatientEncounterLimit) GetByUser(userID int) error {
-	return DB.Where("user_id = ?", userID).Take(&r).Error
+func (r *PatientEncounterLimitRepository) GetByUser(m *models.PatientEncounterLimit, userID int) error {
+	return r.DB.Where("user_id = ?", userID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *PatientEncounterLimit) GetAll(p PaginationInput) ([]PatientEncounterLimit, int64, error) {
-	var result []PatientEncounterLimit
+func (r *PatientEncounterLimitRepository) GetAll(p models.PaginationInput) ([]models.PatientEncounterLimit, int64, error) {
+	var result []models.PatientEncounterLimit
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("User").Order("id DESC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("User").Order("id DESC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -71,11 +65,11 @@ func (r *PatientEncounterLimit) GetAll(p PaginationInput) ([]PatientEncounterLim
 }
 
 // Update ...
-func (r *PatientEncounterLimit) Update() error {
-	return DB.Updates(&r).Error
+func (r *PatientEncounterLimitRepository) Update(m *models.PatientEncounterLimit) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *PatientEncounterLimit) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *PatientEncounterLimitRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.PatientEncounterLimit{}).Error
 }

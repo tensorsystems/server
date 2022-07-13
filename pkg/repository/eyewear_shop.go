@@ -18,32 +18,29 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// EyewearShop is a repository for the EyewearShop domain.
-type EyewearShop struct {
-	gorm.Model
-	ID      int    `gorm:"primaryKey"`
-	Title   string `json:"title" gorm:"uniqueIndex"`
-	Address string `json:"address"`
-	Region  string `json:"region"`
-	Country string `json:"country"`
-	Phone   string `json:"phone"`
-	InHouse bool   `json:"inHouse"`
-	Count   int64  `json:"count"`
-	Active  bool   `json:"active"`
+type EyewearShopRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideEyewearShopRepository(DB *gorm.DB) EyewearShopRepository {
+	return EyewearShopRepository{DB: DB}
 }
 
 // Get ...
-func (r *EyewearShop) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *EyewearShopRepository) Get(m *models.EyewearShop, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetAll ...
-func (r *EyewearShop) GetAll(p PaginationInput, filter *EyewearShop) ([]EyewearShop, int64, error) {
-	var result []EyewearShop
+func (r *EyewearShopRepository) GetAll(p models.PaginationInput, filter *models.EyewearShop) ([]models.EyewearShop, int64, error) {
+	var result []models.EyewearShop
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -58,16 +55,16 @@ func (r *EyewearShop) GetAll(p PaginationInput, filter *EyewearShop) ([]EyewearS
 }
 
 // Save ...
-func (r *EyewearShop) Save() error {
-	return DB.Create(&r).Error
+func (r *EyewearShopRepository) Save(m *models.EyewearShop) error {
+	return r.DB.Create(&m).Error
 }
 
 // Update ...
-func (r *EyewearShop) Update() error {
-	return DB.Updates(&r).Error
+func (r *EyewearShopRepository) Update(m *models.EyewearShop) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *EyewearShop) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *EyewearShopRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.EyewearShop{}).Error
 }

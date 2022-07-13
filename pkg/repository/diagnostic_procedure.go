@@ -19,98 +19,37 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// DiagnosticProcedureStatus ...
-type DiagnosticProcedureStatus string
+type DiagnosticProcedureRepository struct {
+	DB *gorm.DB
+}
 
-// DiagnosticProcedureOrder statuses ...
-const (
-	DiagnosticProcedureOrderedStatus   DiagnosticProcedureStatus = "ORDERED"
-	DiagnosticProcedureCompletedStatus DiagnosticProcedureStatus = "COMPLETED"
-)
-
-// DiagnosticProcedure ...
-type DiagnosticProcedure struct {
-	gorm.Model
-	ID                           int                       `gorm:"primaryKey"`
-	DiagnosticProcedureOrderID   int                       `json:"diagnosticProcedureOrderId"`
-	PatientChartID               int                       `json:"patientChartId"`
-	GeneralText                  *string                   `json:"generalText"`
-	Images                       []File                    `json:"images" gorm:"many2many:diagnostic_images"`
-	Documents                    []File                    `json:"documents" gorm:"many2many:diagnostic_documents"`
-	IsRefraction                 bool                      `json:"isRefraction"`
-	RightDistanceSubjectiveSph   *string                   `json:"rightDistanceSubjectiveSph"`
-	LeftDistanceSubjectiveSph    *string                   `json:"leftDistanceSubjectiveSph"`
-	RightDistanceSubjectiveCyl   *string                   `json:"rightDistanceSubjectiveCyl"`
-	LeftDistanceSubjectiveCyl    *string                   `json:"leftDistanceSubjectiveCyl"`
-	RightDistanceSubjectiveAxis  *string                   `json:"rightDistanceSubjectiveAxis"`
-	LeftDistanceSubjectiveAxis   *string                   `json:"leftDistanceSubjectiveAxis"`
-	RightNearSubjectiveSph       *string                   `json:"rightNearSubjectiveSph"`
-	LeftNearSubjectiveSph        *string                   `json:"leftNearSubjectiveSph"`
-	RightNearSubjectiveCyl       *string                   `json:"rightNearSubjectiveCyl"`
-	LeftNearSubjectiveCyl        *string                   `json:"leftNearSubjectiveCyl"`
-	RightNearSubjectiveAxis      *string                   `json:"rightNearSubjectiveAxis"`
-	LeftNearSubjectiveAxis       *string                   `json:"leftNearSubjectiveAxis"`
-	RightDistanceObjectiveSph    *string                   `json:"rightDistanceObjectiveSph"`
-	LeftDistanceObjectiveSph     *string                   `json:"leftDistanceObjectiveSph"`
-	RightDistanceObjectiveCyl    *string                   `json:"rightDistanceObjectiveCyl"`
-	LeftDistanceObjectiveCyl     *string                   `json:"leftDistanceObjectiveCyl"`
-	RightDistanceObjectiveAxis   *string                   `json:"rightDistanceObjectiveAxis"`
-	LeftDistanceObjectiveAxis    *string                   `json:"leftDistanceObjectiveAxis"`
-	RightNearObjectiveSph        *string                   `json:"rightNearObjectiveSph"`
-	LeftNearObjectiveSph         *string                   `json:"leftNearObjectiveSph"`
-	RightNearObjectiveCyl        *string                   `json:"rightNearObjectiveCyl"`
-	LeftNearObjectiveCyl         *string                   `json:"leftNearObjectiveCyl"`
-	RightNearObjectiveAxis       *string                   `json:"rightNearObjectiveAxis"`
-	LeftNearObjectiveAxis        *string                   `json:"leftNearObjectiveAxis"`
-	RightDistanceFinalSph        *string                   `json:"rightDistanceFinalSph"`
-	LeftDistanceFinalSph         *string                   `json:"leftDistanceFinalSph"`
-	RightDistanceFinalCyl        *string                   `json:"rightDistanceFinalCyl"`
-	LeftDistanceFinalCyl         *string                   `json:"leftDistanceFinalCyl"`
-	RightDistanceFinalAxis       *string                   `json:"rightDistanceFinalAxis"`
-	LeftDistanceFinalAxis        *string                   `json:"leftDistanceFinalAxis"`
-	RightNearFinalSph            *string                   `json:"rightNearFinalSph"`
-	LeftNearFinalSph             *string                   `json:"leftNearFinalSph"`
-	RightNearFinalCyl            *string                   `json:"rightNearFinalCyl"`
-	LeftNearFinalCyl             *string                   `json:"leftNearFinalCyl"`
-	RightNearFinalAxis           *string                   `json:"rightNearFinalAxis"`
-	LeftNearFinalAxis            *string                   `json:"leftNearFinalAxis"`
-	RightVisualAcuity            *string                   `json:"rightVisualAcuity"`
-	LeftVisualAcuity             *string                   `json:"leftVisualAcuity"`
-	FarPd                        *string                   `json:"farPd"`
-	NearPd                       *string                   `json:"nearPd"`
-	DiagnosticProcedureTypeID    int                       `json:"diagnosticProcedureTypeId"`
-	DiagnosticProcedureType      DiagnosticProcedureType   `json:"diagnosticProcedureType"`
-	DiagnosticProcedureTypeTitle string                    `json:"diagnosticProcedureTypeTitle"`
-	Payments                     []Payment                 `json:"payments" gorm:"many2many:diagnostic_procedure_payments;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Status                       DiagnosticProcedureStatus `json:"status"`
-	OrderNote                    string                    `json:"orderNote"`
-	ReceptionNote                string                    `json:"receptionNote"`
-	Count                        int64                     `json:"count"`
-	OldId                        int                       `json:"oldId"`
+func ProvideDiagnosticProcedureRepository(DB *gorm.DB) DiagnosticProcedureRepository {
+	return DiagnosticProcedureRepository{DB: DB}
 }
 
 // Save ...
-func (r *DiagnosticProcedure) Save() error {
-	return DB.Create(&r).Error
+func (r *DiagnosticProcedureRepository) Save(m *models.DiagnosticProcedure) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *DiagnosticProcedure) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *DiagnosticProcedureRepository) Get(m *models.DiagnosticProcedure, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetRefraction ...
-func (r *DiagnosticProcedure) GetRefraction(patientChartID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var diagnosticProcedureType DiagnosticProcedureType
+func (r *DiagnosticProcedureRepository) GetRefraction(m *models.DiagnosticProcedure, patientChartID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var diagnosticProcedureType models.DiagnosticProcedure
 		if err := tx.Where("id = ?", "4").Take(&diagnosticProcedureType).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("is_refraction = ?", true).Where("patient_chart_id = ?", patientChartID).Take(&r).Error; err != nil {
+		if err := tx.Where("is_refraction = ?", true).Where("patient_chart_id = ?", patientChartID).Take(&m).Error; err != nil {
 			return err
 		}
 
@@ -119,10 +58,10 @@ func (r *DiagnosticProcedure) GetRefraction(patientChartID int) error {
 }
 
 // GetAll ...
-func (r *DiagnosticProcedure) GetAll(p PaginationInput, filter *DiagnosticProcedure) ([]DiagnosticProcedure, int64, error) {
-	var result []DiagnosticProcedure
+func (r *DiagnosticProcedureRepository) GetAll(p models.PaginationInput, filter *models.DiagnosticProcedure) ([]models.DiagnosticProcedure, int64, error) {
+	var result []models.DiagnosticProcedure
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("DiagnosticProcedureType").Preload("Images").Preload("RightEyeImages").Preload("LeftEyeImages").Preload("RightEyeSketches").Preload("LeftEyeSketches").Preload("Documents").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("DiagnosticProcedureType").Preload("Images").Preload("RightEyeImages").Preload("LeftEyeImages").Preload("RightEyeSketches").Preload("LeftEyeSketches").Preload("Documents").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -137,38 +76,39 @@ func (r *DiagnosticProcedure) GetAll(p PaginationInput, filter *DiagnosticProced
 }
 
 // Update ...
-func (r *DiagnosticProcedure) Update() error {
-	return DB.Updates(&r).Preload("Images").Preload("Documents").Error
+func (r *DiagnosticProcedureRepository) Update(m *models.DiagnosticProcedure) error {
+	return r.DB.Updates(&m).Preload("Images").Preload("Documents").Error
 }
 
 // DeleteFile ...
-func (r *DiagnosticProcedure) DeleteFile(association string, diagnosticProcedureID int, fileID int) error {
-	return DB.Model(&DiagnosticProcedure{ID: diagnosticProcedureID}).Association(association).Delete(&File{ID: fileID})
+func (r *DiagnosticProcedureRepository) DeleteFile(association string, diagnosticProcedureID int, fileID int) error {
+	return r.DB.Model(&models.DiagnosticProcedure{ID: diagnosticProcedureID}).Association(association).Delete(&models.File{ID: fileID})
 }
 
 // ClearAssociation ...
-func (r *DiagnosticProcedure) ClearAssociation(association string, diagnosticProcedureID int) error {
-	return DB.Model(&DiagnosticProcedure{ID: diagnosticProcedureID}).Association(association).Clear()
+func (r *DiagnosticProcedureRepository) ClearAssociation(association string, diagnosticProcedureID int) error {
+	return r.DB.Model(&models.DiagnosticProcedure{ID: diagnosticProcedureID}).Association(association).Clear()
 }
 
 // Delete ...
-func (r *DiagnosticProcedure) Delete(ID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", ID).Take(&r).Error; err != nil {
+func (r *DiagnosticProcedureRepository) Delete(ID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var diagnosticProcedure models.DiagnosticProcedure
+		if err := tx.Where("id = ?", ID).Take(&diagnosticProcedure).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("id = ?", ID).Delete(&r).Error; err != nil {
+		if err := tx.Where("id = ?", ID).Delete(&diagnosticProcedure).Error; err != nil {
 			return err
 		}
 
 		var diagnosticProceduresCount int64
-		if err := tx.Model(&r).Where("diagnostic_procedure_order_id = ?", r.DiagnosticProcedureOrderID).Count(&diagnosticProceduresCount).Error; err != nil {
+		if err := tx.Model(&diagnosticProcedure).Where("diagnostic_procedure_order_id = ?", diagnosticProcedure.DiagnosticProcedureOrderID).Count(&diagnosticProceduresCount).Error; err != nil {
 			return err
 		}
 
 		if diagnosticProceduresCount == 0 {
-			if err := tx.Where("id = ?", r.DiagnosticProcedureOrderID).Delete(&DiagnosticProcedureOrder{}).Error; err != nil {
+			if err := tx.Where("id = ?", diagnosticProcedure.DiagnosticProcedureOrderID).Delete(&models.DiagnosticProcedureOrder{}).Error; err != nil {
 				return err
 			}
 		}
@@ -178,6 +118,6 @@ func (r *DiagnosticProcedure) Delete(ID int) error {
 }
 
 // GetByPatientChartID ...
-func (r *DiagnosticProcedure) GetByPatientChartID(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *DiagnosticProcedureRepository) GetByPatientChartID(m *models.DiagnosticProcedure, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }

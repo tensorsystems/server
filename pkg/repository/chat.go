@@ -18,43 +18,42 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Chat ...
-type Chat struct {
-	gorm.Model
-	ID                 int                 `gorm:"primaryKey"`
-	RecentMessage      string              `json:"recentMessage"`
-	ChatMembers        []ChatMember        `json:"chatMembers"`
-	ChatMutes          []ChatMute          `json:"chatMutes"`
-	ChatDeletes        []ChatDelete        `json:"chatDeletes"`
-	ChatUnreadMessages []ChatUnreadMessage `json:"chatUnreadMessages"`
-	ChatMessages       []ChatMessage       `json:"chatMessages"`
+type ChatRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChatRepository(DB *gorm.DB) ChatRepository {
+	return ChatRepository{DB: DB}
 }
 
 // Save ...
-func (r *Chat) Save() error {
-	return DB.Create(&r).Error
+func (r *ChatRepository) Save(m *models.Chat) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *Chat) Get(ID int) error {
-	return DB.Where("id = ?", ID).Preload("ChatMembers").Take(&r).Error
+func (r *ChatRepository) Get(m *models.Chat, ID int) error {
+	return r.DB.Where("id = ?", ID).Preload("ChatMembers").Take(&m).Error
 }
 
 // GetUserChats ...
-func (r *Chat) GetUserChats(userID int) ([]*Chat, error) {
-	var chats []*Chat
-	err := DB.Joins("inner join chat_members on chat_members.chat_id = chats.id").Where("chat_members.user_id = ?", userID).Order("updated_at desc").Preload("ChatMembers").Preload("ChatMutes").Preload("ChatUnreadMessages").Find(&chats).Error
+func (r *ChatRepository) GetUserChats(userID int) ([]*models.Chat, error) {
+	var chats []*models.Chat
+	err := r.DB.Joins("inner join chat_members on chat_members.chat_id = chats.id").Where("chat_members.user_id = ?", userID).Order("updated_at desc").Preload("ChatMembers").Preload("ChatMutes").Preload("ChatUnreadMessages").Find(&chats).Error
 	return chats, err
 }
 
 // Update ...
-func (r *Chat) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChatRepository) Update(m *models.Chat) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *Chat) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ChatRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.Chat{}).Error
 }

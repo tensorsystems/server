@@ -18,57 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// SlitLampExam ...
-type SlitLampExam struct {
-	gorm.Model
-	ID                   int     `gorm:"primaryKey"`
-	RightConjunctiva     *string `json:"rightConjunctiva"`
-	LeftConjunctiva      *string `json:"leftConjunctiva"`
-	RightCornea          *string `json:"rightCornea"`
-	LeftCornea           *string `json:"leftCornea"`
-	RightCorneaSketch    *string `json:"rightCorneaSketch"`
-	LeftCorneaSketch     *string `json:"leftCorneaSketch"`
-	LeftSclera           *string `json:"leftSclera"`
-	RightSclera          *string `json:"rightSclera"`
-	RightAnteriorChamber *string `json:"rightAnteriorChamber"`
-	LeftAnteriorChamber  *string `json:"leftAnteriorChamber"`
-	RightIris            *string `json:"rightIris"`
-	LeftIris             *string `json:"leftIris"`
-	RightLens            *string `json:"rightLens"`
-	LeftLens             *string `json:"leftLens"`
-	RightLensSketch      *string `json:"rightLensSketch"`
-	LeftLensSketch       *string `json:"leftLensSketch"`
-	RightVitreos         *string `json:"rightVitreos"`
-	LeftVitreos          *string `json:"leftVitreos"`
-	Note                 *string `json:"note"`
-	PatientChartID       int     `json:"patientChartId"`
+type SlitLampExamRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideSlitLampExamRepository(DB *gorm.DB) SlitLampExamRepository {
+	return SlitLampExamRepository{DB: DB}
 }
 
 // Save ...
-func (r *SlitLampExam) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *SlitLampExamRepository) Save(m *models.SlitLampExam) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *SlitLampExam) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing SlitLampExam
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *SlitLampExamRepository) SaveForPatientChart(m *models.SlitLampExam) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.SlitLampExam
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -78,16 +58,16 @@ func (r *SlitLampExam) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *SlitLampExam) Get(filter SlitLampExam) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *SlitLampExamRepository) Get(m *models.SlitLampExam, filter models.SlitLampExam) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *SlitLampExam) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *SlitLampExamRepository) GetByPatientChart(m *models.SlitLampExam, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *SlitLampExam) Update() error {
-	return DB.Updates(&r).Error
+func (r *SlitLampExamRepository) Update(m *models.SlitLampExam) error {
+	return r.DB.Updates(&m).Error
 }

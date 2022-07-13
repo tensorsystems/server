@@ -19,35 +19,28 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// SystemSymptom
-type SystemSymptom struct {
-	gorm.Model
-	ID       int    `gorm:"primaryKey" json:"id"`
-	Title    string `json:"title"`
-	Count    int64  `json:"count"`
-	Active   bool   `json:"active"`
-	SystemID int    `json:"systemId"`
-	System   System `json:"system"`
+type SystemSymptomRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideSystemSymptomRepository(DB *gorm.DB) SystemSymptomRepository {
+	return SystemSymptomRepository{DB: DB}
 }
 
 // Save ...
-func (r *SystemSymptom) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *SystemSymptomRepository) Save(m *models.SystemSymptom) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *SystemSymptom) GetAll(p PaginationInput, searchTerm *string) ([]SystemSymptom, int64, error) {
-	var result []SystemSymptom
+func (r *SystemSymptomRepository) GetAll(p models.PaginationInput, searchTerm *string) ([]models.SystemSymptom, int64, error) {
+	var result []models.SystemSymptom
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("System")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Preload("System")
 
 	if searchTerm != nil {
 		dbOp.Where("title ILIKE ?", "%"+*searchTerm+"%")
@@ -68,21 +61,21 @@ func (r *SystemSymptom) GetAll(p PaginationInput, searchTerm *string) ([]SystemS
 }
 
 // Get ...
-func (r *SystemSymptom) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *SystemSymptomRepository) Get(m *models.SystemSymptom, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *SystemSymptom) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *SystemSymptomRepository) GetByTitle(m *models.SystemSymptom, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *SystemSymptom) Update() error {
-	return DB.Updates(&r).Error
+func (r *SystemSymptomRepository) Update(m *models.SystemSymptom) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *SystemSymptom) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *SystemSymptomRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.SystemSymptom{}).Error
 }

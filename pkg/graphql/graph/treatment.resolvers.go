@@ -8,13 +8,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tensoremr/server/pkg/graphql/graph/model"
+	graph_models "github.com/tensoremr/server/pkg/graphql/graph/model"
 	"github.com/tensoremr/server/pkg/middleware"
-	"github.com/tensoremr/server/pkg/repository"
+	"github.com/tensoremr/server/pkg/models"
 	deepCopy "github.com/ulule/deepcopier"
 )
 
-func (r *mutationResolver) OrderTreatment(ctx context.Context, input model.OrderTreatmentInput) (*repository.TreatmentOrder, error) {
+func (r *mutationResolver) OrderTreatment(ctx context.Context, input graph_models.OrderTreatmentInput) (*models.TreatmentOrder, error) {
 	// Get current user
 	gc, err := middleware.GinContextFromContext(ctx)
 	if err != nil {
@@ -26,9 +26,8 @@ func (r *mutationResolver) OrderTreatment(ctx context.Context, input model.Order
 		return nil, errors.New("Cannot find user")
 	}
 
-	var user repository.User
-	err = user.GetByEmail(email)
-	if err != nil {
+	var user models.User
+	if err := r.UserRepository.GetByEmail(&user, email); err != nil {
 		return nil, err
 	}
 
@@ -43,40 +42,40 @@ func (r *mutationResolver) OrderTreatment(ctx context.Context, input model.Order
 		return nil, errors.New("You are not authorized to perform this action")
 	}
 
-	var treatment repository.TreatmentOrder
-	if err := treatment.SaveOpthalmologyTreatment(input.TreatmentTypeID, input.PatientChartID, input.PatientID, input.BillingID, user, input.TreatmentNote, input.OrderNote); err != nil {
+	var treatment models.TreatmentOrder
+	if err := r.TreatmentOrderRepository.SaveOpthalmologyTreatment(&treatment, input.TreatmentTypeID, input.PatientChartID, input.PatientID, input.BillingID, user, input.TreatmentNote, input.OrderNote); err != nil {
 		return nil, err
 	}
 
 	return &treatment, nil
 }
 
-func (r *mutationResolver) ConfirmTreatmentOrder(ctx context.Context, input model.ConfirmTreatmentOrderInput) (*model.ConfirmTreatmentOrderResult, error) {
-	var entity repository.TreatmentOrder
+func (r *mutationResolver) ConfirmTreatmentOrder(ctx context.Context, input graph_models.ConfirmTreatmentOrderInput) (*graph_models.ConfirmTreatmentOrderResult, error) {
+	var entity models.TreatmentOrder
 
-	if err := entity.ConfirmOrder(input.TreatmentOrderID, input.TreatmentID, *input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
+	if err := r.TreatmentOrderRepository.ConfirmOrder(&entity, input.TreatmentOrderID, input.TreatmentID, *input.InvoiceNo, input.RoomID, input.CheckInTime); err != nil {
 		return nil, err
 	}
 
-	return &model.ConfirmTreatmentOrderResult{
+	return &graph_models.ConfirmTreatmentOrderResult{
 		TreatmentOrder: &entity,
 		TreatmentID:    input.TreatmentID,
 		InvoiceNo:      *input.InvoiceNo,
 	}, nil
 }
 
-func (r *mutationResolver) SaveTreatment(ctx context.Context, input model.TreatmentInput) (*repository.Treatment, error) {
-	var entity repository.Treatment
+func (r *mutationResolver) SaveTreatment(ctx context.Context, input graph_models.TreatmentInput) (*models.Treatment, error) {
+	var entity models.Treatment
 	deepCopy.Copy(&input).To(&entity)
 
-	var existing repository.Treatment
-	if err := existing.GetByPatientChart(input.PatientChartID); err != nil {
-		if err := entity.Save(); err != nil {
+	var existing models.Treatment
+	if err := r.TreatmentRepository.GetByPatientChart(&existing, input.PatientChartID); err != nil {
+		if err := r.TreatmentRepository.Save(&entity); err != nil {
 			return nil, err
 		}
 	} else {
 		entity.ID = existing.ID
-		if err := entity.Update(); err != nil {
+		if err := r.TreatmentRepository.Update(&entity); err != nil {
 			return nil, err
 		}
 	}
@@ -84,11 +83,11 @@ func (r *mutationResolver) SaveTreatment(ctx context.Context, input model.Treatm
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateTreatment(ctx context.Context, input model.TreatmentUpdateInput) (*repository.Treatment, error) {
-	var entity repository.Treatment
+func (r *mutationResolver) UpdateTreatment(ctx context.Context, input graph_models.TreatmentUpdateInput) (*models.Treatment, error) {
+	var entity models.Treatment
 	deepCopy.Copy(&input).To(&entity)
 
-	if err := entity.Update(); err != nil {
+	if err := r.TreatmentRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -96,22 +95,19 @@ func (r *mutationResolver) UpdateTreatment(ctx context.Context, input model.Trea
 }
 
 func (r *mutationResolver) DeleteTreatment(ctx context.Context, id int) (bool, error) {
-	var entity repository.Treatment
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.TreatmentRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *mutationResolver) SaveTreatmentType(ctx context.Context, input model.TreatmentTypeInput) (*repository.TreatmentType, error) {
-	var entity repository.TreatmentType
+func (r *mutationResolver) SaveTreatmentType(ctx context.Context, input graph_models.TreatmentTypeInput) (*models.TreatmentType, error) {
+	var entity models.TreatmentType
 	deepCopy.Copy(&input).To(&entity)
 
 	// Save billings
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
@@ -119,28 +115,26 @@ func (r *mutationResolver) SaveTreatmentType(ctx context.Context, input model.Tr
 	entity.Billings = billings
 
 	// Save supplies
-	var supply repository.Supply
-	supplies, err := supply.GetByIds(input.SupplyIds)
+	supplies, err := r.SupplyRepository.GetByIds(input.SupplyIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Supplies = supplies
 
-	if err := entity.Save(); err != nil {
+	if err := r.TreatmentTypeRepository.Save(&entity); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *mutationResolver) UpdateTreatmentType(ctx context.Context, input model.TreatmentTypeUpdateInput) (*repository.TreatmentType, error) {
-	var entity repository.TreatmentType
+func (r *mutationResolver) UpdateTreatmentType(ctx context.Context, input graph_models.TreatmentTypeUpdateInput) (*models.TreatmentType, error) {
+	var entity models.TreatmentType
 	deepCopy.Copy(&input).To(&entity)
 
 	// Save billings
-	var billing repository.Billing
-	billings, err := billing.GetByIds(input.BillingIds)
+	billings, err := r.BillingRepository.GetByIds(input.BillingIds)
 	if err != nil {
 		return nil, err
 	}
@@ -148,15 +142,14 @@ func (r *mutationResolver) UpdateTreatmentType(ctx context.Context, input model.
 	entity.Billings = billings
 
 	// Save supplies
-	var supply repository.Supply
-	supplies, err := supply.GetByIds(input.SupplyIds)
+	supplies, err := r.SupplyRepository.GetByIds(input.SupplyIds)
 	if err != nil {
 		return nil, err
 	}
 
 	entity.Supplies = supplies
 
-	if err := entity.Update(); err != nil {
+	if err := r.TreatmentTypeRepository.Update(&entity); err != nil {
 		return nil, err
 	}
 
@@ -164,131 +157,126 @@ func (r *mutationResolver) UpdateTreatmentType(ctx context.Context, input model.
 }
 
 func (r *mutationResolver) DeleteTreatmentType(ctx context.Context, id int) (bool, error) {
-	var entity repository.TreatmentType
-
-	if err := entity.Delete(id); err != nil {
+	if err := r.TreatmentTypeRepository.Delete(id); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (r *queryResolver) Treatment(ctx context.Context, patientChartID int) (*repository.Treatment, error) {
-	var entity repository.Treatment
+func (r *queryResolver) Treatment(ctx context.Context, patientChartID int) (*models.Treatment, error) {
+	var entity models.Treatment
 
-	if err := entity.GetByPatientChart(patientChartID); err != nil {
+	if err := r.TreatmentRepository.GetByPatientChart(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) Treatments(ctx context.Context, page repository.PaginationInput, filter *model.TreatmentFilter) (*model.TreatmentConnection, error) {
-	var f repository.Treatment
+func (r *queryResolver) Treatments(ctx context.Context, page models.PaginationInput, filter *graph_models.TreatmentFilter) (*graph_models.TreatmentConnection, error) {
+	var f models.Treatment
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
-	var entity repository.Treatment
-	entities, count, err := entity.GetAll(page, &f)
+	entities, count, err := r.TreatmentRepository.GetAll(page, &f)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.TreatmentEdge, len(entities))
+	edges := make([]*graph_models.TreatmentEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.TreatmentEdge{
+		edges[i] = &graph_models.TreatmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.TreatmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.TreatmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) GetTreatmentsByPatient(ctx context.Context, page repository.PaginationInput, patientID int) (*model.TreatmentConnection, error) {
-	var entity repository.Treatment
-	entities, count, err := entity.GetByPatient(page, patientID)
+func (r *queryResolver) GetTreatmentsByPatient(ctx context.Context, page models.PaginationInput, patientID int) (*graph_models.TreatmentConnection, error) {
+	entities, count, err := r.TreatmentRepository.GetByPatient(page, patientID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.TreatmentEdge, len(entities))
+	edges := make([]*graph_models.TreatmentEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.TreatmentEdge{
+		edges[i] = &graph_models.TreatmentEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.TreatmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.TreatmentConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) TreatmentTypes(ctx context.Context, page repository.PaginationInput, searchTerm *string) (*model.TreatmentTypeConnection, error) {
-	var entity repository.TreatmentType
-	entities, count, err := entity.GetAll(page, searchTerm)
+func (r *queryResolver) TreatmentTypes(ctx context.Context, page models.PaginationInput, searchTerm *string) (*graph_models.TreatmentTypeConnection, error) {
+	entities, count, err := r.TreatmentTypeRepository.GetAll(page, searchTerm)
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.TreatmentTypeEdge, len(entities))
+	edges := make([]*graph_models.TreatmentTypeEdge, len(entities))
 
 	for i, entity := range entities {
 		e := entity
 
-		edges[i] = &model.TreatmentTypeEdge{
+		edges[i] = &graph_models.TreatmentTypeEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(entities, count, page)
-	return &model.TreatmentTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.TreatmentTypeConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }
 
-func (r *queryResolver) TreatmentOrder(ctx context.Context, patientChartID int) (*repository.TreatmentOrder, error) {
-	var entity repository.TreatmentOrder
-	if err := entity.GetByPatientChartID(patientChartID); err != nil {
+func (r *queryResolver) TreatmentOrder(ctx context.Context, patientChartID int) (*models.TreatmentOrder, error) {
+	var entity models.TreatmentOrder
+
+	if err := r.TreatmentOrderRepository.GetByPatientChartID(&entity, patientChartID); err != nil {
 		return nil, err
 	}
 
 	return &entity, nil
 }
 
-func (r *queryResolver) SearchTreatmentOrders(ctx context.Context, page repository.PaginationInput, filter *model.TreatmentOrderFilter, date *time.Time, searchTerm *string) (*model.TreatmentOrderConnection, error) {
-	var f repository.TreatmentOrder
+func (r *queryResolver) SearchTreatmentOrders(ctx context.Context, page models.PaginationInput, filter *graph_models.TreatmentOrderFilter, date *time.Time, searchTerm *string) (*graph_models.TreatmentOrderConnection, error) {
+	var f models.TreatmentOrder
 	if filter != nil {
 		deepCopy.Copy(filter).To(&f)
 	}
 
 	if filter.Status != nil {
-		f.Status = repository.TreatmentOrderStatus(*filter.Status)
+		f.Status = models.TreatmentOrderStatus(*filter.Status)
 	}
 
-	var entity repository.TreatmentOrder
-	result, count, err := entity.Search(page, &f, date, searchTerm, false)
+	result, count, err := r.TreatmentOrderRepository.Search(page, &f, date, searchTerm, false)
 
 	if err != nil {
 		return nil, err
 	}
 
-	edges := make([]*model.TreatmentOrderEdge, len(result))
+	edges := make([]*graph_models.TreatmentOrderEdge, len(result))
 
 	for i, entity := range result {
 		e := entity
 
-		edges[i] = &model.TreatmentOrderEdge{
+		edges[i] = &graph_models.TreatmentOrderEdge{
 			Node: &e,
 		}
 	}
 
 	pageInfo, totalCount := GetPageInfo(result, count, page)
-	return &model.TreatmentOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
+	return &graph_models.TreatmentOrderConnection{PageInfo: pageInfo, Edges: edges, TotalCount: totalCount}, nil
 }

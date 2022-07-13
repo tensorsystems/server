@@ -18,44 +18,47 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// ChatUnreadMessage ...
-type ChatUnreadMessage struct {
-	gorm.Model
-	ID     int `gorm:"primaryKey"`
-	UserID int `json:"userId"`
-	ChatID int `json:"chatId"`
+type ChatUnreadRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChatUnreadRepository(DB *gorm.DB) ChatUnreadRepository {
+	return ChatUnreadRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChatUnreadMessage) Save() error {
-	return DB.Create(&r).Error
+func (r *ChatUnreadRepository) Save(m *models.ChatUnreadMessage) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *ChatUnreadMessage) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ChatUnreadRepository) Get(m *models.ChatUnreadMessage, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByUserID ...
-func (r *ChatUnreadMessage) GetByUserID(ID int) ([]*ChatUnreadMessage, error) {
-	var unreadMessages []*ChatUnreadMessage
-	err := DB.Where("user_id = ?", ID).Find(&unreadMessages).Error
+func (r *ChatUnreadRepository) GetByUserID(ID int) ([]*models.ChatUnreadMessage, error) {
+	var unreadMessages []*models.ChatUnreadMessage
+	err := r.DB.Where("user_id = ?", ID).Find(&unreadMessages).Error
 	return unreadMessages, err
 }
 
 // Update ...
-func (r *ChatUnreadMessage) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChatUnreadRepository) Update(m *models.ChatUnreadMessage) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *ChatUnreadMessage) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *ChatUnreadRepository) Delete(m *models.ChatUnreadMessage, ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&m).Error
 }
 
 // Delete ...
-func (r *ChatUnreadMessage) DeleteForUserChat(userID int, chatID int) error {
-	return DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&r).Error
+func (r *ChatUnreadRepository) DeleteForUserChat(userID int, chatID int) error {
+	return r.DB.Where("user_id = ? AND chat_id = ?", userID, chatID).Delete(&models.ChatUnreadMessage{}).Error
 }

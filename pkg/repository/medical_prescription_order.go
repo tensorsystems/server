@@ -21,73 +21,64 @@ package repository
 import (
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// MedicalPrescriptionOrder is a gorm struct for the prescription_order table
-type MedicalPrescriptionOrder struct {
-	gorm.Model
-	ID                   int                   `gorm:"primaryKey"`
-	PharmacyID           int                   `json:"pharmacyId"`
-	Pharmacy             Pharmacy              `json:"pharmacy"`
-	PatientChartID       int                   `json:"patientChartId"`
-	OrderedByID          *int                  `json:"orderedById"`
-	OrderedBy            *User                 `json:"orderedBy"`
-	FirstName            string                `json:"firstName"`
-	LastName             string                `json:"lastName"`
-	PhoneNo              string                `json:"phoneNo"`
-	UserName             string                `json:"userName"`
-	Status               string                `json:"status"`
-	MedicalPrescriptions []MedicalPrescription `json:"medicalPrescriptions"`
-	Count                int64                 `json:"count"`
+type MedicalPrescriptionOrderRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideMedicalPrescriptionOrderRepository(DB *gorm.DB) MedicalPrescriptionOrderRepository {
+	return MedicalPrescriptionOrderRepository{DB: DB}
 }
 
 // SaveMedicalPrescription ...
-func (r *MedicalPrescriptionOrder) SaveMedicalPrescription(medicalPrescription MedicalPrescription, patientID int) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var patient Patient
+func (r *MedicalPrescriptionOrderRepository) SaveMedicalPrescription(m *models.MedicalPrescriptionOrder, medicalPrescription models.MedicalPrescription, patientID int) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var patient models.Patient
 		if err := tx.Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
-		var user User
-		if err := tx.Where("id = ?", r.OrderedByID).Take(&user).Error; err != nil {
+		var user models.User
+		if err := tx.Where("id = ?", m.OrderedByID).Take(&user).Error; err != nil {
 			return err
 		}
 
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = user.FirstName + " " + user.LastName
-		r.Status = "ORDERED"
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = user.FirstName + " " + user.LastName
+		m.Status = "ORDERED"
 
-		var existing MedicalPrescriptionOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.MedicalPrescriptionOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
 		medicalPrescription.Status = "Active"
 
-		tx.Model(&r).Association("MedicalPrescriptions").Append(&medicalPrescription)
+		tx.Model(&m).Association("MedicalPrescriptions").Append(&medicalPrescription)
 
 		return nil
 	})
 }
 
 // Search ...
-func (r *MedicalPrescriptionOrder) Search(p PaginationInput, filter *MedicalPrescriptionOrder, date *time.Time, searchTerm *string, ascending bool) ([]MedicalPrescriptionOrder, int64, error) {
-	var result []MedicalPrescriptionOrder
+func (r *MedicalPrescriptionOrderRepository) Search(p models.PaginationInput, filter *models.MedicalPrescriptionOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.MedicalPrescriptionOrder, int64, error) {
+	var result []models.MedicalPrescriptionOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("MedicalPrescriptions").Preload("OrderedBy")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("MedicalPrescriptions").Preload("OrderedBy")
 
 	if date != nil {
 		prescribedDate := *date
@@ -121,20 +112,20 @@ func (r *MedicalPrescriptionOrder) Search(p PaginationInput, filter *MedicalPres
 }
 
 // Get ...
-func (r *MedicalPrescriptionOrder) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *MedicalPrescriptionOrderRepository) Get(m *models.MedicalPrescriptionOrder, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByPatientChartID ...
-func (r *MedicalPrescriptionOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("MedicalPrescriptions").Take(&r).Error
+func (r *MedicalPrescriptionOrderRepository) GetByPatientChartID(m *models.MedicalPrescriptionOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("MedicalPrescriptions").Take(&m).Error
 }
 
 // GetAll ...
-func (r *MedicalPrescriptionOrder) GetAll(p PaginationInput, filter *MedicalPrescriptionOrder) ([]MedicalPrescriptionOrder, int64, error) {
-	var result []MedicalPrescriptionOrder
+func (r *MedicalPrescriptionOrderRepository) GetAll(p PaginationInput, filter *models.MedicalPrescriptionOrder) ([]models.MedicalPrescriptionOrder, int64, error) {
+	var result []models.MedicalPrescriptionOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("MedicalPrescriptions").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("MedicalPrescriptions").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -149,11 +140,11 @@ func (r *MedicalPrescriptionOrder) GetAll(p PaginationInput, filter *MedicalPres
 }
 
 // Update ...
-func (r *MedicalPrescriptionOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *MedicalPrescriptionOrderRepository) Update(m *models.MedicalPrescriptionOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *MedicalPrescriptionOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *MedicalPrescriptionOrderRepository) Delete(m *models.MedicalPrescriptionOrder, ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&m).Error
 }

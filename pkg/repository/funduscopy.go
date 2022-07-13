@@ -18,43 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// Funduscopy ...
-type Funduscopy struct {
-	gorm.Model
-	ID                int     `gorm:"primaryKey"`
-	RightRetina       *string `json:"rightRetina"`
-	LeftRetina        *string `json:"leftRetina"`
-	Note              *string `json:"note"`
-	LeftRetinaSketch  *string `json:"leftRetinaSketch"`
-	RightRetinaSketch *string `json:"rightRetinaSketch"`
-	PatientChartID    int     `json:"patientChartId"`
+type FunduscopyRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideFunduscopyRepository(DB *gorm.DB) FunduscopyRepository {
+	return FunduscopyRepository{DB: DB}
 }
 
 // Save ...
-func (r *Funduscopy) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *FunduscopyRepository) Save(m *models.Funduscopy) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *Funduscopy) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing Funduscopy
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *FunduscopyRepository) SaveForPatientChart(m *models.Funduscopy) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.Funduscopy
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -64,16 +58,16 @@ func (r *Funduscopy) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *Funduscopy) Get(filter Funduscopy) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *FunduscopyRepository) Get(m *models.Funduscopy, filter models.Funduscopy) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *Funduscopy) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *FunduscopyRepository) GetByPatientChart(m *models.Funduscopy, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *Funduscopy) Update() error {
-	return DB.Updates(&r).Error
+func (r *FunduscopyRepository) Update(m *models.Funduscopy) error {
+	return r.DB.Updates(&m).Error
 }

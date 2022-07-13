@@ -18,35 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// ChatMessage ...
-type ChatMessage struct {
-	gorm.Model
-	ID     int    `gorm:"primaryKey"`
-	Body   string `json:"body"`
-	ChatID int    `json:"chatId"`
-	UserID int    `json:"userId"`
+type ChatMessageRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideChatMessageRepository(DB *gorm.DB) ChatMessageRepository {
+	return ChatMessageRepository{DB: DB}
 }
 
 // Save ...
-func (r *ChatMessage) Save() error {
-	return DB.Create(&r).Error
+func (r *ChatMessageRepository) Save(m *models.ChatMessage) error {
+	return r.DB.Create(&m).Error
 }
 
 // Get ...
-func (r *ChatMessage) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *ChatMessageRepository) Get(m *models.ChatMessage, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByChatID ...
-func (r *ChatMessage) GetByChatID(ID int) ([]*ChatMessage, error) {
-	var messages []*ChatMessage
-	err := DB.Where("chat_id = ?", ID).Order("created_at asc").Find(&messages).Error
+func (r *ChatMessageRepository) GetByChatID(ID int) ([]*models.ChatMessage, error) {
+	var messages []*models.ChatMessage
+	err := r.DB.Where("chat_id = ?", ID).Order("created_at asc").Find(&messages).Error
 	return messages, err
 }
 
 // Update ...
-func (r *ChatMessage) Update() error {
-	return DB.Updates(&r).Error
+func (r *ChatMessageRepository) Update(m *models.ChatMessage) error {
+	return r.DB.Updates(&m).Error
 }

@@ -6,5 +6,6 @@ go mod tidy
  
 >>>>>>> Stashed changes
 go build -o ./bin/"tensoremr-server" ./"main.go"
+ 
 make: Leaving directory `/Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server'
  

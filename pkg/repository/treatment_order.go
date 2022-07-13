@@ -21,43 +21,24 @@ package repository
 import (
 	"time"
 
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// TreatmentOrderStatus ...
-type TreatmentOrderStatus string
+type TreatmentOrderRepository struct {
+	DB *gorm.DB
+}
 
-// TreatmentOrderStatus statuses ...
-const (
-	TreatmentOrderStatusOrdered   TreatmentOrderStatus = "ORDERED"
-	TreatmentOrderStatusCompleted TreatmentOrderStatus = "COMPLETED"
-)
-
-// TreatmentOrder ...
-type TreatmentOrder struct {
-	gorm.Model
-	ID             int                  `gorm:"primaryKey"`
-	PatientChartID int                  `json:"patientChartId"`
-	PatientID      int                  `json:"patientId"`
-	FirstName      string               `json:"firstName"`
-	LastName       string               `json:"lastName"`
-	PhoneNo        string               `json:"phoneNo"`
-	UserName       string               `json:"userName"`
-	OrderedByID    int                  `json:"orderedById"`
-	OrderedBy      User                 `json:"orderedBy"`
-	Status         TreatmentOrderStatus `json:"status"`
-	Treatments     []Treatment          `json:"treatments"`
-	Emergency      *bool                `json:"emergency"`
-	Document       string               `gorm:"type:tsvector"`
-	Count          int64                `json:"count"`
+func ProvideTreatmentOrderRepository(DB *gorm.DB) TreatmentOrderRepository {
+	return TreatmentOrderRepository{DB: DB}
 }
 
 // SaveOpthalmologyTreatment ...
-func (r *TreatmentOrder) SaveOpthalmologyTreatment(treatmentTypeID int, patientChartID int, patientID int, billingID int, user User, treatmentNote string, orderNote string) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *TreatmentOrderRepository) SaveOpthalmologyTreatment(m *models.TreatmentOrder, treatmentTypeID int, patientChartID int, patientID int, billingID int, user models.User, treatmentNote string, orderNote string) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 		// Get Patient
-		var patient Patient
-		if err := tx.Model(&Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
+		var patient models.Patient
+		if err := tx.Model(&models.Patient{}).Where("id = ?", patientID).Take(&patient).Error; err != nil {
 			return err
 		}
 
@@ -73,61 +54,61 @@ func (r *TreatmentOrder) SaveOpthalmologyTreatment(treatmentTypeID int, patientC
 			orderedByPrefix = "Dr. "
 		}
 
-		r.PatientChartID = patientChartID
-		r.PatientID = patientID
-		r.FirstName = patient.FirstName
-		r.LastName = patient.LastName
-		r.PhoneNo = patient.PhoneNo
-		r.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
-		r.OrderedByID = user.ID
-		r.Status = TreatmentOrderStatusOrdered
+		m.PatientChartID = patientChartID
+		m.PatientID = patientID
+		m.FirstName = patient.FirstName
+		m.LastName = patient.LastName
+		m.PhoneNo = patient.PhoneNo
+		m.UserName = orderedByPrefix + user.FirstName + " " + user.LastName
+		m.OrderedByID = user.ID
+		m.Status = models.TreatmentOrderStatusOrdered
 
-		var existing TreatmentOrder
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+		var existing models.TreatmentOrder
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
 		// Treatment Type
-		var treatmentType TreatmentType
+		var treatmentType models.TreatmentType
 		if err := tx.Where("id = ?", treatmentTypeID).Take(&treatmentType).Error; err != nil {
 			return err
 		}
 
 		// Create payment
-		var payments []Payment
+		var payments []models.Payment
 
 		// Payment for procedure
-		var payment Payment
-		payment.Status = NotPaidPaymentStatus
+		var payment models.Payment
+		payment.Status = models.NotPaidPaymentStatus
 		payment.BillingID = billingID
 		payments = append(payments, payment)
 
 		// Attach supply payments
 		for _, supply := range treatmentType.Supplies {
 			for _, billing := range supply.Billings {
-				var payment Payment
-				payment.Status = NotPaidPaymentStatus
+				var payment models.Payment
+				payment.Status = models.NotPaidPaymentStatus
 				payment.BillingID = billing.ID
 				payments = append(payments, payment)
 			}
 		}
 
 		// Create treatment
-		var treatment Treatment
+		var treatment models.Treatment
 		treatment.TreatmentTypeID = treatmentType.ID
-		treatment.TreatmentOrderID = r.ID
+		treatment.TreatmentOrderID = m.ID
 		treatment.PatientChartID = patientChartID
 		treatment.Payments = payments
-		treatment.Status = TreatmentStatusOrdered
+		treatment.Status = models.TreatmentStatusOrdered
 		treatment.TreatmentTypeTitle = treatmentType.Title
 		treatment.ReceptionNote = orderNote
 		treatment.Note = treatmentNote
@@ -141,13 +122,13 @@ func (r *TreatmentOrder) SaveOpthalmologyTreatment(treatmentTypeID int, patientC
 }
 
 // GetTodaysOrderedCount ...
-func (r *TreatmentOrder) GetTodaysOrderedCount() (count int) {
+func (r *TreatmentOrderRepository) GetTodaysOrderedCount() (count int) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	end := start.AddDate(0, 0, 1)
 
 	var countTmp int64
-	err := DB.Model(&r).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", TreatmentOrderStatusOrdered).Count(&countTmp).Error
+	err := r.DB.Model(&models.TreatmentOrder{}).Where("created_at >= ?", start).Where("created_at <= ?", end).Where("status = ?", models.TreatmentOrderStatusOrdered).Count(&countTmp).Error
 	if err != nil {
 		countTmp = 0
 	}
@@ -158,10 +139,10 @@ func (r *TreatmentOrder) GetTodaysOrderedCount() (count int) {
 }
 
 // ConfirmOrder ...
-func (r *TreatmentOrder) ConfirmOrder(treatmentOrderID int, treatmentID int, invoiceNo string, roomID int, checkInTime time.Time) error {
-	return DB.Transaction(func(tx *gorm.DB) error {
+func (r *TreatmentOrderRepository) ConfirmOrder(m *models.TreatmentOrder, treatmentOrderID int, treatmentID int, invoiceNo string, roomID int, checkInTime time.Time) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
 
-		var treatment Treatment
+		var treatment models.Treatment
 		if err := tx.Where("id = ?", treatmentID).Preload("Payments").Take(&treatment).Error; err != nil {
 			return err
 		}
@@ -172,64 +153,64 @@ func (r *TreatmentOrder) ConfirmOrder(treatmentOrderID int, treatmentID int, inv
 			paymentIds = append(paymentIds, payment.ID)
 		}
 
-		if err := tx.Model(&Payment{}).Where("id IN ?", paymentIds).Updates(map[string]interface{}{"invoice_no": invoiceNo, "status": "PAID"}).Error; err != nil {
+		if err := tx.Model(&models.Payment{}).Where("id IN ?", paymentIds).Updates(map[string]interface{}{"invoice_no": invoiceNo, "status": "PAID"}).Error; err != nil {
 			return err
 		}
 
 		// Get treatment order with payments
-		if err := tx.Where("id = ?", treatmentOrderID).Preload("Treatments.Payments").Take(&r).Error; err != nil {
+		if err := tx.Where("id = ?", treatmentOrderID).Preload("Treatments.Payments").Take(&m).Error; err != nil {
 			return err
 		}
 
-		var patientChart PatientChart
-		if err := tx.Where("id = ?", r.PatientChartID).Take(&patientChart).Error; err != nil {
+		var patientChart models.PatientChart
+		if err := tx.Where("id = ?", m.PatientChartID).Take(&patientChart).Error; err != nil {
 			return err
 		}
 
-		var previousAppointment Appointment
+		var previousAppointment models.Appointment
 		if err := tx.Where("id = ?", patientChart.AppointmentID).Take(&previousAppointment).Error; err != nil {
 			return err
 		}
 
-		var allPayments []Payment
-		for _, treatment := range r.Treatments {
+		var allPayments []models.Payment
+		for _, treatment := range m.Treatments {
 			allPayments = append(allPayments, treatment.Payments...)
 		}
 
 		allPaid := true
 		for _, payment := range allPayments {
-			if payment.Status == NotPaidPaymentStatus {
+			if payment.Status == models.NotPaidPaymentStatus {
 				allPaid = false
 			}
 		}
 
 		if allPaid {
 			// Update treatment order to completed
-			r.Status = TreatmentOrderStatusCompleted
-			if err := tx.Updates(&r).Error; err != nil {
+			m.Status = models.TreatmentOrderStatusCompleted
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
 
 		// Create new appointment
-		var appointment Appointment
-		appointment.PatientID = r.PatientID
+		var appointment models.Appointment
+		appointment.PatientID = m.PatientID
 		appointment.RoomID = roomID
 		appointment.CheckInTime = checkInTime
-		appointment.UserID = r.OrderedByID
+		appointment.UserID = m.OrderedByID
 		appointment.Credit = false
 		appointment.Payments = treatment.Payments
 		appointment.MedicalDepartment = previousAppointment.MedicalDepartment
 
 		// Assign treatment visit type
-		var visitType VisitType
+		var visitType models.VisitType
 		if err := tx.Where("title = ?", "Treatment").Take(&visitType).Error; err != nil {
 			return err
 		}
 		appointment.VisitTypeID = visitType.ID
 
 		// Assign scheduled status
-		var status AppointmentStatus
+		var status models.AppointmentStatus
 		if err := tx.Where("title = ?", "Scheduled").Take(&status).Error; err != nil {
 			return err
 		}
@@ -241,13 +222,13 @@ func (r *TreatmentOrder) ConfirmOrder(treatmentOrderID int, treatmentID int, inv
 		}
 
 		// Create new patient chart
-		var newPatientChart PatientChart
+		var newPatientChart models.PatientChart
 		newPatientChart.AppointmentID = appointment.ID
 		if err := tx.Create(&newPatientChart).Error; err != nil {
 			return err
 		}
 
-		treatment.Status = TreatmentStatusOrdered
+		treatment.Status = models.TreatmentStatusOrdered
 		treatment.PatientChartID = newPatientChart.ID
 		if err := tx.Updates(&treatment).Error; err != nil {
 			return err
@@ -258,8 +239,8 @@ func (r *TreatmentOrder) ConfirmOrder(treatmentOrderID int, treatmentID int, inv
 }
 
 // GetCount ...
-func (r *TreatmentOrder) GetCount(filter *TreatmentOrder, date *time.Time, searchTerm *string) (int64, error) {
-	dbOp := DB.Model(&r).Where(filter)
+func (r *TreatmentOrderRepository) GetCount(filter *models.TreatmentOrder, date *time.Time, searchTerm *string) (int64, error) {
+	dbOp := r.DB.Model(&models.TreatmentOrder{}).Where(filter)
 
 	if date != nil {
 		createdAt := *date
@@ -279,10 +260,10 @@ func (r *TreatmentOrder) GetCount(filter *TreatmentOrder, date *time.Time, searc
 }
 
 // Search ...
-func (r *TreatmentOrder) Search(p PaginationInput, filter *TreatmentOrder, date *time.Time, searchTerm *string, ascending bool) ([]TreatmentOrder, int64, error) {
-	var result []TreatmentOrder
+func (r *TreatmentOrderRepository) Search(p models.PaginationInput, filter *models.TreatmentOrder, date *time.Time, searchTerm *string, ascending bool) ([]models.TreatmentOrder, int64, error) {
+	var result []models.TreatmentOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Treatments.Payments.Billing").Preload("Treatments.TreatmentType").Preload("OrderedBy.UserTypes")
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Treatments.Payments.Billing").Preload("Treatments.TreatmentType").Preload("OrderedBy.UserTypes")
 
 	if date != nil {
 		createdAt := *date
@@ -312,15 +293,15 @@ func (r *TreatmentOrder) Search(p PaginationInput, filter *TreatmentOrder, date 
 }
 
 // GetByPatientChartID ...
-func (r *TreatmentOrder) GetByPatientChartID(patientChartID int) error {
-	return DB.Where("patient_chart_id = ?", patientChartID).Preload("Treatments").Preload("Treatments.Payments").Preload("Treatments.TreatmentType").Take(&r).Error
+func (r *TreatmentOrderRepository) GetByPatientChartID(m *models.TreatmentOrder, patientChartID int) error {
+	return r.DB.Where("patient_chart_id = ?", patientChartID).Preload("Treatments").Preload("Treatments.Payments").Preload("Treatments.TreatmentType").Take(&m).Error
 }
 
 // GetAll ...
-func (r *TreatmentOrder) GetAll(p PaginationInput, filter *TreatmentOrder) ([]TreatmentOrder, int64, error) {
-	var result []TreatmentOrder
+func (r *TreatmentOrderRepository) GetAll(p PaginationInput, filter *models.TreatmentOrder) ([]models.TreatmentOrder, int64, error) {
+	var result []models.TreatmentOrder
 
-	dbOp := DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Treatments").Order("id ASC").Find(&result)
+	dbOp := r.DB.Scopes(Paginate(&p)).Select("*, count(*) OVER() AS count").Where(filter).Preload("Treatments").Order("id ASC").Find(&result)
 
 	var count int64
 	if len(result) > 0 {
@@ -335,11 +316,11 @@ func (r *TreatmentOrder) GetAll(p PaginationInput, filter *TreatmentOrder) ([]Tr
 }
 
 // Update ...
-func (r *TreatmentOrder) Update() error {
-	return DB.Updates(&r).Error
+func (r *TreatmentOrderRepository) Update(m *models.TreatmentOrder) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *TreatmentOrder) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *TreatmentOrderRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.TreatmentOrder{}).Error
 }

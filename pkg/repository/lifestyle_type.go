@@ -18,67 +18,58 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// LifestyleType ...
-type LifestyleType struct {
-	gorm.Model
-	ID    int    `gorm:"primaryKey" json:"id"`
-	Title string `json:"title"`
+type LifestyleTypeRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideLifestyleTypeRepository(DB *gorm.DB) LifestyleTypeRepository {
+	return LifestyleTypeRepository{DB: DB}
 }
 
 // Save ...
-func (r *LifestyleType) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Count ...
-func (r *LifestyleType) Count(dbString string) (int64, error) {
-	var count int64
-
-	err := DB.Model(&LifestyleType{}).Count(&count).Error
-	return count, err
+func (r *LifestyleTypeRepository) Save(m *models.LifestyleType) error {
+	return r.DB.Create(&m).Error
 }
 
 // GetAll ...
-func (r *LifestyleType) GetAll(p PaginationInput) ([]LifestyleType, int64, error) {
-	var result []LifestyleType
+func (r *LifestyleTypeRepository) GetAll(p models.PaginationInput) ([]models.LifestyleType, int64, error) {
+	var result []models.LifestyleType
+
+	dbOp := r.DB.Scopes(models.Paginate(&p)).Select("*, count(*) OVER() AS count").Order("id ASC").Find(&result)
 
 	var count int64
-	count, countErr := r.Count("")
-	if countErr != nil {
-		return result, 0, countErr
+	if len(result) > 0 {
+		count = result[0].Count
 	}
 
-	err := DB.Scopes(Paginate(&p)).Order("id ASC").Find(&result).Error
-	if err != nil {
-		return result, 0, err
+	if dbOp.Error != nil {
+		return result, 0, dbOp.Error
 	}
 
-	return result, count, err
+	return result, count, dbOp.Error
 }
 
 // Get ...
-func (r *LifestyleType) Get(ID int) error {
-	return DB.Where("id = ?", ID).Take(&r).Error
+func (r *LifestyleTypeRepository) Get(m *models.LifestyleType, ID int) error {
+	return r.DB.Where("id = ?", ID).Take(&m).Error
 }
 
 // GetByTitle ...
-func (r *LifestyleType) GetByTitle(title string) error {
-	return DB.Where("title = ?", title).Take(&r).Error
+func (r *LifestyleTypeRepository) GetByTitle(m *models.LifestyleType, title string) error {
+	return r.DB.Where("title = ?", title).Take(&m).Error
 }
 
 // Update ...
-func (r *LifestyleType) Update() error {
-	return DB.Updates(&r).Error
+func (r *LifestyleTypeRepository) Update(m *models.LifestyleType) error {
+	return r.DB.Updates(&m).Error
 }
 
 // Delete ...
-func (r *LifestyleType) Delete(ID int) error {
-	return DB.Where("id = ?", ID).Delete(&r).Error
+func (r *LifestyleTypeRepository) Delete(ID int) error {
+	return r.DB.Where("id = ?", ID).Delete(&models.LifestyleType{}).Error
 }

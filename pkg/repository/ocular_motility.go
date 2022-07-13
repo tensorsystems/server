@@ -18,58 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// OcularMotility ...
-type OcularMotility struct {
-	gorm.Model
-	ID                  int     `gorm:"primaryKey"`
-	RightOcularMotility *string `json:"rightOcularMotility"`
-	LeftOcularMotility  *string `json:"leftOcularMotility"`
-	Rsr                 *string `json:"rsr"`
-	Rio                 *string `json:"rio"`
-	Rlr                 *string `json:"rlr"`
-	Rmr                 *string `json:"rmr"`
-	Rir                 *string `json:"rir"`
-	Rso                 *string `json:"rso"`
-	RightFlick          *bool   `json:"rightFlick"`
-	Lsr                 *string `json:"lsr"`
-	Lio                 *string `json:"lio"`
-	Llr                 *string `json:"llr"`
-	Lrl                 *string `json:"lrl"`
-	Lmr                 *string `json:"lmr"`
-	Lir                 *string `json:"lir"`
-	Lso                 *string `json:"lso"`
-	LeftFlick           *bool   `json:"leftFlick"`
-	Distance            *string `json:"distance"`
-	Near                *string `json:"near"`
-	Note                *string `json:"note"`
-	PatientChartID      int     `json:"patientChartId"`
+type OcularMotilityRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideOcularMotilityRepository(DB *gorm.DB) OcularMotilityRepository {
+	return OcularMotilityRepository{DB: DB}
 }
 
 // Save ...
-func (r *OcularMotility) Save() error {
-	err := DB.Create(&r).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *OcularMotilityRepository) Save(m *models.OcularMotility) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *OcularMotility) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing OcularMotility
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *OcularMotilityRepository) SaveForPatientChart(m *models.OcularMotility) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.OcularMotility
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -79,16 +58,16 @@ func (r *OcularMotility) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *OcularMotility) Get(filter OcularMotility) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *OcularMotilityRepository) Get(m *models.OcularMotility, filter models.OcularMotility) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *OcularMotility) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *OcularMotilityRepository) GetByPatientChart(m *models.OcularMotility, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *OcularMotility) Update() error {
-	return DB.Updates(&r).Error
+func (r *OcularMotilityRepository) Update(m *models.OcularMotility) error {
+	return r.DB.Updates(&m).Error
 }

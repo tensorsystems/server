@@ -19,41 +19,36 @@
 package repository
 
 import (
+	"github.com/tensoremr/server/pkg/models"
 	"gorm.io/gorm"
 )
 
-// ExternalExam ...
-type ExternalExam struct {
-	gorm.Model
-	ID                  int     `gorm:"primaryKey"`
-	RightOrbits         *string `json:"rightOrbits"`
-	LeftOrbits          *string `json:"leftOrbits"`
-	RightLids           *string `json:"rightLids"`
-	LeftLids            *string `json:"leftLids"`
-	RightLacrimalSystem *string `json:"rightLacrimalSystem"`
-	LeftLacrimalSystem  *string `json:"leftLacrimalSystem"`
-	Note                *string `json:"note"`
-	PatientChartID      int     `json:"patientChartId"`
+type ExternalExamRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideExternalExamRepository(DB *gorm.DB) ExternalExamRepository {
+	return ExternalExamRepository{DB: DB}
 }
 
 // Save ...
-func (r *ExternalExam) Save() error {
-	return DB.Create(&r).Error
+func (r *ExternalExamRepository) Save(m *models.ExternalExam) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *ExternalExam) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing ExternalExam
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *ExternalExamRepository) SaveForPatientChart(m *models.ExternalExam) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.ExternalExam
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -63,16 +58,16 @@ func (r *ExternalExam) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *ExternalExam) Get(filter ExternalExam) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *ExternalExamRepository) Get(m *models.ExternalExam, filter models.ExternalExam) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *ExternalExam) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *ExternalExamRepository) GetByPatientChart(m *models.ExternalExam, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *ExternalExam) Update() error {
-	return DB.Updates(&r).Error
+func (r *ExternalExamRepository) Update(m *models.ExternalExam) error {
+	return r.DB.Updates(&m).Error
 }

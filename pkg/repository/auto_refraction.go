@@ -18,51 +18,37 @@
 
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/gorm"
+)
 
-// AutoRefraction ...
-type AutoRefraction struct {
-	gorm.Model
-	ID                 int    `gorm:"primaryKey"`
-	RightDistanceSph   *string `json:"rightDistanceSph"`
-	LeftDistanceSph    *string `json:"leftDistanceSph"`
-	RightDistanceAxis  *string `json:"rightDistanceAxis"`
-	LeftDistanceAxis   *string `json:"leftDistanceAxis"`
-	RightDistanceCyl   *string `json:"rightDistanceCyl"`
-	LeftDistanceCyl    *string `json:"leftDistanceCyl"`
-	RightNearSph       *string `json:"rightNearSph"`
-	LeftNearSph        *string `json:"leftNearSph"`
-	RightNearCyl       *string `json:"rightNearCyl"`
-	LeftNearCyl        *string `json:"leftNearCyl"`
-	RightNearAxis      *string `json:"rightNearAxis"`
-	LeftNearAxis       *string `json:"leftNearAxis"`
-	RightLensMeterSph  *string `json:"rightLensMeterSph"`
-	LeftLensMeterSph   *string `json:"leftLensMeterSph"`
-	RightLensMeterAxis *string `json:"rightLensMeterAxis"`
-	LeftLensMeterAxis  *string `json:"leftLensMeterAxis"`
-	RightLensMeterCyl  *string `json:"rightLensMeterCyl"`
-	LeftLensMeterCyl   *string `json:"leftLensMeterCyl"`
-	PatientChartID     int    `json:"patientChartId" gorm:"unique"`
+type AutoRefractionRepository struct {
+	DB *gorm.DB
+}
+
+func ProvideAutoRefractionRepository(DB *gorm.DB) AutoRefractionRepository {
+	return AutoRefractionRepository{DB: DB}
 }
 
 // Save ...
-func (r *AutoRefraction) Save() error {
-	return DB.Create(&r).Error
+func (r *AutoRefractionRepository) Save(m *models.AutoRefraction) error {
+	return r.DB.Create(&m).Error
 }
 
 // SaveForPatientChart ...
-func (r *AutoRefraction) SaveForPatientChart() error {
-	return DB.Transaction(func(tx *gorm.DB) error {
-		var existing AutoRefraction
-		existingErr := tx.Where("patient_chart_id = ?", r.PatientChartID).Take(&existing).Error
+func (r *AutoRefractionRepository) SaveForPatientChart(m *models.AutoRefraction) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		var existing models.AutoRefraction
+		existingErr := tx.Where("patient_chart_id = ?", m.PatientChartID).Take(&existing).Error
 
 		if existingErr != nil {
-			if err := tx.Create(&r).Error; err != nil {
+			if err := tx.Create(&m).Error; err != nil {
 				return err
 			}
 		} else {
-			r.ID = existing.ID
-			if err := tx.Updates(&r).Error; err != nil {
+			m.ID = existing.ID
+			if err := tx.Updates(&m).Error; err != nil {
 				return err
 			}
 		}
@@ -72,16 +58,16 @@ func (r *AutoRefraction) SaveForPatientChart() error {
 }
 
 // Get ...
-func (r *AutoRefraction) Get(filter AutoRefraction) error {
-	return DB.Where(filter).Take(&r).Error
+func (r *AutoRefractionRepository) Get(m *models.AutoRefraction, filter models.AutoRefraction) error {
+	return r.DB.Where(filter).Take(&m).Error
 }
 
 // GetByPatientChart ...
-func (r *AutoRefraction) GetByPatientChart(ID int) error {
-	return DB.Where("patient_chart_id = ?", ID).Take(&r).Error
+func (r *AutoRefractionRepository) GetByPatientChart(m *models.AutoRefraction, ID int) error {
+	return r.DB.Where("patient_chart_id = ?", ID).Take(&m).Error
 }
 
 // Update ...
-func (r *AutoRefraction) Update() error {
-	return DB.Updates(&r).Error
+func (r *AutoRefractionRepository) Update(m *models.AutoRefraction) error {
+	return r.DB.Updates(&m).Error
 }
