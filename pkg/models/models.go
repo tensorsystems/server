@@ -32,8 +32,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Global variable
-var DB *gorm.DB
 
 // Model facilitate database interactions
 type Model struct {
@@ -72,8 +70,6 @@ func (m *Model) OpenPostgres() error {
 		return err
 	}
 
-	DB = db
-
 	m.DB = db
 	m.isOpen = true
 
@@ -94,8 +90,6 @@ func (m *Model) OpenWithConfigTest(cfg *conf.Configuration) error {
 	if err != nil {
 		return err
 	}
-
-	DB = db
 
 	m.DB = db
 	m.isOpen = true

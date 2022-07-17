@@ -37,6 +37,15 @@ func ProvidePatientQueueRepository(DB *gorm.DB) PatientQueueRepository {
 	return PatientQueueRepository{DB: DB}
 }
 
+// Seed ...
+func (r *PatientQueueRepository) Seed() {
+	emptyQueue := datatypes.JSON([]byte("[]"))
+
+	r.DB.Create(&models.PatientQueue{QueueName: "Pre-Exam", Queue: emptyQueue, QueueType:  models.QueueType("PREEXAM")})
+	r.DB.Create(&models.PatientQueue{QueueName: "Pre-Operation", Queue: emptyQueue, QueueType:  models.QueueType("PREOPERATION")})
+}
+
+
 // Save
 func (r *PatientQueueRepository) Save(m *models.PatientQueue) error {
 	return r.DB.Create(&m).Error

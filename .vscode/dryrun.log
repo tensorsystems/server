@@ -1,11 +1,6 @@
 make --dry-run --always-make --keep-going --print-directory
 make: Entering directory `/Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server'
 go mod tidy
-<<<<<<< Updated upstream
-=======
- 
->>>>>>> Stashed changes
 go build -o ./bin/"tensoremr-server" ./"main.go"
- 
 make: Leaving directory `/Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server'
  

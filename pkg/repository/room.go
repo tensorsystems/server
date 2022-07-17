@@ -34,6 +34,13 @@ func ProvideRoomRepository(DB *gorm.DB) RoomRepository {
 	return RoomRepository{DB: DB}
 }
 
+// Seed ...
+func (r *RoomRepository) Seed() {
+	r.DB.Create(&models.Room{Title: "Exam Room 1"})
+	r.DB.Create(&models.Room{Title: "Exam Room 1"})
+	r.DB.Create(&models.Room{Title: "Exam Room 1"})
+}
+
 // Save ...
 func (r *RoomRepository) Save(m *models.Room) error {
 	err := r.DB.Create(&m).Error

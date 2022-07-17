@@ -20,11 +20,12 @@ package repository
 
 import (
 	"github.com/tensoremr/server/pkg/models"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	DB *gorm.DB
+	DB                 *gorm.DB
 	UserTypeRepository UserTypeRepository
 }
 
@@ -66,8 +67,61 @@ func (r *UserRepository) Save(m *models.User, userTypes []models.UserType) error
 				}
 			}
 
-			if isPhysician {
+			isNurse := false
+			for _, e := range userTypes {
+				if e.Title == "Nurse" {
+					isNurse = true
+				}
+			}
 
+			if isPhysician {
+				var patientEncounterLimit models.PatientEncounterLimit
+				patientEncounterLimit.UserID = m.ID
+				patientEncounterLimit.MondayLimit = 150
+				patientEncounterLimit.TuesdayLimit = 150
+				patientEncounterLimit.WednesdayLimit = 150
+				patientEncounterLimit.ThursdayLimit = 150
+				patientEncounterLimit.FridayLimit = 150
+				patientEncounterLimit.SaturdayLimit = 150
+				patientEncounterLimit.SundayLimit = 150
+				patientEncounterLimit.Overbook = 5
+
+				if err := tx.Create(&patientEncounterLimit).Error; err != nil {
+					return err
+				}
+
+				queue := datatypes.JSON([]byte("[" + "]"))
+
+				var patientQueue models.PatientQueue
+				patientQueue.QueueName = "Dr. " + m.FirstName + " " + m.LastName
+				patientQueue.Queue = queue
+				patientQueue.QueueType = "USER"
+
+				if err := tx.Create(&patientQueue).Error; err != nil {
+					return err
+				}
+
+				var queueSubscription models.QueueSubscription
+				queueSubscription.UserID = m.ID
+				queueSubscription.Subscriptions = append(queueSubscription.Subscriptions, patientQueue)
+
+				if err := tx.Create(&queueSubscription).Error; err != nil {
+					return err
+				}
+			}
+
+			if isNurse {
+				var patientQueue models.PatientQueue
+				if err := tx.Where("queue_name = ?", "Pre-Exam").Take(&patientQueue).Error; err != nil {
+					return err
+				}
+				var queueSubscription models.QueueSubscription
+				queueSubscription.UserID = m.ID
+				queueSubscription.Subscriptions = append(queueSubscription.Subscriptions, patientQueue)
+
+				if err := tx.Create(&queueSubscription).Error; err != nil {
+					return err
+				}
 			}
 		}
 

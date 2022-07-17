@@ -26,7 +26,7 @@ import (
 type Billing struct {
 	gorm.Model
 	ID       int     `gorm:"primaryKey"`
-	Item     string  `json:"item"`
+	Item     string  `json:"item" gorm:"uniqueIndex"`
 	Code     string  `json:"code"`
 	Price    float64 `json:"price"`
 	Credit   bool    `json:"credit"`

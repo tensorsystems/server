@@ -41,7 +41,7 @@ const (
 type PatientQueue struct {
 	gorm.Model
 	ID        int            `gorm:"primaryKey" json:"id"`
-	QueueName string         `json:"queueName"`
+	QueueName string         `json:"queueName" gorm:"uniqueIndex"`
 	Queue     datatypes.JSON `json:"queue"`
 	QueueType QueueType      `json:"queueType"`
 }

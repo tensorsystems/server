@@ -31,6 +31,11 @@ func ProvideBillingRepository(DB *gorm.DB) BillingRepository {
 	return BillingRepository{DB: DB}
 }
 
+// Seed ...
+func (r *BillingRepository) Seed() {
+	r.DB.Create(&models.Billing{Item: "Consultation", Code: "001", Price: 100, Credit: false, Remark: ""})
+}
+
 // Save ...
 func (r *BillingRepository) Save(m *models.Billing) error {
 	return r.DB.Create(&m).Error
