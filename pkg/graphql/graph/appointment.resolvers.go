@@ -78,7 +78,7 @@ func (r *mutationResolver) UpdateAppointment(ctx context.Context, input graph_mo
 	if input.ProviderName != nil {
 		appointment.ProviderName = *input.ProviderName
 	}
-	
+
 	if existing.UserID != *input.UserID {
 		var user models.User
 		if err := r.UserRepository.Get(&user, *input.UserID); err != nil {
