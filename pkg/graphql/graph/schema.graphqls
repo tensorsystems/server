@@ -66,6 +66,16 @@ type HomeStats {
   checkedOut: Int!
 }
 
+input OrderFilterInput {
+  userId: ID
+  appointmentId: ID
+  patientChartId: ID
+  status: String
+  orderType: String
+  searchTerm: String
+  date: Time
+}
+
 type Query {
   todos: [Todo!]!
   getHealthCheck: HealthCheckReport!

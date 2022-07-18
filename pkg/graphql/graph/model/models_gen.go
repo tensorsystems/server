@@ -1819,6 +1819,16 @@ type OrderDiagnosticProcedureInput struct {
 	ReceptionNote             string `json:"receptionNote"`
 }
 
+type OrderFilterInput struct {
+	UserID         *int       `json:"userId"`
+	AppointmentID  *int       `json:"appointmentId"`
+	PatientChartID *int       `json:"patientChartId"`
+	Status         *string    `json:"status"`
+	OrderType      *string    `json:"orderType"`
+	SearchTerm     *string    `json:"searchTerm"`
+	Date           *time.Time `json:"date"`
+}
+
 type OrderFollowUpInput struct {
 	PatientChartID int    `json:"patientChartId"`
 	PatientID      int    `json:"patientId"`
@@ -1997,6 +2007,7 @@ type PatientChartInput struct {
 	StickieNote               *string  `json:"stickieNote"`
 	MedicalRecommendation     *string  `json:"medicalRecommendation"`
 	SickLeave                 *string  `json:"sickLeave"`
+	IllnessType               *string  `json:"illnessType"`
 }
 
 type PatientChartUpdateInput struct {
@@ -2021,6 +2032,7 @@ type PatientChartUpdateInput struct {
 	StickieNote               *string  `json:"stickieNote"`
 	MedicalRecommendation     *string  `json:"medicalRecommendation"`
 	SickLeave                 *string  `json:"sickLeave"`
+	IllnessType               *string  `json:"illnessType"`
 }
 
 type PatientConnection struct {

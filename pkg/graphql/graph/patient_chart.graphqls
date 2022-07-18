@@ -175,6 +175,7 @@ type PatientChart {
   stickieNote: String
   medicalRecommendation: String
   sickLeave: String
+  illnessType: String
   medicalPrescriptionOrder: MedicalPrescriptionOrder
   eyewearPrescriptionOrder: EyewearPrescriptionOrder
   diagnosticProcedureOrder: DiagnosticProcedureOrder
@@ -222,6 +223,7 @@ input PatientChartInput {
   stickieNote: String
   medicalRecommendation: String
   sickLeave: String
+  illnessType: String
 }
 
 input PatientChartUpdateInput {
@@ -246,6 +248,7 @@ input PatientChartUpdateInput {
   stickieNote: String
   medicalRecommendation: String
   sickLeave: String
+  illnessType: String
 }
 
 input VitalSignsInput {

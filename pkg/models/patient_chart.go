@@ -47,6 +47,7 @@ type PatientChart struct {
 	StickieNote               *string                  `json:"stickieNote"`
 	MedicalRecommendation     *string                  `json:"medicalRecommendation"`
 	SickLeave                 *string                  `json:"sickLeave"`
+	IllnessType               *string                  `json:"illnessType"`
 	MedicalPrescriptionOrder  MedicalPrescriptionOrder `json:"medicalPrescriptionOrder"`
 	EyewearPrescriptionOrder  EyewearPrescriptionOrder `json:"eyewearPrescriptionOrder"`
 	DiagnosticProcedureOrder  DiagnosticProcedureOrder `json:"diagnosticProcedureOrder"`
