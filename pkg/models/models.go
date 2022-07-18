@@ -32,7 +32,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 // Model facilitate database interactions
 type Model struct {
 	models map[string]reflect.Value
