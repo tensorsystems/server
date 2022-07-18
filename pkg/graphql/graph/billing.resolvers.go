@@ -38,7 +38,6 @@ func (r *mutationResolver) UpdateBilling(ctx context.Context, input graph_models
 }
 
 func (r *mutationResolver) DeleteBilling(ctx context.Context, id int) (bool, error) {
-
 	if err := r.BillingRepository.Delete(id); err != nil {
 		return false, err
 	}

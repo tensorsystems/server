@@ -27,14 +27,74 @@ func (r *mutationResolver) NewAppointment(ctx context.Context, input graph_model
 }
 
 func (r *mutationResolver) UpdateAppointment(ctx context.Context, input graph_models.AppointmentUpdateInput) (*models.Appointment, error) {
-	var entity models.Appointment
-	deepCopy.Copy(&input).To(&entity)
+	var appointment models.Appointment
+	appointment.ID = input.ID
 
-	if err := r.AppointmentRepository.Update(&entity); err != nil {
+	var existing models.Appointment
+	if err := r.AppointmentRepository.Get(&existing, input.ID); err != nil {
 		return nil, err
 	}
 
-	return &entity, nil
+	if input.PatientID != nil {
+		appointment.PatientID = *input.PatientID
+	}
+
+	if input.CheckInTime != nil {
+		appointment.CheckInTime = *input.CheckInTime
+	}
+
+	if input.CheckedInTime != nil {
+		appointment.CheckedInTime = input.CheckedInTime
+	}
+
+	if input.CheckedOutTime != nil {
+		appointment.CheckedOutTime = *input.CheckedOutTime
+	}
+
+	if input.RoomID != nil {
+		appointment.RoomID = *input.RoomID
+	}
+
+	if input.VisitTypeID != nil {
+		appointment.VisitTypeID = *input.VisitTypeID
+	}
+
+	if input.AppointmentStatusID != nil {
+		appointment.AppointmentStatusID = *input.AppointmentStatusID
+	}
+
+	if input.Emergency != nil {
+		appointment.Emergency = input.Emergency
+	}
+
+	if input.MedicalDepartment != nil {
+		appointment.MedicalDepartment = *input.MedicalDepartment
+	}
+
+	if input.Credit != nil {
+		appointment.Credit = *input.Credit
+	}
+
+	if input.ProviderName != nil {
+		appointment.ProviderName = *input.ProviderName
+	}
+	
+	if existing.UserID != *input.UserID {
+		var user models.User
+		if err := r.UserRepository.Get(&user, *input.UserID); err != nil {
+			return nil, err
+		}
+
+		providerName := user.FirstName + " " + user.LastName
+		appointment.ProviderName = providerName
+		appointment.UserID = user.ID
+	}
+
+	if err := r.AppointmentRepository.Update(&appointment); err != nil {
+		return nil, err
+	}
+
+	return &appointment, nil
 }
 
 func (r *mutationResolver) DeleteAppointment(ctx context.Context, id int) (bool, error) {

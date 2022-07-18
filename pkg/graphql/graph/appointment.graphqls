@@ -105,6 +105,7 @@ input AppointmentUpdateInput {
   fileIds: [ID]
   userId: ID
   patientChartId: ID
+  providerName: String
 }
 
 input AppointmentFilter {

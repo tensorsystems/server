@@ -145,6 +145,7 @@ type AppointmentUpdateInput struct {
 	FileIds             []*int     `json:"fileIds"`
 	UserID              *int       `json:"userId"`
 	PatientChartID      *int       `json:"patientChartId"`
+	ProviderName        *string    `json:"providerName"`
 }
 
 type BillingConnection struct {

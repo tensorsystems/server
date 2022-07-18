@@ -71,10 +71,10 @@ func NewServer() *Server {
 	server.DB = server.ModelRegistry.DB
 
 	server.ModelRegistry.RegisterAllModels()
-	server.ModelRegistry.AutoMigrateAll()
-	
-	server.AddSearchIndex()
-	server.SeedData()
+	// server.ModelRegistry.AutoMigrateAll()
+
+	// server.AddSearchIndex()
+	// server.SeedData()
 	server.RegisterJobs()
 
 	server.Gin = server.NewRouter()

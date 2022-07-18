@@ -32,7 +32,7 @@ func main() {
 	fmt.Println(`
   Copyright 2021 Kidus Tiliksew
 
-  This file is part of Tensor EMR.
+  This program is part of Tensor EMR.
 
   Tensor EMR is free software: you can redistribute it and/or modify
   it under the terms of the version 2 of GNU General Public License as published by
