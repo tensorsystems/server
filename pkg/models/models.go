@@ -226,3 +226,278 @@ func getTypeName(typ reflect.Type) string {
 	split := strings.Split(typ.String(), ".")
 	return split[len(split)-1]
 }
+
+// AddSearchIndex ...
+func (s *Model) AddSearchIndex() error {
+	d := s.DB
+
+	if err := d.Exec("UPDATE patients SET document = to_tsvector(id || ' ' || first_name || ' ' || last_name || ' ' || phone_no || ' ' || phone_no2 || ' ' || coalesce(email, ''))").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX patients_document_idx ON patients USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION patients_tsvector_trigger() RETURNS trigger AS $$
+	begin
+		new.document := to_tsvector(new.id || ' ' || new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.phone_no2 || ' ' || coalesce(new.email, ''));
+		return new;
+	end
+	$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON patients FOR EACH ROW EXECUTE PROCEDURE patients_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// users search index
+	// =======================
+
+	if err := d.Exec("UPDATE users SET document = to_tsvector(id || ' ' || first_name || ' ' || last_name || ' ' || coalesce(email, ''))").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX users_document_idx ON users USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION users_tsvector_trigger() RETURNS trigger AS $$
+	begin
+		new.document := to_tsvector(new.id || ' ' || new.first_name || ' ' || new.last_name || ' ' || coalesce(new.email, ''));
+		return new;
+	end
+	$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE users_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// billings search index
+	// =======================
+
+	if err := d.Exec("UPDATE billings SET document = to_tsvector(id || ' ' || item || ' ' || code)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX billings_document_idx ON billings USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION billings_tsvector_trigger() RETURNS trigger AS $$
+	begin
+		new.document := to_tsvector(new.id || ' ' || new.item || ' ' || new.code);
+		return new;
+	end
+	$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON billings FOR EACH ROW EXECUTE PROCEDURE billings_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// ============================
+	// appointments search index
+	// ============================
+
+	if err := d.Exec("UPDATE appointments SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX appointments_document_idx ON appointments USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION appointments_tsvector_trigger() RETURNS trigger AS $$
+	begin
+		new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no);
+		return new;
+	end
+	$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON appointments FOR EACH ROW EXECUTE PROCEDURE appointments_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// ========================================
+	// diagnostic procedure order search index
+	// ========================================
+
+	if err := d.Exec("UPDATE diagnostic_procedure_orders SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no || ' ' || user_name)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX diagnostic_procedure_orders_document_idx ON diagnostic_procedure_orders USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION diagnostic_procedure_orders_tsvector_trigger() RETURNS trigger AS $$
+	begin
+		new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.user_name);
+		return new;
+	end
+	$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON diagnostic_procedure_orders FOR EACH ROW EXECUTE PROCEDURE diagnostic_procedure_orders_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// lab order search index
+	// =======================
+	if err := d.Exec("UPDATE lab_orders SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no || ' ' || user_name)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX lab_orders_document_idx ON lab_orders USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION lab_orders_tsvector_trigger() RETURNS trigger AS $$
+		begin
+			new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.user_name);
+			return new;
+		end
+		$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON lab_orders FOR EACH ROW EXECUTE PROCEDURE lab_orders_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// diagnosis search index
+	// =======================
+	if err := d.Exec("UPDATE diagnoses SET document = to_tsvector(id || ' ' || coalesce(category_code, '') || ' ' || coalesce(diagnosis_code, '') || ' ' || coalesce(full_code, '') || ' ' || coalesce(full_description, '') || ' ' || coalesce(category_title, ''))").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX diagnoses_document_idx ON diagnoses USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION diagnoses_tsvector_trigger() RETURNS trigger AS $$
+	begin
+		new.document := to_tsvector(new.id || ' ' || coalesce(new.category_code, '') || ' ' || coalesce(new.diagnosis_code, '') || ' ' || coalesce(new.full_code, '') || ' ' || coalesce(new.full_description, '') || ' ' || coalesce(new.category_title, ''));
+		return new;
+	end
+	$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON diagnoses FOR EACH ROW EXECUTE PROCEDURE diagnoses_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// treatment order search index
+	// =======================
+
+	if err := d.Exec("UPDATE treatment_orders SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no || ' ' || user_name)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX treatment_orders_document_idx ON treatment_orders USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION treatment_orders_tsvector_trigger() RETURNS trigger AS $$
+		begin
+			new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.user_name);
+			return new;
+		end
+		$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON treatment_orders FOR EACH ROW EXECUTE PROCEDURE treatment_orders_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// surgical order search index
+	// =======================
+
+	if err := d.Exec("UPDATE surgical_orders SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no || ' ' || user_name)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX surgical_orders_document_idx ON surgical_orders USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION surgical_orders_tsvector_trigger() RETURNS trigger AS $$
+		begin
+			new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.user_name);
+			return new;
+		end
+		$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON surgical_orders FOR EACH ROW EXECUTE PROCEDURE surgical_orders_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// follow up search index
+	// =======================
+
+	if err := d.Exec("UPDATE follow_up_orders SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no || ' ' || user_name)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX follow_up_orders_document_idx ON follow_up_orders USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION follow_up_orders_tsvector_trigger() RETURNS trigger AS $$
+		begin
+			new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.user_name);
+			return new;
+		end
+		$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON follow_up_orders FOR EACH ROW EXECUTE PROCEDURE follow_up_orders_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	// =======================
+	// referral search index
+	// =======================
+	if err := d.Exec("UPDATE referral_orders SET document = to_tsvector(first_name || ' ' || last_name || ' ' || phone_no || ' ' || user_name)").Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE INDEX referral_orders_document_idx ON referral_orders USING GIN (document)").Error; err != nil {
+
+	}
+
+	if err := d.Exec(`CREATE FUNCTION referral_orders_tsvector_trigger() RETURNS trigger AS $$
+		begin
+			new.document := to_tsvector(new.first_name || ' ' || new.last_name || ' ' || new.phone_no || ' ' || new.user_name);
+			return new;
+		end
+		$$ LANGUAGE plpgsql`).Error; err != nil {
+
+	}
+
+	if err := d.Exec("CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON referral_orders FOR EACH ROW EXECUTE PROCEDURE referral_orders_tsvector_trigger()").Error; err != nil {
+
+	}
+
+	return nil
+}

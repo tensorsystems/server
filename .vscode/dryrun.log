@@ -1,14 +1,7 @@
 make --dry-run --always-make --keep-going --print-directory
-objc[3499]: Class AppleTypeCRetimerRestoreInfoHelper is implemented in both /usr/lib/libauthinstall.dylib (0x21dd0f458) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1047c84f8). One of the two will be used. Which one is undefined.
-
-objc[3499]: Class AppleTypeCRetimerFirmwareAggregateRequestCreator is implemented in both /usr/lib/libauthinstall.dylib (0x21dd0f4a8) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1047c8548). One of the two will be used. Which one is undefined.
-objc[3499]: Class AppleTypeCRetimerFirmwareRequestCreator is implemented in both /usr/lib/libauthinstall.dylib (0x21dd0f4f8) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1047c8598). One of the two will be used. Which one is undefined.
-objc[3499]: Class ATCRTRestoreInfoFTABFile is implemented in both /usr/lib/libauthinstall.dylib (0x21dd0f548) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1047c85e8). One of the two will be used. Which one is undefined.
-objc[3499]: Class AppleTypeCRetimerFirmwareCopier is implemented in both /usr/lib/libauthinstall.dylib (0x21dd0f598) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1047c8638). One of the two will be used. Which one is undefined.
-objc[3499]: Class ATCRTRestoreInfoFTABSubfile is implemented in both /usr/lib/libauthinstall.dylib (0x21dd0f5e8) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1047c8688). One of the two will be used. Which one is undefined.
-
 make: Entering directory `/Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server'
 go mod tidy
 go build -o ./bin/"tensoremr-server" ./"main.go"
+ 
 make: Leaving directory `/Users/kidustiliksew/Desktop/work/emr/emr-2020/tensoremr-server'
  
